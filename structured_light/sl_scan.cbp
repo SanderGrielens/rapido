@@ -11,15 +11,14 @@
 				<Option object_output="obj/Debug/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters="0.3" />
+				<Option parameters="0.5 5" />
 				<Compiler>
 					<Add option="-g" />
-					<Add directory="/home/sander/Documents/Vimba_1_3" />
+					<Add directory="/home/svw/Documents/rapido/Camera_sdk/Vimba_1_3" />
 				</Compiler>
 				<Linker>
-					<Add library="/home/sander/Documents/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit/libVimbaC.so" />
-					<Add library="/home/sander/Documents/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit/libVimbaCPP.so" />
-					<Add library="/home/sander/Documents/Vimba_1_3/VimbaC/DynamicLib/x86_64bit/libVimbaC.so" />
+					<Add library="/home/svw/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit/libVimbaC.so" />
+					<Add library="/home/svw/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit/libVimbaCPP.so" />
 				</Linker>
 			</Target>
 			<Target title="Release">
