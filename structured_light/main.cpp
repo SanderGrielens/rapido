@@ -5,16 +5,134 @@ using namespace cv;
 using namespace AVT;
 using namespace VmbAPI;
 
+int NOP_h;
+int NOP_v;
 int aantalseries;
 float b;
 float m;
+int projector_width;
+int projector_height;
 
 const float PIXEL_UNCERTAIN = std::numeric_limits<float>::quiet_NaN();
 const unsigned short BIT_UNCERTAIN = 0xffff;
 
-bool get_calib_images(int delay, int number_of_patterns, int serie)
+vector<Mat> generate_pattern()
 {
-    Mat pattern;
+    vector<Mat> result;
+    ///Calculate how many vertical patters there are
+    int vertical_patterns=0;
+    while(pow(2, vertical_patterns) < projector_width)
+    {
+        vertical_patterns++;
+    }
+    NOP_v = vertical_patterns;
+
+    ///Do the same for the horizontal patterns
+    int horizontal_patterns=0;
+    while(pow(2, horizontal_patterns) < projector_height)
+    {
+        horizontal_patterns++;
+    }
+    NOP_h = horizontal_patterns;
+
+    for(int i =0 ; i< horizontal_patterns*2 + vertical_patterns*2 + 4; i++)
+    {
+        Mat newmat = Mat(projector_height, projector_width, CV_8UC1);
+        result.push_back(newmat) ;
+    }
+    cout<<"grootte van result: "<< result.size()<<endl;
+    cout<<"Matrix placeholders created.\n"
+          "number of horizontal patterns calculated "<<horizontal_patterns<<"\n"
+          "number of vertical patters calculated "<<vertical_patterns<<endl;
+
+        ///Generate vertical patterns
+    int teller =0;
+    for(int k=vertical_patterns; k>=0; teller+=2, k--)
+    {
+        bool change = true;
+        bool flag = true;
+        for(int i = 0; i < projector_width;i++)
+        {
+            for(int j =0; j< projector_height; j++)
+            {
+                ///Fill in the column
+                uchar pixel_color=0;
+                if(flag)
+                    pixel_color = 255;
+
+                result[teller].at<uchar>( j, i ) = pixel_color;
+                ///inverse
+
+                if( pixel_color > 0 )
+                    pixel_color = ( uchar ) 0;
+                else
+                    pixel_color = ( uchar ) 255;
+
+                result[teller + 1].at<uchar>( j,i ) = pixel_color;  // inverse
+            }
+            int macht = pow(2, k);
+
+            if(i%macht == 0 && i != 0)
+            {
+                if(change)
+                {
+                    flag = !flag;
+                    change = false;
+                }
+                else
+                    change = true;
+            }
+        }
+    }
+
+
+
+    ///Generate Horizontal patterns
+    for(int k=horizontal_patterns; k>0; teller +=2, k--)
+    {
+        bool change = true;
+        bool flag = true;
+        for(int i = 0; i < projector_height;i++)
+        {
+            for(int j =0; j< projector_width; j++)
+            {
+                ///Fill in the row
+                uchar pixel_color=0;
+                if(flag)
+                    pixel_color = 255;
+                result[teller].at<uchar>( i, j ) = pixel_color;
+
+                ///inverse
+                if( pixel_color > 0 )
+                    pixel_color = ( uchar ) 0;
+                else
+                    pixel_color = ( uchar ) 255;
+
+                result[teller + 1].at<uchar>( i, j ) = pixel_color;  // inverse
+            }
+            if(k==1)
+                {cout<<"ik ga hier kapot"<<i<<" "<<" "<<k<<" "<<endl;
+                cout<< teller<<endl;}
+            int macht = pow(2,k);
+            if(i%macht == 0 && i != 0)
+            {
+                if(change)
+                {
+                    flag = !flag;
+                    change = false;
+                }
+                else
+                    change = true;
+            }
+        }
+        cout<<teller<<endl;
+    }
+    return result;
+}
+
+bool get_calib_images(int delay, int serie)
+{
+    vector<Mat> pattern;
     cout<<"serienummer: "<<serie<<endl;
     ostringstream conv;
     conv << serie;
@@ -29,22 +147,23 @@ bool get_calib_images(int delay, int number_of_patterns, int serie)
         cout<<"system startup failed"<<endl;
     }
 
-    for(int i = 1; i<=number_of_patterns; i++)
+    pattern = generate_pattern();
+    cout<<"Pattern generated"<<endl;
+    int number_of_patterns = (NOP_h + NOP_v)*2 +2;
+
+    for(int i = 0; i<number_of_patterns;i++)
     {
         string Result;
         ostringstream convert;
         convert << i;
-        Result = "patterns/pattern" + convert.str() + ".png";
 
-        pattern = imread(Result, 0);
-        if(pattern.empty())
-            return -1;
+        cout<<"pattern" << i <<" generated"<<endl;
 
         ///Project pattern full screen via projector
         namedWindow( "pattern", CV_WINDOW_NORMAL );
         setWindowProperty("pattern", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
         moveWindow("pattern", 0, 0);
-        imshow("pattern", pattern);
+        imshow("pattern", pattern[i]);
         waitKey(delay);
 
         ///Read from camera
@@ -107,7 +226,6 @@ bool get_calib_images(int delay, int number_of_patterns, int serie)
         ///Save camera image
         string pFileName = "./picture/serie" + conv.str() + "/frame" + convert.str()+ ".bmp";
         AVTWriteBitmapToFile( &bitmap, pFileName.c_str() );
-
     }
 
     return true;
@@ -165,36 +283,13 @@ unsigned short check_bit(unsigned value1, unsigned value2, unsigned Ld, unsigned
     return BIT_UNCERTAIN;
 }
 
-bool decode(int serienummer)
+void calculate_light_components(Mat &Ld, Mat &Lg, vector<Mat> beelden)
 {
-    Mat beelden[NOP+1];
-    ostringstream serienr;
-    serienr << serienummer;
-    string path = "./picture/serie" + serienr.str() + "/frame";
-    string einde = ".bmp";
-
-    ///Reading every image in a serie
-    for(int i=1; i<=NOP; i++)
-    {
-        ostringstream beeldnr;
-        beeldnr << i;
-        beelden[i] = imread(path + beeldnr.str() + einde);
-        if(beelden[i].empty())
-            cout<<"no image"<<endl;
-
-        cvtColor(beelden[i], beelden[i], CV_BGR2GRAY);
-    }
-
-    Mat pattern_image = Mat(beelden[0].size(), CV_32FC2);;
-
-    ///Calculate the matrices Ld and Lg of the series (Direct light and Global Light respectively)
-    Mat Ld(beelden[NOP-2].rows, beelden[NOP-2].cols, CV_32F);
-    Mat Lg(beelden[NOP-2].rows, beelden[NOP-2].cols, CV_32F);
-
     float minld = 1000;
     float maxld = 0;
     float minlg = 1000;
     float maxlg = 0;
+    int NOP = NOP_h+NOP_v;
 
     for(int i =0; i< beelden[NOP].rows; i++)
     {
@@ -231,17 +326,58 @@ bool decode(int serienummer)
         }
     }
 
+    cout<<"direct and global light calculated"<<endl;
+}
+
+bool decode(int serienummer)
+{
+    vector<Mat> beelden ;
+    ostringstream serienr;
+    serienr << serienummer;
+    string path = "./picture/serie" + serienr.str() + "/frame";
+    string einde = ".bmp";
+
+    ///Reading every image in a serie
+    for(int i=0; i<=(NOP_v+NOP_h)*2; i++)
+    {
+        ostringstream beeldnr;
+        beeldnr << i;
+        Mat newmat = imread(path + beeldnr.str() + einde,0);
+        beelden.push_back(newmat);
+        if(beelden[i].empty())
+            cout<<"no image"<<endl;
+
+        cout<<"beeld "<<i<<"ingelezen"<<endl;
+    }
+    int NOP = 100;
+    ///Calculate the matrices Ld and Lg of the series (Direct light and Global Light respectively)
+    Mat Ld(beelden[NOP-2].rows, beelden[NOP-2].cols, CV_32F);
+    Mat Lg(beelden[NOP-2].rows, beelden[NOP-2].cols, CV_32F);
+
+    calculate_light_components(Ld, Lg, beelden);
+
     int total_images = NOP - 5; ///Number of images, without fully lighted, fully dark, red, green and blue.
     int total_patterns = total_images/2;
     int total_bits = total_patterns/2;
-
     int holder = total_bits;
+    Mat pattern_image[2];
+    pattern_image[0] = Mat(beelden[1].size(), CV_32FC2);
+    pattern_image[1] = Mat(beelden[1].size(), CV_32FC2);
+    int t=3;
 
     ///Go over each image pair (img and his inverse) and check for each pixel it's value.
-    for(int i = 3; i<=NOP-3 ; i+=2)
+    for(int i = 3; i<=NOP ; t+=2, i++)
     {
         Mat img1 = beelden[i].clone();
         Mat img2 = beelden[i].clone();
+        int channel = 0;
+        if(i == NOP)
+        {
+            channel = 1;
+            i = 3;
+        }
+
+        cout<<"image pair: "<<i/2<<endl;
 
         int bit = --holder;
 
@@ -249,20 +385,77 @@ bool decode(int serienummer)
         {
             for(int k =0; k<img1.cols; k++)
             {
-                unsigned val1 = img1.at<uchar>(j,k);
-                unsigned val2 = img2.at<uchar>(j,k);
-                unsigned ld = Ld.at<float>(j,k);
-                unsigned lg = Lg.at<float>(j,k);
-                unsigned short p = check_bit(val1, val2, ld, lg, m);
-                if(p == BIT_UNCERTAIN)
-                    pattern_image = PIXEL_UNCERTAIN;
-                else
-                    pattern_image += p<<bit;
+                if (pattern_image[channel].at<float>(j,k)!=PIXEL_UNCERTAIN)
+                {
+                    unsigned val1 = img1.at<uchar>(j,k);
+                    unsigned val2 = img2.at<uchar>(j,k);
+                    unsigned ld = Ld.at<float>(j,k);
+                    unsigned lg = Lg.at<float>(j,k);
+                    unsigned short p = check_bit(val1, val2, ld, lg, m);
+                    if(p == BIT_UNCERTAIN)
+                        pattern_image[channel].at<float>(j,k) = PIXEL_UNCERTAIN;
+                    else
+                        pattern_image[channel].at<float>(j,k) += p<<bit;
+                }
             }
         }
+
+        cout<<i/2<<"th bit pattern decoded"<<endl;
     }
 
-    cout << pattern_image<<endl;
+    /*Mat image(pattern_image[0].size(), CV_8UC3);
+
+    float max_t = max_value;
+    float n = 4.f;
+    float dt = 255.f/n;
+    for (int h=0; h<pattern_image.rows; h++)
+    {
+        const cv::Vec2f * row1 = pattern_image.ptr<cv::Vec2f>(h);
+        cv::Vec3b * row2 = image.ptr<cv::Vec3b>(h);
+        for (int w=0; w<pattern_image.cols; w++)
+        {
+            if (row1[w][set]>max_value || INVALID(row1[w][set]))
+            {   //invalid value: use grey
+                row2[w] = cv::Vec3b(128, 128, 128);
+                continue;
+            }
+            //display
+            float t = row1[w][set]*255.f/max_t;
+            float c1 = 0.f, c2 = 0.f, c3 = 0.f;
+            if (t<=1.f*dt)
+            {   //black -> red
+                float c = n*(t-0.f*dt);
+                c1 = c;     //0-255
+                c2 = 0.f;   //0
+                c3 = 0.f;   //0
+            }
+            else if (t<=2.f*dt)
+            {   //red -> red,green
+                float c = n*(t-1.f*dt);
+                c1 = 255.f; //255
+                c2 = c;     //0-255
+                c3 = 0.f;   //0
+            }
+            else if (t<=3.f*dt)
+            {   //red,green -> green
+                float c = n*(t-2.f*dt);
+                c1 = 255.f-c;   //255-0
+                c2 = 255.f;     //255
+                c3 = 0.f;       //0
+            }
+            else if (t<=4.f*dt)
+            {   //green -> blue
+                float c = n*(t-3.f*dt);
+                c1 = 0.f;       //0
+                c2 = 255.f-c;   //255-0
+                c3 = c;         //0-255
+            }
+            row2[w] = cv::Vec3b(static_cast<uchar>(c3), static_cast<uchar>(c2), static_cast<uchar>(c1));
+        }
+    }*/
+
+
+    cout<<pattern_image;
 
     //tonen(Ld/maxld, "Direct");
     //tonen(Lg/maxlg, "globaal");
@@ -284,7 +477,7 @@ bool decode_all(int aantalseries)
 
 int main(int argc, char *argv[])
 {
-    if(argc<3)
+    if(argc<5)
     {
         cerr<<"not enough arguments"<<endl;
         return -1;
@@ -294,6 +487,8 @@ int main(int argc, char *argv[])
     bool flag = true;
     b = atoi(argv[1]);
     m = atoi(argv[2]);
+    projector_width = atoi(argv[3]);
+    projector_height = atoi(argv[4]);
     string dir = "./picture/";
     vector<string> files;
 
@@ -321,7 +516,7 @@ int main(int argc, char *argv[])
             conv << aantalseries;
             string path = "./picture/serie"+conv.str();
             mkdir(path.c_str(), 0700);
-            bool gelukt = get_calib_images(300, NOP, aantalseries);
+            bool gelukt = get_calib_images(300, aantalseries);
             if(gelukt)
                 aantalseries++;
         }

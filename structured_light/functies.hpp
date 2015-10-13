@@ -1,6 +1,6 @@
 #ifndef FUNCTIES_HPP_INCLUDE
 #define FUNCTIES_HPP_INCLUDED
-#define NOP 50 ///number of patterns
+
 
 #include <iostream>
 #include <opencv2/opencv.hpp>
