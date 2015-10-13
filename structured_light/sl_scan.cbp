@@ -11,14 +11,15 @@
 				<Option object_output="obj/Debug/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters="0.5 5" />
+				<Option parameters="0.5 5 1280 800" />
 				<Compiler>
 					<Add option="-g" />
-					<Add directory="/home/svw/Documents/rapido/Camera_sdk/Vimba_1_3" />
+					<Add directory="/home/sander/Documents/rapido/Camera_sdk/Vimba_1_3" />
 				</Compiler>
 				<Linker>
-					<Add library="/home/svw/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit/libVimbaC.so" />
-					<Add library="/home/svw/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit/libVimbaCPP.so" />
+					<Add library="/home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit/libVimbaC.so" />
+					<Add library="/home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit/libVimbaCPP.so" />
+					<Add directory="/home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit" />
 				</Linker>
 			</Target>
 			<Target title="Release">
@@ -38,6 +39,7 @@
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
 		</Compiler>
+		<Unit filename="Bitmap.cpp" />
 		<Unit filename="functies.cpp" />
 		<Unit filename="functies.hpp" />
 		<Unit filename="main.cpp" />

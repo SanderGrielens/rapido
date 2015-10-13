@@ -19,35 +19,15 @@ const unsigned short BIT_UNCERTAIN = 0xffff;
 vector<Mat> generate_pattern()
 {
     vector<Mat> result;
-    ///Calculate how many vertical patters there are
-    int vertical_patterns=0;
-    while(pow(2, vertical_patterns) < projector_width)
-    {
-        vertical_patterns++;
-    }
-    NOP_v = vertical_patterns;
 
-    ///Do the same for the horizontal patterns
-    int horizontal_patterns=0;
-    while(pow(2, horizontal_patterns) < projector_height)
-    {
-        horizontal_patterns++;
-    }
-    NOP_h = horizontal_patterns;
-
-    for(int i =0 ; i< horizontal_patterns*2 + vertical_patterns*2 + 4; i++)
+    for(int i =0 ; i< NOP_h*2 + NOP_v*2 + 4; i++)
     {
         Mat newmat = Mat(projector_height, projector_width, CV_8UC1);
         result.push_back(newmat) ;
     }
-    cout<<"grootte van result: "<< result.size()<<endl;
-    cout<<"Matrix placeholders created.\n"
-          "number of horizontal patterns calculated "<<horizontal_patterns<<"\n"
-          "number of vertical patters calculated "<<vertical_patterns<<endl;
-
         ///Generate vertical patterns
     int teller =0;
-    for(int k=vertical_patterns; k>=0; teller+=2, k--)
+    for(int k=NOP_v; k>=0; teller+=2, k--)
     {
         bool change = true;
         bool flag = true;
@@ -88,7 +68,7 @@ vector<Mat> generate_pattern()
 
 
     ///Generate Horizontal patterns
-    for(int k=horizontal_patterns; k>0; teller +=2, k--)
+    for(int k=NOP_h-1; k>=0; teller +=2, k--)
     {
         bool change = true;
         bool flag = true;
@@ -110,9 +90,6 @@ vector<Mat> generate_pattern()
 
                 result[teller + 1].at<uchar>( i, j ) = pixel_color;  // inverse
             }
-            if(k==1)
-                {cout<<"ik ga hier kapot"<<i<<" "<<" "<<k<<" "<<endl;
-                cout<< teller<<endl;}
             int macht = pow(2,k);
             if(i%macht == 0 && i != 0)
             {
@@ -125,7 +102,6 @@ vector<Mat> generate_pattern()
                     change = true;
             }
         }
-        cout<<teller<<endl;
     }
     return result;
 }
@@ -136,29 +112,52 @@ bool get_calib_images(int delay, int serie)
     cout<<"serienummer: "<<serie<<endl;
     ostringstream conv;
     conv << serie;
-
     CameraPtr camera ;
     FramePtr frame;
-    char * pCameraID   = NULL;
+    char * pCameraID = NULL;
 
     VimbaSystem & system = VimbaSystem :: GetInstance ();
     if ( !VmbErrorSuccess == system.Startup () )
     {
         cout<<"system startup failed"<<endl;
     }
+    else
+        cout<<"system started"<<endl;
+
+    std::string strCameraID;
+    if(NULL == pCameraID)
+    {
+        CameraPtrVector cameras;
+        system.GetCameras(cameras);
+        if(cameras.size() <= 0)
+        {
+            cout<<"no camera found"<<endl;
+            return false;
+        }
+        else
+        {
+            cameras[0]->GetID(strCameraID);
+        }
+    }
+    else
+    {
+        strCameraID = pCameraID;
+    }
+
+    VmbErrorType res = system.OpenCameraByID(strCameraID.c_str(), VmbAccessModeFull, camera);
+    if(VmbErrorSuccess == res)
+        cout<<"Camera geopend"<<endl;
 
     pattern = generate_pattern();
     cout<<"Pattern generated"<<endl;
-    int number_of_patterns = (NOP_h + NOP_v)*2 +2;
+
+    int number_of_patterns = (NOP_h + NOP_v)*2;
 
     for(int i = 0; i<number_of_patterns;i++)
     {
         string Result;
         ostringstream convert;
         convert << i;
-
-        cout<<"pattern" << i <<" generated"<<endl;
-
         ///Project pattern full screen via projector
         namedWindow( "pattern", CV_WINDOW_NORMAL );
         setWindowProperty("pattern", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
@@ -166,10 +165,7 @@ bool get_calib_images(int delay, int serie)
         imshow("pattern", pattern[i]);
         waitKey(delay);
 
-        ///Read from camera
-
-        VmbErrorType res = system.OpenCameraByID(pCameraID, VmbAccessModeFull, camera);
-
+                ///Read from camera
         FeaturePtr pCommandFeature;
         res = camera->GetFeatureByName("GVSPAdjustPacketSize", pCommandFeature );
         if ( VmbErrorSuccess == pCommandFeature->RunCommand() )
@@ -204,23 +200,23 @@ bool get_calib_images(int delay, int serie)
             }
         }
 
-        camera->Close();
-
         VmbUint32_t nImageSize = 0;
         VmbErrorType err = frame->GetImageSize( nImageSize );
+
         VmbUint32_t nWidth = 0;
         err = frame->GetWidth( nWidth );
+
         VmbUint32_t nHeight = 0;
         err = frame->GetHeight( nHeight );
+
         VmbUchar_t *pImage = NULL;
         err = frame->GetImage(pImage );
 
         AVTBitmap bitmap;
-        bitmap.colorCode = ColorCodeRGB24;
+        bitmap.colorCode = ColorCodeMono8;
         bitmap.bufferSize = nImageSize;
         bitmap.width = nWidth;
         bitmap.height = nHeight;
-
         AVTCreateBitmap( &bitmap, pImage );
 
         ///Save camera image
@@ -240,7 +236,7 @@ bool findcorners(vector<vector<Point2f> > &chessboardcorners, int aantalseries)
         cout<<"nummer "<<i<<endl;
         ostringstream conv;
         conv << i;
-        string path = "./picture/serie" + conv.str() + "/frame1.bmp";
+        string path = "./picture/serie" + conv.str() + "/frame0.bmp";
         board = imread(path, 0);
         if(board.empty())
             cout<<"leeg"<<endl;
@@ -300,14 +296,14 @@ void calculate_light_components(Mat &Ld, Mat &Lg, vector<Mat> beelden)
             int lpmin=1000;
             for(int k = 2; k< 6; k++)
             {
-                if(beelden[NOP-k].at<uchar>(i,j) < lpmin)
-                    lpmin = beelden[NOP-k].at<uchar>(i,j);
+                if(beelden[NOP*2-k].at<uchar>(i,j) < lpmin)
+                    lpmin = beelden[NOP*2-k].at<uchar>(i,j);
             }
 
             for(int k = 2; k<6; k++)
             {
-                if(beelden[NOP-k].at<uchar>(i,j) > lpmax)
-                    lpmax = beelden[NOP-k].at<uchar>(i,j);
+                if(beelden[NOP*2-k].at<uchar>(i,j) > lpmax)
+                    lpmax = beelden[NOP*2-k].at<uchar>(i,j);
             }
 
             Ld.at<float>(i,j) = (lpmax - lpmin) / (1 - b);
@@ -338,46 +334,44 @@ bool decode(int serienummer)
     string einde = ".bmp";
 
     ///Reading every image in a serie
-    for(int i=0; i<=(NOP_v+NOP_h)*2; i++)
+    for(int i=2; i<(NOP_v+NOP_h)*2; i++)
     {
         ostringstream beeldnr;
         beeldnr << i;
         Mat newmat = imread(path + beeldnr.str() + einde,0);
-        beelden.push_back(newmat);
-        if(beelden[i].empty())
+        if(newmat.empty())
             cout<<"no image"<<endl;
 
-        cout<<"beeld "<<i<<"ingelezen"<<endl;
+        beelden.push_back(newmat);
     }
-    int NOP = 100;
+
     ///Calculate the matrices Ld and Lg of the series (Direct light and Global Light respectively)
-    Mat Ld(beelden[NOP-2].rows, beelden[NOP-2].cols, CV_32F);
-    Mat Lg(beelden[NOP-2].rows, beelden[NOP-2].cols, CV_32F);
+    ///DIT IS NOG VERKEERD!
+    Mat Ld(beelden[NOP_v].rows, beelden[NOP_v].cols, CV_32F);
+    Mat Lg(beelden[NOP_v].rows, beelden[NOP_v].cols, CV_32F);
 
     calculate_light_components(Ld, Lg, beelden);
 
-    int total_images = NOP - 5; ///Number of images, without fully lighted, fully dark, red, green and blue.
+    int total_images = NOP_v+NOP_h; ///Number of images, without fully lighted, fully dark, red, green and blue.
     int total_patterns = total_images/2;
     int total_bits = total_patterns/2;
     int holder = total_bits;
-    Mat pattern_image[2];
-    pattern_image[0] = Mat(beelden[1].size(), CV_32FC2);
+    Mat pattern_image [2];
+    pattern_image [0]= Mat(beelden[1].size(), CV_32FC2);
     pattern_image[1] = Mat(beelden[1].size(), CV_32FC2);
     int t=3;
 
     ///Go over each image pair (img and his inverse) and check for each pixel it's value.
-    for(int i = 3; i<=NOP ; t+=2, i++)
+    for(int i = 0; i<=2*(NOP_v + NOP_h) ; i+=2)
     {
         Mat img1 = beelden[i].clone();
-        Mat img2 = beelden[i].clone();
+        Mat img2 = beelden[i+1].clone();
         int channel = 0;
-        if(i == NOP)
+
+        if(i == 2*NOP_v )
         {
             channel = 1;
-            i = 3;
         }
-
-        cout<<"image pair: "<<i/2<<endl;
 
         int bit = --holder;
 
@@ -403,24 +397,24 @@ bool decode(int serienummer)
         cout<<i/2<<"th bit pattern decoded"<<endl;
     }
 
-    /*Mat image(pattern_image[0].size(), CV_8UC3);
+    Mat image(beelden[1].size(), CV_8UC3);
 
-    float max_t = max_value;
+    float max_t = projector_width;
     float n = 4.f;
     float dt = 255.f/n;
-    for (int h=0; h<pattern_image.rows; h++)
+    int set = 0;
+    for(int i = 0; i< pattern_image[0].rows; i++)
     {
-        const cv::Vec2f * row1 = pattern_image.ptr<cv::Vec2f>(h);
-        cv::Vec3b * row2 = image.ptr<cv::Vec3b>(h);
-        for (int w=0; w<pattern_image.cols; w++)
+        for(int j = 0; j< pattern_image[0].cols; j++)
         {
-            if (row1[w][set]>max_value || INVALID(row1[w][set]))
+            if (pattern_image[0].at<float>(i,j) > projector_width || pattern_image[0].at<float>(i,j) == PIXEL_UNCERTAIN)
             {   //invalid value: use grey
-                row2[w] = cv::Vec3b(128, 128, 128);
+                image.at<Vec3b>(i,j) = Vec3b(128, 128, 128);
                 continue;
             }
+
             //display
-            float t = row1[w][set]*255.f/max_t;
+            float t = pattern_image[0].at<float>(i,j)*255.f/max_t;
             float c1 = 0.f, c2 = 0.f, c3 = 0.f;
             if (t<=1.f*dt)
             {   //black -> red
@@ -450,15 +444,12 @@ bool decode(int serienummer)
                 c2 = 255.f-c;   //255-0
                 c3 = c;         //0-255
             }
-            row2[w] = cv::Vec3b(static_cast<uchar>(c3), static_cast<uchar>(c2), static_cast<uchar>(c1));
+            image.at<Vec3b>(i,j) = Vec3b(c3, c2,c1);
         }
-    }*/
+    }
 
+    tonen(image, "kleur");
 
-    cout<<pattern_image;
-
-    //tonen(Ld/maxld, "Direct");
-    //tonen(Lg/maxlg, "globaal");
     return true;
 }
 
@@ -467,6 +458,8 @@ bool decode_all(int aantalseries)
     bool gelukt;
     for(int i=0; i< aantalseries; i++)
     {
+        cout<<"decode next"<<endl;
+        cout<<endl;
         gelukt = decode(i);
         if(!gelukt)
             return false;
@@ -500,6 +493,24 @@ int main(int argc, char *argv[])
     ///Remove ".." and "." directoy from the count
     aantalseries-=1;
     cout<<"aantal series: "<<aantalseries<<endl;
+    int vertical_patterns=0;
+    ///Get dimensions
+    while(pow(2, vertical_patterns) < projector_width)
+    {
+        vertical_patterns++;
+    }
+    NOP_v = vertical_patterns;
+
+    ///Do the same for the horizontal patterns
+    int horizontal_patterns=0;
+    while(pow(2, horizontal_patterns) < projector_height)
+    {
+        horizontal_patterns++;
+    }
+    NOP_h = horizontal_patterns;
+
+
+
     while(flag)
     {
         cout<<"Choose your option:\n"

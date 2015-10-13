@@ -90,7 +90,7 @@ void opslaan(Mat image, String naam)            // afbeelding opslaan a.d.h.v. a
 
 void tonen(Mat image, String naam)              // afbeelding tonen op scherm a.d.h.v. afbeelding en naam venster
 {
-    namedWindow( naam, WINDOW_NORMAL );
+    namedWindow( naam, WINDOW_AUTOSIZE );
     resizeWindow(naam, 1200,900);
     imshow( naam, image );
     waitKey(0);
