@@ -8,6 +8,7 @@
 #include <string>
 #include <algorithm>
 #include <iterator>
+#include <bitset>
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -23,6 +24,7 @@
 #include "Common/StreamSystemInfo.h"
 #include "Common/ErrorCodeToMessage.h"
 #include "VimbaCPP/Include/VimbaSystem.h"
+
 using namespace std;
 using namespace cv;
 

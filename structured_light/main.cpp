@@ -276,16 +276,19 @@ bool findcorners(vector<vector<Point2f> > &chessboardcorners, int aantalseries)
     return true;
 }
 
-unsigned short check_bit(unsigned value1, unsigned value2, unsigned Ld, unsigned Lg, unsigned m)
+int check_bit(float value1, float value2, float Ld, float Lg, float m)
 {
     //cout<<value1<<" "<<value2<<" "<<Ld<<" "<<Lg<<endl;
     if (Ld < m)
     {
-        return BIT_UNCERTAIN;
+        return 2;
     }
     if (Ld>Lg)
     {
-        return (value1>value2 ? 1 : 0);
+        if( value1>value2)
+            return 1;
+        else
+            return 0;
     }
     if (value1<=Ld && value2>=Lg)
     {
@@ -295,7 +298,8 @@ unsigned short check_bit(unsigned value1, unsigned value2, unsigned Ld, unsigned
     {
         return 1;
     }
-    return BIT_UNCERTAIN;
+
+    return 2;
 }
 
 void calculate_light_components(vector<Mat> &Ld, vector<Mat> &Lg, vector<Mat> beelden, int dir)
@@ -305,6 +309,8 @@ void calculate_light_components(vector<Mat> &Ld, vector<Mat> &Lg, vector<Mat> be
     int minlg = 1000;
     int maxlg = 0;
     int NOP;
+    Mat minimum = Mat(Ld[dir].size(), CV_32FC1);
+    Mat maximum = Mat(Ld[dir].size(), CV_32FC1);
     if(dir)
         NOP = 2*NOP_v-1; //number of highest frequency vertical pattern
     else
@@ -314,27 +320,30 @@ void calculate_light_components(vector<Mat> &Ld, vector<Mat> &Lg, vector<Mat> be
     {
         for(int j =0; j<beelden[NOP].cols; j++)
         {
-            int lpmax=0;
-            int lpmin=1000;
-            for(int k = 0; k< 4; k++)
+            float lpmax=0.0;
+            float lpmin=1000.0;
+            for(int k = 2; k< 8; k++)
             {
-                if(beelden[NOP-k].at<uchar>(i,j) < lpmin)
-                    lpmin = beelden[NOP-k].at<uchar>(i,j);
+                if(beelden[NOP-k].at<float>(i,j) < lpmin)
+                    lpmin = beelden[NOP-k].at<float>(i,j);
             }
 
-            for(int k = 0; k<4; k++)
+            for(int k = 2; k < 8; k++)
             {
-                if(beelden[NOP-k].at<uchar>(i,j) > lpmax)
-                    lpmax = beelden[NOP-k].at<uchar>(i,j);
+                if(beelden[NOP-k].at<float>(i,j) > lpmax)
+                    lpmax = beelden[NOP-k].at<float>(i,j);
             }
 
-            int d = static_cast<int>((lpmax - lpmin) / (1 - b));
-            int g = static_cast<int>(2*(lpmin - b*lpmax) / (1- pow(b,2)));
+            minimum.at<float>(i,j) = lpmin;
+            maximum.at<float>(i,j) = lpmax;
 
-            Ld[dir].at<uchar>(i,j) = (g>0 ? static_cast<unsigned>(d) : lpmax);
-            Lg[dir].at<uchar>(i,j) = (g>0 ? static_cast<unsigned>(g) : 0);
+            float d =(lpmax - lpmin) / (1 - b);
+            float g = (2*(lpmin - b*lpmax) / (1- pow(b,2)));
 
-            if(Ld[dir].at<uchar>(i,j) < minld)
+            Ld[dir].at<float>(i,j) = (g>0 ? d : lpmax);
+            Lg[dir].at<float>(i,j) = (g>0 ? g : 0);
+
+            /*if(Ld[dir].at<uchar>(i,j) < minld)
                 minld = Ld[dir].at<uchar>(i,j);
             if( Ld[dir].at<uchar>(i,j) > maxld)
                 maxld = Ld[dir].at<uchar>(i,j);
@@ -342,21 +351,23 @@ void calculate_light_components(vector<Mat> &Ld, vector<Mat> &Lg, vector<Mat> be
             if(Lg[dir].at<uchar>(i,j) < minlg)
                 minlg = Lg[dir].at<uchar>(i,j);
             if( Lg[dir].at<uchar>(i,j) > maxlg)
-                maxlg = Lg[dir].at<uchar>(i,j);
+                maxlg = Lg[dir].at<uchar>(i,j);*/
         }
     }
 
-    cout<< minld<<" "<<maxld<<endl;
-    cout<< minlg<<" "<<maxlg<<endl;
+    //tonen(minimum/255, "min");
+    //tonen(maximum/255, "max");
 
-    //tonen(Ld[dir], "Ld");
-    //tonen(Lg[dir], "Lg");
+    //tonen(Ld[dir]/255, "Ld");
+    //tonen(Lg[dir]/255, "Lg");
 
     cout<<"direct and global light calculated"<<endl;
 }
 
+
 void get_pattern_image(vector<Mat> &pattern, vector<Mat> Ld, vector<Mat> Lg, vector<Mat> beelden, int dir)
 {
+    int holder;
     int bit;
     int NOP;
     int start;
@@ -364,57 +375,110 @@ void get_pattern_image(vector<Mat> &pattern, vector<Mat> Ld, vector<Mat> Lg, vec
     if(dir)
     {
         start = 0;
-        bit = NOP_v;
-        NOP = 2*NOP_v-1; //number of highest frequency vertical pattern
+        holder = NOP_v;
+        NOP = 2*NOP_v-3; //number of highest frequency vertical pattern
     }
     else
     {
-        bit = NOP_h;
+        holder = NOP_h;
         NOP = 2*NOP_v + 2*NOP_h-3; //number of highest frequency horizontal pattern
         start = 2*NOP_v;
     }
 
+    bit = holder;
+
+    //cout<<"bit: "<<bit<<endl;
+
     ///Go over each image pair (img and his inverse) and check for each pixel it's value.
     for(int i = start; i<=NOP ; i+=2)
     {
-        Mat img1 = beelden[i].clone();
-        Mat img2 = beelden[i+1].clone();
+        Mat img2 = beelden[i].clone();
+        Mat img1 = beelden[i+1].clone();
         bit--;
-        cout<<"bit: "<<bit<<endl;
-
+        int teller = 0;
         for(int j =0; j< img1.rows; j++)
         {
             for(int k =0; k<img1.cols; k++)
             {
-                if (pattern[dir].at<float>(j,k)!=PIXEL_UNCERTAIN)
+
+                float val1 = img1.at<float>(j,k);
+                float val2 = img2.at<float>(j,k);
+                float ld = Ld[dir].at<float>(j,k);
+                float lg = Lg[dir].at<float>(j,k);
+                if (pattern[dir].at<float>(j,k) < pow(2, NOP_v+1))
                 {
-                    unsigned val1 = img1.at<uchar>(j,k);
-                    unsigned val2 = img2.at<uchar>(j,k);
-                    unsigned ld = Ld[dir].at<uchar>(j,k);
-                    unsigned lg = Lg[dir].at<uchar>(j,k);
-                    unsigned short p = check_bit(val1, val2, ld, lg, m);
-                    if(p == BIT_UNCERTAIN)
-                        pattern[dir].at<float>(j,k) = PIXEL_UNCERTAIN;
+                    int p = check_bit(val1, val2, ld, lg, m);
+                    if(p == 2)
+                    {
+                        pattern[dir].at<float>(j,k) += 1<<NOP_v+1;
+                        teller++;
+                    }
                     else
                     {
-                        pattern[dir].at<float>(j,k) += p<<bit;
+                        pattern[dir].at<float>(j,k) += p*(pow(2, bit));
                     }
                 }
             }
         }
+    }
+    ///Convert pattern from gray code to binary
+    for(int i=0;i<pattern[dir].rows;i++)
+    {
+        for(int j=0; j<pattern[dir].cols;j++)
+        {
+            int q = static_cast<int>(pattern[dir].at<float>(i,j));
+            int p = q;
 
-        cout<<i/2<<"th bit pattern decoded"<<endl;
+            for (unsigned shift = 1; shift < holder; shift <<= 1)
+            {
+                p ^= p >> shift;
+            }
+
+            //if (p<0) {p = 0;}
+            //else if (p>=projector_width) {p = projector_width - 1;}
+            pattern[dir].at<float>(i,j) = p + (pattern[dir].at<float>(i,j) - q)-1;
+        }
     }
 }
 
 void colorize_pattern(vector<Mat> pattern_image, vector<Mat> &image, int dir)
 {
     int NOP;
-    if(dir)
-        NOP = projector_width/NOP_v;
-    else
-        NOP = projector_height/NOP_h;
 
+    int effective_width = projector_width;
+    int effective_height = projector_height;
+    if(dir)
+    {
+        int max_vert_value = (1<<NOP_v);
+        cout<<max_vert_value<<endl;
+        while (effective_width>max_vert_value )
+        {
+            effective_width >>= 1;
+        }
+        NOP = effective_width;
+    }
+    else
+    {
+        int max_hor_value = (1<<NOP_h);
+        cout<<max_hor_value<<endl;
+        while (effective_height>max_hor_value )
+        {
+            effective_height >>= 1;
+        }
+        NOP = effective_height;
+    }
+
+    float mp = 0;
+    for(int i=0; i<pattern_image[dir].rows;i++)
+    {
+        for(int j=0;j<pattern_image[dir].cols;j++)
+        {
+            if(pattern_image[dir].at<float>(i,j) > mp && 1<<NOP_v+1 > pattern_image[dir].at<float>(i,j) )
+                mp =pattern_image[dir].at<float>(i,j);
+        }
+    }
+
+    cout<<effective_width<<" x "<<effective_height<<endl;
 
     float max_t = NOP;
     float n = 4.f;
@@ -424,14 +488,18 @@ void colorize_pattern(vector<Mat> pattern_image, vector<Mat> &image, int dir)
     {
         for(int j = 0; j< pattern_image[dir].cols; j++)
         {
-            if (pattern_image[dir].at<float>(i,j) > max_t || pattern_image[dir].at<float>(i,j) == PIXEL_UNCERTAIN)
+            if (pattern_image[dir].at<float>(i,j) >= 1<<NOP_v+1)
             {   //invalid value: use grey
+                //cout<<pattern_image[dir].at<float>(i,j)<<" ";
                 image[dir].at<Vec3b>(i,j) = Vec3b(128, 128, 128);
                 continue;
             }
 
             //display
             float t = pattern_image[dir].at<float>(i,j)*255.f/max_t;
+            if( i == 399 && j == 639)
+                cout<<"t: "<<t<<endl;
+            //cout<<t<<endl;
             float c1 = 0.f, c2 = 0.f, c3 = 0.f;
             if (t<=1.f*dt)
             {   //black -> red
@@ -464,7 +532,6 @@ void colorize_pattern(vector<Mat> pattern_image, vector<Mat> &image, int dir)
             image[dir].at<Vec3b>(i,j) = Vec3b(c3, c2,c1);
         }
     }
-
     tonen(image[dir], "kleur");
 }
 
@@ -484,27 +551,28 @@ bool decode(int serienummer)
         Mat newmat = imread(path + beeldnr.str() + einde,0);
         if(newmat.empty())
             cout<<"no image"<<endl;
-
-        beelden.push_back(newmat);
+        Mat newmat_float;
+        newmat.convertTo(newmat_float, CV_32FC1);
+        beelden.push_back(newmat_float);
     }
 
     ///Calculate the matrices Ld and Lg of the series (Direct light and Global Light respectively)
-    Mat newmat = Mat(beelden[NOP_v].rows, beelden[NOP_v].cols, CV_8U);
-    Mat newmat1 = Mat(beelden[NOP_v].rows, beelden[NOP_v].cols, CV_32F);
+    Mat newmat = Mat(beelden[NOP_v].rows, beelden[NOP_v].cols, CV_32FC1);
+    Mat newmat1 = Mat(beelden[NOP_v].rows, beelden[NOP_v].cols, CV_32FC1);
     Mat newmat2 = Mat(beelden[1].size(), CV_8UC3);
 
     vector<Mat> Ld;
-    Ld.push_back(newmat);
-    Ld.push_back(newmat);
+    Ld.push_back(newmat.clone());
+    Ld.push_back(newmat.clone());
     vector<Mat> Lg;
-    Lg.push_back(newmat);
-    Lg.push_back(newmat);
+    Lg.push_back(newmat.clone());
+    Lg.push_back(newmat.clone());
     vector<Mat> pattern_image;
-    pattern_image.push_back(newmat1);
-    pattern_image.push_back(newmat1);
+    pattern_image.push_back(newmat1.clone());
+    pattern_image.push_back(newmat1.clone());
     vector<Mat> image;
-    image.push_back(newmat2);
-    image.push_back(newmat2);
+    image.push_back(newmat2.clone());
+    image.push_back(newmat2.clone());
 
 
     ///Get vertical

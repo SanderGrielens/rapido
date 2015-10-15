@@ -252,13 +252,14 @@
 1444822897 source:/home/svw/Documents/rapido/structured_light/functies.cpp
 	"functies.hpp"
 
-1444740527 /home/svw/Documents/rapido/structured_light/functies.hpp
+1444912577 /home/svw/Documents/rapido/structured_light/functies.hpp
 	<iostream>
 	<opencv2/opencv.hpp>
 	<vector>
 	<string>
 	<algorithm>
 	<iterator>
+	<bitset>
 	<stdio.h>
 	<stdlib.h>
 	<ctype.h>
@@ -459,7 +460,7 @@
 	<string>
 	"VimbaCPP/Include/VimbaCPP.h"
 
-1444822841 source:/home/svw/Documents/rapido/structured_light/main.cpp
+1444919705 source:/home/svw/Documents/rapido/structured_light/main.cpp
 	"functies.hpp"
 
 1444824180 source:/home/sander/Documents/rapido/structured_light/functies.cpp
