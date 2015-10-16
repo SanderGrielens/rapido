@@ -52,33 +52,13 @@ unsigned char AVTReleaseBitmap( AVTBitmap * const pBitmap );
 
 unsigned char AVTWriteBitmapToFile( AVTBitmap const * const pBitmap, char const * const pFileName );
 
-struct Match
+struct Decoder
 {
-    Scalar lijn;
-    Point2f punt1;
-    vector<Point2f> punt2;
-    float score;
-} ;
-
-struct combPoint
-{
-    Point2f punt0;
-    Point2f punt1;
-    Point2f punt2;
-} ;
-
-struct Point4f
-{
-    float x;
-    float y;
-    float z;
-    float w;
-} ;
-
-struct punt3D
-{
-    combPoint a;
-    Point4f b;
+    vector<Mat> minimum;
+    vector<Mat> maximum;
+    vector<Mat> Ld;
+    vector<Mat> Lg;
+    vector<Mat> pattern_image;
 } ;
 
 int getdir (string dir, vector<string> &files);
