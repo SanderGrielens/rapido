@@ -370,7 +370,6 @@ void calculate_light_components(Decoder &d, vector<Mat> beelden, int dir)
     cout<<"direct and global light calculated"<<endl;
 }
 
-
 void get_pattern_image(Decoder &d, vector<Mat> beelden, int dir)
 {
     int holder;
@@ -637,13 +636,15 @@ bool decode_all(int aantalseries, vector<Decoder> &dec)
 
 bool calibrate(vector<Decoder> dec, vector<vector<Point2f> > corners, int aantalseries)
 {
-    FileStorage fs("camera.xml", FileStorage::READ);
-    fs5["fundament34"] >> fundamentalMatrix;
+    /*FileStorage fs("camera.xml", FileStorage::READ);
+    fs["fundament34"] >> fundamentalMatrix;
     if(!fundamentalMatrix.empty())
     {
         cout<<"Matrix bestond al, en is ingelezen 34"<<endl;
         return 0;
-    }
+    }*/
+
+    int status = Calibrate_Camera();
 }
 
 int main(int argc, char *argv[])

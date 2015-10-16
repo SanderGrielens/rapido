@@ -225,7 +225,7 @@ int Calibrate_Camera(Mat *cameraMat, Mat *distCo)
     Settings s;
     string inputSettingsFile;
 
-    inputSettingsFile = "./calib5.xml";
+    inputSettingsFile = "./calib.xml";
 
     FileStorage fs(inputSettingsFile, FileStorage::READ); // Read the settings
     if (!fs.isOpened())
