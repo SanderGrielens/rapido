@@ -667,7 +667,7 @@ int main(int argc, char *argv[])
     bool gelukt_d = false;
     bool gelukt_c = false;
     vector<Decoder> dec;
-    vector<vector<Point2f> > chessboardcorners(aantalseries);
+    vector<vector<Point2f> > corners;
 
     ///Count the number of series
     getdir(dir, files);
@@ -704,6 +704,7 @@ int main(int argc, char *argv[])
             " g = get calibration files\n"
             " f = find chessboard corners for each serie\n"
             " d = decode\n"
+            " c = calibrate\n"
             " q = quit program"<<endl;
         char keuze;
         cin >> keuze;
@@ -721,7 +722,10 @@ int main(int argc, char *argv[])
 
         else if(keuze == 'f')
         {
+            vector<vector<Point2f> > chessboardcorners(aantalseries);
             gelukt_f = findcorners(chessboardcorners, aantalseries);
+            if(gelukt_f)
+                corners = chessboardcorners;
         }
 
         else if(keuze == 'd')
@@ -734,7 +738,7 @@ int main(int argc, char *argv[])
         {
             if(gelukt_f && gelukt_d)
             {
-                gelukt_c = calibrate(dec, chessboardcorners, aantalseries);
+                gelukt_c = calibrate(dec, corners, aantalseries);
             }
         }
 
