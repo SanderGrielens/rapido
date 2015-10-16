@@ -28,7 +28,7 @@
 using namespace std;
 using namespace cv;
 
-
+///VIMBA SDK FUNCTIONS AND STRUCTS
 typedef enum
 {
     ColorCodeMono8  = 1,
@@ -47,11 +47,10 @@ typedef struct
 } AVTBitmap;
 
 unsigned char AVTCreateBitmap( AVTBitmap * const pBitmap, const void* pBuffer );
-
 unsigned char AVTReleaseBitmap( AVTBitmap * const pBitmap );
-
 unsigned char AVTWriteBitmapToFile( AVTBitmap const * const pBitmap, char const * const pFileName );
 
+///SL SPECIFIC FUNCTIONS AND STRUCTS
 struct Decoder
 {
     vector<Mat> minimum;
@@ -62,14 +61,11 @@ struct Decoder
 } ;
 
 int getdir (string dir, vector<string> &files);
-double distance_Point_Line(Scalar lijn, Point2f punt);
-double distance_to_Line(cv::Point line_start, cv::Point line_end, cv::Point point);
-int Calibrate_Camera(Mat *cameraMatrix, Mat *distCoeffs, int welkecamera);
-void nonMaximaSuppression(const Mat& src, const int sz, Mat& dst, const Mat mask) ;
 
-/* Standaardfuncties */
-double Slope(int x0, int y0, int x1, int y1);
-void fullLine(cv::Mat *img, cv::Point a, cv::Point b, cv::Scalar color);
+///CALIBRATION SPECIFIC FUNCTIONS
+int Calibrate_Camera(Mat *cameraMatrix, Mat *distCoeffs, int welkecamera);
+
+///STANDARD FUNCTIONS
 Mat inlezen(String Im);                          // afbeelding inlezen a.d.h.v. pad
 Mat inlezenGrijs(String Im);                     // afbeelding inlezen in grijswaarden a.d.h.v. pad
 

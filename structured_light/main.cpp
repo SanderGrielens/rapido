@@ -186,7 +186,7 @@ bool get_calib_images(int delay, int serie)
         imshow("pattern", pattern[i]);
         waitKey(delay);
 
-                ///Read from camera
+        ///Read from camera
         FeaturePtr pCommandFeature;
         res = camera->GetFeatureByName("GVSPAdjustPacketSize", pCommandFeature );
         if ( VmbErrorSuccess == pCommandFeature->RunCommand() )
@@ -243,6 +243,14 @@ bool get_calib_images(int delay, int serie)
         ///Save camera image
         string pFileName = "./picture/serie" + conv.str() + "/frame" + convert.str()+ ".bmp";
         AVTWriteBitmapToFile( &bitmap, pFileName.c_str() );
+
+        ///Save the first (and fully lighted) image to camera calibration folder.
+        if(i==0)
+        {
+            string pFileName = "./calibration_camera/calib_serie" + conv.str() + ".bmp";
+            AVTWriteBitmapToFile( &bitmap, pFileName.c_str() );
+        }
+
     }
 
     return true;
@@ -629,7 +637,13 @@ bool decode_all(int aantalseries, vector<Decoder> &dec)
 
 bool calibrate(vector<Decoder> dec, vector<vector<Point2f> > corners, int aantalseries)
 {
-
+    FileStorage fs("camera.xml", FileStorage::READ);
+    fs5["fundament34"] >> fundamentalMatrix;
+    if(!fundamentalMatrix.empty())
+    {
+        cout<<"Matrix bestond al, en is ingelezen 34"<<endl;
+        return 0;
+    }
 }
 
 int main(int argc, char *argv[])
