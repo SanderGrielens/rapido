@@ -219,7 +219,7 @@ enum { DETECTION = 0, CAPTURING = 1, CALIBRATED = 2 };
 
 bool runCalibrationAndSave(Settings& s, Size imageSize, Mat&  cameraMatrix, Mat& distCoeffs,
                            vector<vector<Point2f> > imagePoints );
-int Calibrate_Camera(Mat *cameraMat, Mat *distCo)
+int Calibrate_Camera()
 {
     //cout<<"in calibrate camera gaan lukt!"<<endl;
     Settings s;
@@ -400,10 +400,8 @@ int Calibrate_Camera(Mat *cameraMat, Mat *distCo)
         }
         else
         {
-            cout<<"geraken we tot aan de undistort??"<<endl;
 
             initUndistortRectifyMap(cameraMatrix, distCoeffs, Mat(),getOptimalNewCameraMatrix(cameraMatrix, distCoeffs, imageSize, 0.5), imageSize, CV_16SC2, map1, map2);
-            cout<<"Ja, maar geraken we er voorbij?"<<endl;
         }
 
         for(size_t i = 0; i < s.imageList.size(); i++ )
@@ -421,8 +419,8 @@ int Calibrate_Camera(Mat *cameraMat, Mat *distCo)
     }
     //! [show_results]
 
-    *cameraMat=cameraMatrix;
-    *distCo= distCoeffs;
+    //*cameraMat=cameraMatrix;
+    //*distCo= distCoeffs;
 
     return 0;
 }

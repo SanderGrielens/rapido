@@ -63,7 +63,7 @@ struct Decoder
 int getdir (string dir, vector<string> &files);
 
 ///CALIBRATION SPECIFIC FUNCTIONS
-int Calibrate_Camera(Mat *cameraMatrix, Mat *distCoeffs, int welkecamera);
+int Calibrate_Camera();
 
 ///STANDARD FUNCTIONS
 Mat inlezen(String Im);                          // afbeelding inlezen a.d.h.v. pad
