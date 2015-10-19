@@ -320,7 +320,7 @@ int Calibrate_Camera()
                     Mat viewGray;
                     cvtColor(view, viewGray, COLOR_BGR2GRAY);
                     cornerSubPix( viewGray, pointBuf, Size(11,11),
-                        Size(-1,-1), TermCriteria( TermCriteria::EPS+TermCriteria::COUNT, 30, 0.1 ));
+                        Size(-1,-1), TermCriteria( TermCriteria::EPS+TermCriteria::COUNT, 300, 0.001 ));
                 }
 
                 if( mode == CAPTURING &&  // For camera only take new samples after delay time
@@ -521,6 +521,7 @@ static bool runCalibration( Settings& s, Size& imageSize, Mat& cameraMatrix, Mat
         rms = calibrateCamera(objectPoints, imagePoints, imageSize, cameraMatrix, distCoeffs, rvecs, tvecs,
                               s.flag);
     }
+
 
     cout << "Re-projection error reported by calibrateCamera: "<< rms << endl;
 

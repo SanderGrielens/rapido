@@ -259,15 +259,15 @@ bool get_calib_images(int delay, int serie)
 bool findcorners(vector<vector<Point2f> > &chessboardcorners, int aantalseries)
 {
     Mat board;
-    Size boardSize(6,8);
+    Size boardSize(8,6);
     FileStorage fs("chessboardcorners.xml", FileStorage::READ);
     for(int i = 0; i<aantalseries; i++)
     {
         cout<<"nummer "<<i<<endl;
         ostringstream conv;
         conv << i;
-        FileStorage fs("chessboardcorners.xml", FileStorage::READ);
-        fs["corners" + conv.str()] >> chessboardcorners[i];
+        FileStorage fs("./picture/serie" + conv.str() + "/chessboardcorners.xml", FileStorage::READ);
+        fs["corners"] >> chessboardcorners[i];
         if(chessboardcorners[i].empty())
         {
             fs.release();
@@ -276,20 +276,23 @@ bool findcorners(vector<vector<Point2f> > &chessboardcorners, int aantalseries)
             if(board.empty())
                 cout<<"leeg"<<endl;
 
-            bool found1_1 = findChessboardCorners(board, boardSize, chessboardcorners[i],
-                                                  CV_CALIB_CB_ADAPTIVE_THRESH + CV_CALIB_CB_NORMALIZE_IMAGE + CV_CALIB_CB_FILTER_QUADS);
+            //bool found1_1 = findChessboardCorners(board, boardSize, chessboardcorners[i],
+                                                  //CV_CALIB_CB_ADAPTIVE_THRESH + CV_CALIB_CB_NORMALIZE_IMAGE + CV_CALIB_CB_FILTER_QUADS);
+
+            bool found1_1 = findChessboardCorners(board, boardSize, chessboardcorners[i],CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_NORMALIZE_IMAGE);
 
             if(!found1_1)
             {
                 std::cerr << "Checkboard 1_"<<i<<" corners not found!" << std::endl;
                 return false;
             }
-            cornerSubPix(board, chessboardcorners[i], Size(11,11), Size(-1,-1), TermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 100, 1e-5));
+            cornerSubPix(board, chessboardcorners[i], Size(11,11), Size(-1,-1), TermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 300, 0.001));
             cvtColor(board, board, CV_GRAY2BGR);
             drawChessboardCorners( board, boardSize, chessboardcorners[i], found1_1 );
-            //tonen(board, "zijn ze gevonden?");
-            FileStorage fs("chessboardcorners.xml", FileStorage::WRITE);
-            fs << "corners" + conv.str() << chessboardcorners[i];
+
+            tonen(board, "zijn ze gevonden?");
+            FileStorage fs("./picture/serie" + conv.str() + "/chessboardcorners.xml", FileStorage::WRITE);
+            fs << "corners"<< chessboardcorners[i];
             fs.release();
         }
     }
@@ -323,7 +326,7 @@ int check_bit(float value1, float value2, float Ld, float Lg, float m)
     return 2;
 }
 
-void calculate_light_components(Decoder &d, vector<Mat> beelden, int dir)
+void calculate_light_components(Decoder &d, vector<Mat> beelden, int dir, string serienr)
 {
     int minld = 1000;
     int maxld = 0;
@@ -346,12 +349,11 @@ void calculate_light_components(Decoder &d, vector<Mat> beelden, int dir)
     string LD = "ld"+ richting;
     string LG = "lg"+richting;
 
-    FileStorage fs("lightcomponents.xml", FileStorage::READ);
+    FileStorage fs("./picture/serie" + serienr + "/lightcomponents.xml", FileStorage::READ);
     fs[LD] >> d.Ld[dir];
     fs[LG] >> d.Lg[dir];
     fs.release();
-
-    cout<<"uitlezen gelukt"<<endl;
+    FileStorage fs1();
 
     if(d.Ld[dir].empty() || d.Lg[dir].empty())
     {
@@ -383,15 +385,33 @@ void calculate_light_components(Decoder &d, vector<Mat> beelden, int dir)
                 //cout<<i<<" "<<j<<endl;
             }
         }
-        FileStorage fs1("lightcomponents.xml", FileStorage::WRITE);
-        fs1 << LG << d.Ld[dir];
-        fs1 << LD << d.Lg[dir];
-        fs1.release();
+
+
+        d.Lg[dir].convertTo(d.Lg[dir], CV_8UC1);
+        d.Ld[dir].convertTo(d.Ld[dir], CV_8UC1);
+
+        FileStorage fs;
+        if(dir)
+             fs.open("./picture/serie" + serienr + "/lightcomponents.xml", FileStorage::WRITE);
+        else
+             fs.open("./picture/serie" + serienr + "/lightcomponents.xml", FileStorage::APPEND);
+
+        if(!fs.isOpened())
+            cout<<"file won't open"<<endl;
+
+
+        fs << LG << d.Ld[dir];
+        fs << LD << d.Lg[dir];
+        fs.release();
     }
+
+    d.Lg[dir].convertTo(d.Lg[dir], CV_32FC1);
+    d.Ld[dir].convertTo(d.Ld[dir], CV_32FC1);
+
     cout<<"direct and global light calculated"<<endl;
 }
 
-void get_pattern_image(Decoder &d, vector<Mat> beelden, int dir)
+void get_pattern_image(Decoder &d, vector<Mat> beelden, int dir, string serienr)
 {
     int holder;
     int bit;
@@ -414,11 +434,10 @@ void get_pattern_image(Decoder &d, vector<Mat> beelden, int dir)
         richting = "hor";
     }
 
-    FileStorage fs("pattern.xml", FileStorage::READ);
+    FileStorage fs("./picture/serie" + serienr+ "/pattern.xml", FileStorage::READ);
     fs["pattern" + richting] >> d.pattern_image[dir];
     fs.release();
 
-    cout<<"get pattern"<<endl;
     if(d.pattern_image[dir].empty())
     {
         d.pattern_image[dir] = Mat(beelden[NOP_v].rows, beelden[NOP_v].cols, CV_32FC1);
@@ -494,12 +513,24 @@ void get_pattern_image(Decoder &d, vector<Mat> beelden, int dir)
             }
         }
 
-        FileStorage fs("pattern.xml", FileStorage::WRITE);
-        fs<< "pattern" + richting<< d.pattern_image[dir];
-        fs.release();
+        FileStorage fs1;
+        bool gelukt;
 
-        tonen(d.minimum[dir], "minimum");
-        tonen(d.maximum[dir], "maximum");
+        if(dir)
+        {
+            gelukt = fs1.open("./picture/serie" + serienr+ "/pattern.xml", FileStorage::WRITE);
+        }
+        else
+        {
+            gelukt = fs1.open("./picture/serie" + serienr+ "/pattern.xml", FileStorage::APPEND);
+        }
+        if(!fs1.isOpened())
+            cout<<"file won't open"<<endl;
+        fs1<< "pattern" + richting<< d.pattern_image[dir];
+        fs1.release();
+
+        //tonen(d.minimum[dir], "minimum");
+        //tonen(d.maximum[dir], "maximum");
     }
 }
 
@@ -624,19 +655,21 @@ bool decode(int serienummer, Decoder &d)
     image.push_back(newmat2.clone());
     image.push_back(newmat2.clone());
 
+    cout<<"Vertical: "<<endl;
 
     ///Get vertical
     int vertical = 1;
-    calculate_light_components(d, beelden, vertical);
-    get_pattern_image(d, beelden, vertical);
-    colorize_pattern(d, image, vertical);
+    calculate_light_components(d, beelden, vertical, serienr.str());
+    get_pattern_image(d, beelden, vertical, serienr.str());
+    //colorize_pattern(d, image, vertical);
 
-    cout<<"en nu horizontaal"<<endl;
+    cout<<"Horizontal: "<<endl;
+
     ///Get Horizontal
     int horizontal = 0;
-    calculate_light_components(d, beelden, horizontal);
-    get_pattern_image(d, beelden, horizontal);
-    colorize_pattern(d, image, horizontal);
+    calculate_light_components(d, beelden, horizontal, serienr.str());
+    get_pattern_image(d, beelden, horizontal, serienr.str());
+    //colorize_pattern(d, image, horizontal);
     return true;
 }
 
@@ -646,7 +679,7 @@ bool decode_all(int aantalseries, vector<Decoder> &dec)
     for(int i=0; i< aantalseries; i++)
     {
         Decoder d;
-        cout<<"decode next"<<endl;
+        cout<<"decode "<<i<<endl;
         cout<<endl;
         gelukt = decode(i, d);
         if(!gelukt)
@@ -660,23 +693,114 @@ bool decode_all(int aantalseries, vector<Decoder> &dec)
 
 bool calibrate(vector<Decoder> dec, vector<vector<Point2f> > corners, int aantalseries)
 {
-    Mat cameraMat;
-    FileStorage fs("camera.xml", FileStorage::READ);
-    fs["camera_matrix"] >> cameraMat;
-    if(cameraMat.empty())
+    vector<vector<Point2f> > pcorners;
+    int window = 23; ///the value for window is halve the size of the desired homography window
+
+    vector<vector<Point3f> > objectpoints;
+    vector<cv::Point3f> world_corners;
+
+    for (int h=0; h<6; h++)
     {
-        cout<<"No calibration file found. Recalibrating the camera"<<endl;
-        int status = Calibrate_Camera();
+        for (int w=0; w<8; w++)
+        {
+            world_corners.push_back(cv::Point3f(28.55555555f * w, 28.55555555f * h, 0.f));
+        }
     }
 
-    for(int i=0; i< corners[0].size(); i++)
+    for(int k=0; k<aantalseries;k++)
     {
-        cout<<corners[0][i]<<endl;
+        Decoder d = dec[k];
+        vector<Point2f> c = corners[k];
+        vector<Point2f> proj;
+
+        for(int l = 0; l< c.size(); l++) //for each chessboard corner
+        {
+            vector<Point2f> cam_points;
+            vector<Point2f> proj_points;
+
+            if(c[l].x >= window && c[l].y >= window && c[l].x + window < camera_width && c[l].y + window<camera_height)
+            {
+                for(int x = c[l].x - window; x<=c[l].x + window; x++)  //for each point in the window around the corner
+                {
+                    for(int y = c[l].y - window; y<=c[l].y + window; y++)
+                    {
+                        if (d.pattern_image[0].at<float>(y,x) >= (pow(2, NOP_v+2)) || d.pattern_image[1].at<float>(y,x) >= (pow(2, NOP_v+2)))
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            cam_points.push_back(Point2f(x,y));
+                            proj_points.push_back(Point2f(d.pattern_image[1].at<float>(y,x), d.pattern_image[0].at<float>(y,x))); ///pattern point is (vertical pattern, horizontal pattern)
+                        }
+                    }
+                }
+
+                Mat homography = findHomography(cam_points, proj_points, CV_RANSAC, 1 );
+                Point3d p = Point3d(c[l].x, c[l].y, 1.0);
+                Point3d Q = Point3d(Mat(homography*Mat(p)));
+                Point2f q = Point2f(Q.x/Q.z, Q.y/Q.z);
+                proj.push_back(q);
+            }
+            else
+            {
+                cout<<"chessboard corners are too close to the edge, fatal error"<<endl;
+                exit(-1);
+            }
+        }
+
+        //cornerSubPix(d.pattern_image[0], proj, Size(11,11), Size(-1,-1), TermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 300, 0.001));
+
+        objectpoints.push_back(world_corners);
+        pcorners.push_back(proj);
     }
+
+    int cal_flags = 0
+                + CALIB_FIX_PRINCIPAL_POINT
+                //+ cv::CALIB_FIX_K1
+                //+ cv::CALIB_FIX_K2
+                //+ cv::CALIB_ZERO_TANGENT_DIST
+                + cv::CALIB_FIX_K3
+                ;
+
+    Size imageSize = dec[0].pattern_image[0].size();
+    vector<Mat> cam_rvecs, cam_tvecs;
+    Mat cam_mat;
+    Mat cam_dist;
+    int cam_flags = cal_flags;
+    double cam_error = cv::calibrateCamera(objectpoints, corners, imageSize, cam_mat, cam_dist, cam_rvecs, cam_tvecs, cam_flags/*,
+                                            TermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 100, 1e-5)*/);
+
+    cout<<"camera calibration RMS error: "<<cam_error<<endl;
+
+    //calibrate the projector ////////////////////////////////////
+    vector<cv::Mat> proj_rvecs, proj_tvecs;
+    Mat proj_mat;
+    Mat proj_dist;
+    int proj_flags = cal_flags;
+    Size projector_size(projector_width, projector_height);
+    double proj_error = cv::calibrateCamera(objectpoints, pcorners, projector_size, proj_mat, proj_dist, proj_rvecs, proj_tvecs, proj_flags,
+                                             TermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 100, 1e-5));
+    cout<<"projector calibration RMS error: "<<proj_error<<endl;
+
+    //stereo calibration
+    Mat R, T, E, F;
+    double stereo_error = cv::stereoCalibrate(objectpoints, corners, pcorners, cam_mat, cam_dist, proj_mat, proj_dist,
+                                                imageSize , R, T, E, F,
+                                                CV_CALIB_FIX_INTRINSIC+
+                                                CV_CALIB_FIX_ASPECT_RATIO +
+                                                CV_CALIB_ZERO_TANGENT_DIST +
+                                                CV_CALIB_SAME_FOCAL_LENGTH +
+                                                CV_CALIB_RATIONAL_MODEL +
+                                                CV_CALIB_FIX_K3 + CV_CALIB_FIX_K4 + CV_CALIB_FIX_K5,
+                                                TermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 100, 1e-5));
+    cout<<"Stereo RMS error: "<<stereo_error<<endl;
+
 
     return true;
 }
 
+///Arguments sequence: value for b, value for m, threshold, projector width, projector height
 int main(int argc, char *argv[])
 {
     if(argc<6)
@@ -730,7 +854,7 @@ int main(int argc, char *argv[])
           "number of horizontal patterns: "<<NOP_h<<endl;
 
     ///Verwijderen wanneer op alle sets gewerkt moet worden:
-    aantalseries=1;
+    //aantalseries=1;
 
     while(flag)
     {
@@ -778,7 +902,6 @@ int main(int argc, char *argv[])
             {
                 cout<<"To calibrate, first find corners and decode"<<endl;
             }
-            gelukt_c = calibrate(dec, corners, aantalseries);
         }
 
         else if(keuze == 'q')
