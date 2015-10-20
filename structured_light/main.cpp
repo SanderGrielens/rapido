@@ -244,12 +244,12 @@ bool get_calib_images(int delay, int serie)
         string pFileName = "./picture/serie" + conv.str() + "/frame" + convert.str()+ ".bmp";
         AVTWriteBitmapToFile( &bitmap, pFileName.c_str() );
 
-        ///Save the first (and fully lighted) image to camera calibration folder.
+        /*///Save the first (and fully lighted) image to camera calibration folder.
         if(i==0)
         {
             string pFileName = "./calibration_camera/calib_serie" + conv.str() + ".bmp";
             AVTWriteBitmapToFile( &bitmap, pFileName.c_str() );
-        }
+        }*/
 
     }
 
@@ -271,7 +271,7 @@ bool findcorners(vector<vector<Point2f> > &chessboardcorners, int aantalseries)
         if(chessboardcorners[i].empty())
         {
             fs.release();
-            string path = "./calibration_camera/calib_serie" + conv.str()+".bmp";
+            string path = "./picture/serie" + conv.str()+"/frame0.bmp";
             board = imread(path, 0);
             if(board.empty())
                 cout<<"leeg"<<endl;
@@ -387,8 +387,8 @@ void calculate_light_components(Decoder &d, vector<Mat> beelden, int dir, string
         }
 
 
-        d.Lg[dir].convertTo(d.Lg[dir], CV_8UC1);
-        d.Ld[dir].convertTo(d.Ld[dir], CV_8UC1);
+        //d.Lg[dir].convertTo(d.Lg[dir], CV_8UC1);
+        //d.Ld[dir].convertTo(d.Ld[dir], CV_8UC1);
 
         FileStorage fs;
         if(dir)
@@ -400,13 +400,13 @@ void calculate_light_components(Decoder &d, vector<Mat> beelden, int dir, string
             cout<<"file won't open"<<endl;
 
 
-        fs << LG << d.Ld[dir];
-        fs << LD << d.Lg[dir];
+        fs << LD << d.Ld[dir];
+        fs << LG << d.Lg[dir];
         fs.release();
     }
 
-    d.Lg[dir].convertTo(d.Lg[dir], CV_32FC1);
-    d.Ld[dir].convertTo(d.Ld[dir], CV_32FC1);
+    //tonen(d.Ld[dir]/255, "Ld");
+    //tonen(d.Lg[dir]/255, "Lg");
 
     cout<<"direct and global light calculated"<<endl;
 }
@@ -440,7 +440,7 @@ void get_pattern_image(Decoder &d, vector<Mat> beelden, int dir, string serienr)
 
     if(d.pattern_image[dir].empty())
     {
-        d.pattern_image[dir] = Mat(beelden[NOP_v].rows, beelden[NOP_v].cols, CV_32FC1);
+        d.pattern_image[dir] = Mat::zeros(beelden[NOP_v].rows, beelden[NOP_v].cols, CV_32FC1);
         bit = holder;
         //cout<<"bit: "<<bit<<endl;
 
@@ -607,10 +607,14 @@ void colorize_pattern(Decoder &d, vector<Mat> &image, int dir)
             image[dir].at<Vec3b>(i,j) = Vec3b(c3, c2,c1);
         }
     }
-    tonen(image[dir], "kleur");
+    if(dir)
+        tonen(image[dir], "kleurver");
+    else
+        tonen(image[dir], "kleurhor");
+
 }
 
-bool decode(int serienummer, Decoder &d)
+bool decode(int serienummer, Decoder &d, bool draw)
 {
     vector<Mat> beelden ;
     ostringstream serienr;
@@ -661,7 +665,6 @@ bool decode(int serienummer, Decoder &d)
     int vertical = 1;
     calculate_light_components(d, beelden, vertical, serienr.str());
     get_pattern_image(d, beelden, vertical, serienr.str());
-    //colorize_pattern(d, image, vertical);
 
     cout<<"Horizontal: "<<endl;
 
@@ -669,11 +672,17 @@ bool decode(int serienummer, Decoder &d)
     int horizontal = 0;
     calculate_light_components(d, beelden, horizontal, serienr.str());
     get_pattern_image(d, beelden, horizontal, serienr.str());
-    //colorize_pattern(d, image, horizontal);
+
+    ///draw?
+    if(draw)
+    {
+        colorize_pattern(d, image, horizontal);
+        colorize_pattern(d, image, vertical);
+    }
     return true;
 }
 
-bool decode_all(int aantalseries, vector<Decoder> &dec)
+bool decode_all(int aantalseries, vector<Decoder> &dec, bool draw)
 {
     bool gelukt;
     for(int i=0; i< aantalseries; i++)
@@ -681,7 +690,7 @@ bool decode_all(int aantalseries, vector<Decoder> &dec)
         Decoder d;
         cout<<"decode "<<i<<endl;
         cout<<endl;
-        gelukt = decode(i, d);
+        gelukt = decode(i, d, draw);
         if(!gelukt)
             return false;
 
@@ -694,7 +703,7 @@ bool decode_all(int aantalseries, vector<Decoder> &dec)
 bool calibrate(vector<Decoder> dec, vector<vector<Point2f> > corners, int aantalseries)
 {
     vector<vector<Point2f> > pcorners;
-    int window = 23; ///the value for window is halve the size of the desired homography window
+    int window = 10; ///the value for window is halve the size of the desired homography window
 
     vector<vector<Point3f> > objectpoints;
     vector<cv::Point3f> world_corners;
@@ -717,7 +726,7 @@ bool calibrate(vector<Decoder> dec, vector<vector<Point2f> > corners, int aantal
         {
             vector<Point2f> cam_points;
             vector<Point2f> proj_points;
-
+            gem_overgeslagen = 0;
             if(c[l].x >= window && c[l].y >= window && c[l].x + window < camera_width && c[l].y + window<camera_height)
             {
                 for(int x = c[l].x - window; x<=c[l].x + window; x++)  //for each point in the window around the corner
@@ -735,8 +744,7 @@ bool calibrate(vector<Decoder> dec, vector<vector<Point2f> > corners, int aantal
                         }
                     }
                 }
-
-                Mat homography = findHomography(cam_points, proj_points, CV_RANSAC, 1 );
+                Mat homography = findHomography(cam_points, proj_points, CV_RANSAC, 10 );
                 Point3d p = Point3d(c[l].x, c[l].y, 1.0);
                 Point3d Q = Point3d(Mat(homography*Mat(p)));
                 Point2f q = Point2f(Q.x/Q.z, Q.y/Q.z);
@@ -756,7 +764,7 @@ bool calibrate(vector<Decoder> dec, vector<vector<Point2f> > corners, int aantal
     }
 
     int cal_flags = 0
-                + CALIB_FIX_PRINCIPAL_POINT
+                + CV_CALIB_FIX_PRINCIPAL_POINT
                 //+ cv::CALIB_FIX_K1
                 //+ cv::CALIB_FIX_K2
                 //+ cv::CALIB_ZERO_TANGENT_DIST
@@ -768,8 +776,8 @@ bool calibrate(vector<Decoder> dec, vector<vector<Point2f> > corners, int aantal
     Mat cam_mat;
     Mat cam_dist;
     int cam_flags = cal_flags;
-    double cam_error = cv::calibrateCamera(objectpoints, corners, imageSize, cam_mat, cam_dist, cam_rvecs, cam_tvecs, cam_flags/*,
-                                            TermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 100, 1e-5)*/);
+    double cam_error = cv::calibrateCamera(objectpoints, corners, imageSize, cam_mat, cam_dist, cam_rvecs, cam_tvecs, cam_flags,
+                                            TermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 100, 1e-5));
 
     cout<<"camera calibration RMS error: "<<cam_error<<endl;
 
@@ -789,11 +797,11 @@ bool calibrate(vector<Decoder> dec, vector<vector<Point2f> > corners, int aantal
                                                 imageSize , R, T, E, F,
                                                 CV_CALIB_FIX_INTRINSIC+
                                                 CV_CALIB_FIX_ASPECT_RATIO +
-                                                CV_CALIB_ZERO_TANGENT_DIST +
+                                                /*CV_CALIB_ZERO_TANGENT_DIST +*/
                                                 CV_CALIB_SAME_FOCAL_LENGTH +
                                                 CV_CALIB_RATIONAL_MODEL +
-                                                CV_CALIB_FIX_K3 + CV_CALIB_FIX_K4 + CV_CALIB_FIX_K5,
-                                                TermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 100, 1e-5));
+                                                CV_CALIB_FIX_K3 /*+ CV_CALIB_FIX_K4 + CV_CALIB_FIX_K5,
+                                                TermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 100, 1e-5)*/);
     cout<<"Stereo RMS error: "<<stereo_error<<endl;
 
 
@@ -811,9 +819,10 @@ int main(int argc, char *argv[])
 
 
     bool flag = true;
-    b = atoi(argv[1]);
-    m = atoi(argv[2]);
-    thresh = atoi(argv[3]);
+    b = atof(argv[1]);
+    cout<<b<<endl;
+    m = atof(argv[2]);
+    thresh = atof(argv[3]);
     projector_width = atoi(argv[4]);
     projector_height = atoi(argv[5]);
     string dir = "./picture/";
@@ -888,8 +897,8 @@ int main(int argc, char *argv[])
 
         else if(keuze == 'd')
         {
-
-            gelukt_d = decode_all(aantalseries, dec);
+            bool draw = true;
+            gelukt_d = decode_all(aantalseries, dec, draw);
         }
 
         else if(keuze == 'c')
@@ -901,6 +910,14 @@ int main(int argc, char *argv[])
             else
             {
                 cout<<"To calibrate, first find corners and decode"<<endl;
+                vector<vector<Point2f> > chessboardcorners(aantalseries);
+                gelukt_f = findcorners(chessboardcorners, aantalseries);
+                if(gelukt_f)
+                    corners = chessboardcorners;
+                bool draw = false;
+                gelukt_d = decode_all(aantalseries, dec, draw);
+                gelukt_c = calibrate(dec, corners, aantalseries);
+
             }
         }
 
