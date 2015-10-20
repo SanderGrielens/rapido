@@ -66,6 +66,13 @@ int getdir (string dir, vector<string> &files);
 int Calibrate_Camera();
 
 ///STANDARD FUNCTIONS
+struct Point4f {
+  float x;
+  float y;
+  float z;
+  float w;
+} ;
+
 Mat inlezen(String Im);                          // afbeelding inlezen a.d.h.v. pad
 Mat inlezenGrijs(String Im);                     // afbeelding inlezen in grijswaarden a.d.h.v. pad
 
