@@ -15,6 +15,7 @@
 #include <sstream>
 #include <time.h>
 #include <limits>
+#include <ctime>
 #include <sys/types.h>
 #include <dirent.h>
 #include <errno.h>
@@ -24,6 +25,13 @@
 #include "Common/StreamSystemInfo.h"
 #include "Common/ErrorCodeToMessage.h"
 #include "VimbaCPP/Include/VimbaSystem.h"
+
+#include <boost/thread/thread.hpp>
+#include <pcl/common/common_headers.h>
+#include <pcl/features/normal_3d.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/visualization/pcl_visualizer.h>
+#include <pcl/console/parse.h>
 
 using namespace std;
 using namespace cv;
@@ -58,6 +66,12 @@ struct Decoder
     vector<Mat> Ld;
     vector<Mat> Lg;
     vector<Mat> pattern_image;
+} ;
+
+struct Visualizer
+{
+    Mat pointcloud;
+    vector<Point2f> cam_points;
 } ;
 
 int getdir (string dir, vector<string> &files);

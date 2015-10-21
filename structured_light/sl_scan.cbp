@@ -11,15 +11,15 @@
 				<Option object_output="obj/Debug/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters="0.5 5 1280 800" />
+				<Option parameters="0.5 5 5 1280 800" />
 				<Compiler>
 					<Add option="-g" />
-					<Add directory="/home/sander/Documents/rapido/Camera_sdk/Vimba_1_3" />
+					<Add directory="/home/svw/Documents/rapido/Camera_sdk/Vimba_1_3" />
 				</Compiler>
 				<Linker>
-					<Add library="/home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit/libVimbaC.so" />
-					<Add library="/home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit/libVimbaCPP.so" />
-					<Add directory="/home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit" />
+					<Add library="/home/svw/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit/libVimbaC.so" />
+					<Add library="/home/svw/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit/libVimbaCPP.so" />
+					<Add directory="/home/svw/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit" />
 				</Linker>
 			</Target>
 			<Target title="Release">
@@ -27,11 +27,62 @@
 				<Option object_output="obj/Release/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
+				<Option parameters="0.5 5 5 1280 800" />
 				<Compiler>
 					<Add option="-O2" />
+					<Add directory="/home/svw/Documents/rapido/Camera_sdk/Vimba_1_3" />
+					<Add directory="/usr/include/pcl-1.7" />
+					<Add directory="/usr/include/eigen3" />
+					<Add directory="/usr/include/vtk-5.8" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
+					<Add library="/home/svw/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit/libVimbaC.so" />
+					<Add library="/home/svw/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit/libVimbaCPP.so" />
+					<Add library="/usr/lib/libvtkalglib.so" />
+					<Add library="/usr/lib/libvtkCharts.so" />
+					<Add library="/usr/lib/libvtkCommon.so" />
+					<Add library="/usr/lib/libvtkDICOMParser.so" />
+					<Add library="/usr/lib/libvtkexoIIc.so" />
+					<Add library="/usr/lib/libvtkFiltering.so" />
+					<Add library="/usr/lib/libvtkftgl.so" />
+					<Add library="/usr/lib/libvtkGenericFiltering.so" />
+					<Add library="/usr/lib/libvtkGeovis.so" />
+					<Add library="/usr/lib/libvtkGraphics.so" />
+					<Add library="/usr/lib/libvtkHybrid.so" />
+					<Add library="/usr/lib/libvtkImaging.so" />
+					<Add library="/usr/lib/libvtkInfovis.so" />
+					<Add library="/usr/lib/libvtkIO.so" />
+					<Add library="/usr/lib/libvtkmetaio.so" />
+					<Add library="/usr/lib/libvtkParallel.so" />
+					<Add library="/usr/lib/libvtkproj4.so" />
+					<Add library="/usr/lib/libvtkQtChart.so" />
+					<Add library="/usr/lib/libvtkRendering.so" />
+					<Add library="/usr/lib/libvtksys.so" />
+					<Add library="/usr/lib/libvtkverdict.so" />
+					<Add library="/usr/lib/libvtkViews.so" />
+					<Add library="/usr/lib/libvtkVolumeRendering.so" />
+					<Add library="/usr/lib/libvtkWidgets.so" />
+					<Add library="/usr/lib/libpcl_apps.so" />
+					<Add library="/usr/lib/libpcl_common.so" />
+					<Add library="/usr/lib/libpcl_features.so" />
+					<Add library="/usr/lib/libpcl_filters.so" />
+					<Add library="/usr/lib/libpcl_io.so" />
+					<Add library="/usr/lib/libpcl_io_ply.so" />
+					<Add library="/usr/lib/libpcl_kdtree.so" />
+					<Add library="/usr/lib/libpcl_keypoints.so" />
+					<Add library="/usr/lib/libpcl_octree.so" />
+					<Add library="/usr/lib/libpcl_outofcore.so" />
+					<Add library="/usr/lib/libpcl_people.so" />
+					<Add library="/usr/lib/libpcl_recognition.so" />
+					<Add library="/usr/lib/libpcl_registration.so" />
+					<Add library="/usr/lib/libpcl_sample_consensus.so" />
+					<Add library="/usr/lib/libpcl_search.so" />
+					<Add library="/usr/lib/libpcl_segmentation.so" />
+					<Add library="/usr/lib/libpcl_surface.so" />
+					<Add library="/usr/lib/libpcl_tracking.so" />
+					<Add library="/usr/lib/libpcl_visualization.so" />
+					<Add directory="/home/svw/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit" />
 				</Linker>
 			</Target>
 		</Build>

@@ -7,7 +7,6 @@ using namespace VmbAPI;
 
 int NOP_h;
 int NOP_v;
-int aantalseries;
 float b;
 float m;
 float thresh;
@@ -15,6 +14,61 @@ int projector_width;
 int projector_height;
 int camera_width;
 int camera_height;
+
+unsigned int text_id = 0;
+void keyboardEventOccurred (const pcl::visualization::KeyboardEvent &event,
+                            void* viewer_void)
+{
+  boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer = *static_cast<boost::shared_ptr<pcl::visualization::PCLVisualizer> *> (viewer_void);
+  if (event.getKeySym () == "r" && event.keyDown ())
+  {
+    std::cout << "r was pressed => removing all text" << std::endl;
+
+    char str[512];
+    for (unsigned int i = 0; i < text_id; ++i)
+    {
+      sprintf (str, "text#%03d", i);
+      viewer->removeShape (str);
+    }
+    text_id = 0;
+  }
+}
+
+void mouseEventOccurred (const pcl::visualization::MouseEvent &event,
+                         void* viewer_void)
+{
+  boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer = *static_cast<boost::shared_ptr<pcl::visualization::PCLVisualizer> *> (viewer_void);
+  if (event.getButton () == pcl::visualization::MouseEvent::LeftButton &&
+      event.getType () == pcl::visualization::MouseEvent::MouseButtonRelease)
+  {
+    std::cout << "Left mouse button released at position (" << event.getX () << ", " << event.getY () << ")" << std::endl;
+
+    char str[512];
+    sprintf (str, "text#%03d", text_id ++);
+    viewer->addText ("clicked here", event.getX (), event.getY (), str);
+  }
+}
+
+Decoder init_decoder()
+{
+    Decoder d;
+
+    Mat newmat = Mat::zeros(camera_height, camera_width, CV_32FC1);
+
+    ///initialize Decoder
+    d.minimum.push_back(newmat.clone());
+    d.minimum.push_back(newmat.clone());
+    d.maximum.push_back(newmat.clone());
+    d.maximum.push_back(newmat.clone());
+    d.Ld.push_back(newmat.clone());
+    d.Ld.push_back(newmat.clone());
+    d.Lg.push_back(newmat.clone());
+    d.Lg.push_back(newmat.clone());
+    d.pattern_image.push_back(newmat.clone());
+    d.pattern_image.push_back(newmat.clone());
+
+    return d;
+}
 
 vector<Mat> generate_pattern()
 {
@@ -105,7 +159,7 @@ vector<Mat> generate_pattern()
     return result;
 }
 
-bool get_calib_images(int delay, int serie)
+bool get_images(int delay, int serie, string mode)
 {
     vector<Mat> pattern;
     cout<<"serienummer: "<<serie<<endl;
@@ -237,17 +291,23 @@ bool get_calib_images(int delay, int serie)
         bitmap.height = nHeight;
         AVTCreateBitmap( &bitmap, pImage );
 
+        string pFileName;
         ///Save camera image
-        string pFileName = "./picture/serie" + conv.str() + "/frame" + convert.str()+ ".bmp";
-        AVTWriteBitmapToFile( &bitmap, pFileName.c_str() );
-
-        /*///Save the first (and fully lighted) image to camera calibration folder.
-        if(i==0)
+        if(mode.compare("calibration") == 0)
         {
-            string pFileName = "./calibration_camera/calib_serie" + conv.str() + ".bmp";
-            AVTWriteBitmapToFile( &bitmap, pFileName.c_str() );
-        }*/
+            pFileName = "./picture/serie" + conv.str() + "/frame" + convert.str()+ ".bmp";
+        }
+        else if(mode.compare("scan") == 0)
+        {
+            pFileName = "./scan/serie" + conv.str() + "/frame" + convert.str()+ ".bmp";
+        }
+        else
+        {
+            cerr<<"no mode selected"<<endl;
+            return false;
+        }
 
+        AVTWriteBitmapToFile( &bitmap, pFileName.c_str() );
     }
 
     return true;
@@ -257,43 +317,37 @@ bool findcorners(vector<vector<Point2f> > &chessboardcorners, int aantalseries)
 {
     Mat board;
     Size boardSize(8,6);
-    FileStorage fs("chessboardcorners.xml", FileStorage::READ);
+
     for(int i = 0; i<aantalseries; i++)
     {
-        cout<<"nummer "<<i<<endl;
+        cout<<"finding corners image "<<i<<endl;
         ostringstream conv;
         conv << i;
-        FileStorage fs("./picture/serie" + conv.str() + "/chessboardcorners.xml", FileStorage::READ);
-        fs["corners"] >> chessboardcorners[i];
-        if(chessboardcorners[i].empty())
+
+        string path = "./picture/serie" + conv.str()+"/frame0.bmp";
+        board = imread(path, 0);
+        if(board.empty())
         {
-            fs.release();
-            string path = "./picture/serie" + conv.str()+"/frame0.bmp";
-            board = imread(path, 0);
-            if(board.empty())
-                cout<<"leeg"<<endl;
-
-            //bool found1_1 = findChessboardCorners(board, boardSize, chessboardcorners[i],
-                                                  //CV_CALIB_CB_ADAPTIVE_THRESH + CV_CALIB_CB_NORMALIZE_IMAGE + CV_CALIB_CB_FILTER_QUADS);
-
-            bool found1_1 = findChessboardCorners(board, boardSize, chessboardcorners[i],CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_NORMALIZE_IMAGE);
-
-            if(!found1_1)
-            {
-                std::cerr << "Checkboard 1_"<<i<<" corners not found!" << std::endl;
-                return false;
-            }
-            cornerSubPix(board, chessboardcorners[i], Size(11,11), Size(-1,-1), TermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 300, 0.001));
-            cvtColor(board, board, CV_GRAY2BGR);
-            drawChessboardCorners( board, boardSize, chessboardcorners[i], found1_1 );
-
-            tonen(board, "zijn ze gevonden?");
-            FileStorage fs("./picture/serie" + conv.str() + "/chessboardcorners.xml", FileStorage::WRITE);
-            fs << "corners"<< chessboardcorners[i];
-            fs.release();
+            cout<<"leeg "<<i<<endl;
+            continue;
         }
-    }
 
+        //bool found1_1 = findChessboardCorners(board, boardSize, chessboardcorners[i],
+                                                //CV_CALIB_CB_ADAPTIVE_THRESH + CV_CALIB_CB_NORMALIZE_IMAGE + CV_CALIB_CB_FILTER_QUADS);
+
+        bool found1_1 = findChessboardCorners(board, boardSize, chessboardcorners[i],CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_NORMALIZE_IMAGE);
+
+        if(!found1_1)
+        {
+            std::cerr << "Checkboard 1_"<<i<<" corners not found!" << std::endl;
+            return false;
+        }
+        cornerSubPix(board, chessboardcorners[i], Size(11,11), Size(-1,-1), TermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 300, 0.001));
+        cvtColor(board, board, CV_GRAY2BGR);
+        drawChessboardCorners( board, boardSize, chessboardcorners[i], found1_1 );
+
+        //tonen(board, "zijn ze gevonden?");
+    }
     return true;
 }
 
@@ -323,12 +377,8 @@ int check_bit(float value1, float value2, float Ld, float Lg, float m)
     return 2;
 }
 
-void calculate_light_components(Decoder &d, vector<Mat> beelden, int dir, string location)
+void calculate_light_components(Decoder &d, vector<Mat> beelden, int dir)
 {
-    int minld = 1000;
-    int maxld = 0;
-    int minlg = 1000;
-    int maxlg = 0;
     int x = beelden[0].cols;
     int y = beelden[0].rows;
     int NOP;
@@ -346,75 +396,47 @@ void calculate_light_components(Decoder &d, vector<Mat> beelden, int dir, string
     string LD = "ld"+ richting;
     string LG = "lg"+richting;
 
-    FileStorage fs(location, FileStorage::READ);
-    fs[LD] >> d.Ld[dir];
-    fs[LG] >> d.Lg[dir];
-    fs.release();
-    FileStorage fs1();
-
-    if(d.Ld[dir].empty() || d.Lg[dir].empty())
+    for(int i =0; i< y; i++)
     {
-        d.Ld[dir] = Mat::zeros(beelden[NOP_v].rows, beelden[NOP_v].cols, CV_32FC1);
-        d.Lg[dir] = Mat::zeros(beelden[NOP_v].rows, beelden[NOP_v].cols, CV_32FC1);
-        for(int i =0; i< y; i++)
+        for(int j =0; j<x; j++)
         {
-            for(int j =0; j<x; j++)
+            float lpmax=0.0;
+            float lpmin=1000.0;
+            for(int k = 2; k< 8; k++)
             {
-                float lpmax=0.0;
-                float lpmin=1000.0;
-                for(int k = 2; k< 8; k++)
-                {
-                    if(beelden[NOP-k].at<float>(i,j) < lpmin)
-                        lpmin = beelden[NOP-k].at<float>(i,j);
-                }
-
-                for(int k = 2; k < 8; k++)
-                {
-                    if(beelden[NOP-k].at<float>(i,j) > lpmax)
-                        lpmax = beelden[NOP-k].at<float>(i,j);
-                }
-
-                float _d =(lpmax - lpmin) / (1 - b);
-                float g = (2*(lpmin - b*lpmax) / (1- pow(b,2)));
-
-                d.Ld[dir].at<float>(i,j) = (g>0 ? _d : lpmax);
-                d.Lg[dir].at<float>(i,j) = (g>0 ? g : 0);
-                //cout<<i<<" "<<j<<endl;
+                if(beelden[NOP-k].at<float>(i,j) < lpmin)
+                    lpmin = beelden[NOP-k].at<float>(i,j);
             }
+
+            for(int k = 2; k < 8; k++)
+            {
+                if(beelden[NOP-k].at<float>(i,j) > lpmax)
+                    lpmax = beelden[NOP-k].at<float>(i,j);
+            }
+
+            float _d =(lpmax - lpmin) / (1 - b);
+            float g = (2*(lpmin - b*lpmax) / (1- pow(b,2)));
+
+            d.Ld[dir].at<float>(i,j) = (g>0 ? _d : lpmax);
+            d.Lg[dir].at<float>(i,j) = (g>0 ? g : 0);
         }
-
-
-        //d.Lg[dir].convertTo(d.Lg[dir], CV_8UC1);
-        //d.Ld[dir].convertTo(d.Ld[dir], CV_8UC1);
-
-        FileStorage fs;
-        if(dir)
-             fs.open(location, FileStorage::WRITE);
-        else
-             fs.open(location, FileStorage::APPEND);
-
-        if(!fs.isOpened())
-            cout<<"file won't open"<<endl;
-
-
-        fs << LD << d.Ld[dir];
-        fs << LG << d.Lg[dir];
-        fs.release();
     }
 
-    tonen(d.Ld[dir]/255, "Ld");
-    tonen(d.Lg[dir]/255, "Lg");
+    //tonen(d.Ld[dir]/255, "Ld");
+    //tonen(d.Lg[dir]/255, "Lg");
 
     cout<<"direct and global light calculated"<<endl;
 }
 
-void get_pattern_image(Decoder &d, vector<Mat> beelden, int dir, string location)
+void get_pattern_image(Decoder &d, vector<Mat> beelden, int dir)
 {
     int holder;
     int bit;
     int NOP;
     int start;
     string richting;
+    float max_goed = pow(2, NOP_v+1);
+    float min_slecht = pow(2, NOP_v+2);
 
     if(dir)
     {
@@ -431,104 +453,86 @@ void get_pattern_image(Decoder &d, vector<Mat> beelden, int dir, string location
         richting = "hor";
     }
 
-    FileStorage fs(location, FileStorage::READ);
-    fs["pattern" + richting] >> d.pattern_image[dir];
-    fs.release();
+    bit = holder;
+    //cout<<"bit: "<<bit<<endl;
 
-    if(d.pattern_image[dir].empty())
+    for(int j =0; j< beelden[NOP].rows; j++)
     {
-        d.pattern_image[dir] = Mat::zeros(beelden[NOP_v].rows, beelden[NOP_v].cols, CV_32FC1);
-        bit = holder;
-        //cout<<"bit: "<<bit<<endl;
-
-        ///Go over each image pair (img and his inverse) and check for each pixel it's value. Add it to pattern[dir]
-        /// If a pixel is in a lighted area, we add 2 raised to the power of the frame. This way we get a gray code pattern for each pixel in pattern[dir].
-        /// Pattern[dir] is of type 32 bit float. If you have more than 32 patterns, change the type of pattern[dir].
-        for(int i = start; i<=NOP ; i+=2)
+        for(int k =0; k<beelden[NOP].cols; k++)
         {
-            Mat img2 = beelden[i].clone();
-            Mat img1 = beelden[i+1].clone();
-            bit--;
-            int teller = 0;
+            float val1 = beelden[NOP].at<float>(j,k);
+            float val2 = beelden[NOP-1].at<float>(j,k);
 
-            for(int j =0; j< img1.rows; j++)
-            {
-                for(int k =0; k<img1.cols; k++)
-                {
-                    float val1 = img1.at<float>(j,k);
-                    float val2 = img2.at<float>(j,k);
-                    float ld = d.Ld[dir].at<float>(j,k);
-                    float lg = d.Lg[dir].at<float>(j,k);
+            ///save min and max of every pixel in every image pair
+            if(val1 < d.minimum[dir].at<float>(j,k) || val2 < d.minimum[dir].at<float>(j,k))
+                d.minimum[dir].at<float>(j,k) = (val1<val2 ? val1 : val2);
 
-                    ///save min and max of every image pair
-                    if(val1 < d.minimum[dir].at<float>(j,k) || val2 < d.minimum[dir].at<float>(j,k))
-                        d.minimum[dir].at<float>(j,k) = (val1<val2 ? val1 : val2);
-
-                    if(val1> d.maximum[dir].at<float>(j,k) || val2> d.maximum[dir].at<float>(j,k))
-                        d.maximum[dir].at<float>(j,k) = (val1>val2 ? val1 : val2);
-
-                    ///build pattern
-                    if (d.pattern_image[dir].at<float>(j,k) < pow(2, NOP_v+1))
-                    {
-                        int p = check_bit(val1, val2, ld, lg, m);
-                        if(p == 2)
-                        {
-                            d.pattern_image[dir].at<float>(j,k) += p*(pow(2, NOP_v+2));
-                            teller++;
-                        }
-                        else
-                        {
-                            d.pattern_image[dir].at<float>(j,k) += p*(pow(2, bit));
-                        }
-                    }
-                }
-            }
+            if(val1> d.maximum[dir].at<float>(j,k) || val2> d.maximum[dir].at<float>(j,k))
+                d.maximum[dir].at<float>(j,k) = (val1>val2 ? val1 : val2);
         }
-        ///Convert pattern from gray code to binary
-        for(int i=0;i<d.pattern_image[dir].rows;i++)
-        {
-            for(int j=0; j<d.pattern_image[dir].cols;j++)
-            {
-                if (d.pattern_image[dir].at<float>(i,j) < (pow(2, NOP_v+2)) )
-                {   //invalid value: use grey
-                    int q = static_cast<int>(d.pattern_image[dir].at<float>(i,j));
-                    int p = q;
-
-                    for (unsigned shift = 1; shift < holder; shift <<= 1)
-                    {
-                        p ^= p >> shift;
-                    }
-                    d.pattern_image[dir].at<float>(i,j) = p + (d.pattern_image[dir].at<float>(i,j) - q);
-                    if(dir)
-                        d.pattern_image[dir].at<float>(i,j)--;
-                }
-
-                if((d.maximum[dir].at<float>(i,j) - d.minimum[dir].at<float>(i,j)) < thresh)
-                {
-                    d.pattern_image[dir].at<float>(i,j) = 2*(pow(2, NOP_v+2));
-                }
-            }
-        }
-
-        FileStorage fs1;
-        bool gelukt;
-
-        if(dir)
-        {
-            gelukt = fs1.open(location, FileStorage::WRITE);
-        }
-        else
-        {
-            gelukt = fs1.open(location, FileStorage::APPEND);
-        }
-        if(!fs1.isOpened())
-            cout<<"file won't open"<<endl;
-        fs1<< "pattern" + richting<< d.pattern_image[dir];
-        fs1.release();
-
-        //tonen(d.minimum[dir], "minimum");
-        //tonen(d.maximum[dir], "maximum");
     }
+
+    ///Go over each image pair (img and his inverse) and check for each pixel it's value. Add it to pattern[dir]
+    /// If a pixel is in a lighted area, we add 2 raised to the power of the frame. This way we get a gray code pattern for each pixel in pattern[dir].
+    /// Pattern[dir] is of type 32 bit float. If you have more than 32 patterns, change the type of pattern[dir].
+    for(int i = start; i<=NOP ; i+=2)
+    {
+        bit--;
+
+        for(int j =0; j< beelden[i+1].rows; j++)
+        {
+            for(int k =0; k<beelden[i+1].cols; k++)
+            {
+                float val1 = beelden[i+1].at<float>(j,k);
+                float val2 = beelden[i].at<float>(j,k);
+                float ld = d.Ld[dir].at<float>(j,k);
+                float lg = d.Lg[dir].at<float>(j,k);
+
+                ///build pattern
+                /*if (d.pattern_image[dir].at<float>(j,k) < max_goed)
+                {*/
+                    int p = check_bit(val1, val2, ld, lg, m);
+                    if(p == 2)
+                    {
+                        d.pattern_image[dir].at<float>(j,k) += (p<<(NOP_v+2)); //p*(pow(2, NOP_v+2));
+                    }
+                    else
+                    {
+                        d.pattern_image[dir].at<float>(j,k) +=  (p<<bit); //p*(pow(2, bit));
+                    }
+                //}
+            }
+        }
+    }
+
+    ///Convert pattern from gray code to binary
+    for(int i=0;i<d.pattern_image[dir].rows;i++)
+    {
+        for(int j=0; j<d.pattern_image[dir].cols;j++)
+        {
+            if (d.pattern_image[dir].at<float>(i,j) < min_slecht )
+            {   //invalid value: use grey
+                int q = static_cast<int>(d.pattern_image[dir].at<float>(i,j));
+                int p = q;
+
+                for (unsigned shift = 1; shift < holder; shift <<= 1)
+                {
+                    p ^= p >> shift;
+                }
+                d.pattern_image[dir].at<float>(i,j) = p + (d.pattern_image[dir].at<float>(i,j) - q);
+                if(dir)
+                    d.pattern_image[dir].at<float>(i,j)--;
+            }
+
+            if((d.maximum[dir].at<float>(i,j) - d.minimum[dir].at<float>(i,j)) < thresh)
+            {
+                d.pattern_image[dir].at<float>(i,j) = 2 << NOP_v+2;// 2*(pow(2, NOP_v+2));
+            }
+        }
+    }
+    //tonen(d.minimum[dir], "minimum");
+    //tonen(d.maximum[dir], "maximum");
+    cout<<"pattern decoded"<<endl;
 }
 
 void colorize_pattern(Decoder &d, vector<Mat> &image, int dir)
@@ -611,12 +615,26 @@ void colorize_pattern(Decoder &d, vector<Mat> &image, int dir)
 
 }
 
-bool decode(int serienummer, Decoder &d, bool draw)
+bool decode(int serienummer, Decoder &d, bool draw, string mode)
 {
     vector<Mat> beelden ;
     ostringstream serienr;
     serienr << serienummer;
-    string path = "./picture/serie" + serienr.str() + "/frame";
+    string path;
+    if(mode.compare("calibration") == 0)
+    {
+        path = "./picture/serie" + serienr.str() + "/frame";
+    }
+    else if(mode.compare("scan") == 0)
+    {
+        path = "./scan/serie" + serienr.str() + "/frame";
+    }
+    else
+    {
+        cerr<<"No mode selected"<<endl;
+        return false;
+    }
+
     string einde = ".bmp";
 
     ///Reading every image in a serie
@@ -636,46 +654,27 @@ bool decode(int serienummer, Decoder &d, bool draw)
     camera_width = beelden[0].cols;
     camera_height = beelden[0].rows;
 
-    ///Calculate the matrices Ld and Lg of the series (Direct light and Global Light respectively)
-    Mat newmat = Mat(beelden[NOP_v].rows, beelden[NOP_v].cols, CV_32FC1);
-    Mat newmat2 = Mat(beelden[1].size(), CV_8UC3);
+    d = init_decoder();
 
-    ///initialize Decoder
-    d.minimum.push_back(newmat.clone());
-    d.minimum.push_back(newmat.clone());
-    d.maximum.push_back(newmat.clone());
-    d.maximum.push_back(newmat.clone());
-    d.Ld.push_back(newmat.clone());
-    d.Ld.push_back(newmat.clone());
-    d.Lg.push_back(newmat.clone());
-    d.Lg.push_back(newmat.clone());
-    d.pattern_image.push_back(newmat.clone());
-    d.pattern_image.push_back(newmat.clone());
-
+    Mat newmat2 = Mat::zeros(camera_height, camera_width, CV_8UC3);
     vector<Mat> image;
     image.push_back(newmat2.clone());
     image.push_back(newmat2.clone());
 
-
-    cout<<"Vertical: "<<endl;
-
     ///Get vertical
-    string location = "./picture/serie" + serienr.str()+ "/pattern.xml";
+    cout<<"Vertical: "<<endl;
     int vertical = 1;
-    calculate_light_components(d, beelden, vertical, location);
-    location = "./picture/serie" + serienr.str()+ "/lightcomponents.xml";
-    get_pattern_image(d, beelden, vertical, location);
+    calculate_light_components(d, beelden, vertical);
+    get_pattern_image(d, beelden, vertical);
 
-    cout<<"Horizontal: "<<endl;
 
     ///Get Horizontal
-    location = "./picture/serie" + serienr.str()+ "/pattern.xml";
+    cout<<"Horizontal: "<<endl;
     int horizontal = 0;
-    calculate_light_components(d, beelden, horizontal, location);
-    location = "./picture/serie" + serienr.str()+ "/lightcomponents.xml";
-    get_pattern_image(d, beelden, horizontal, location);
+    calculate_light_components(d, beelden, horizontal);
+    get_pattern_image(d, beelden, horizontal);
 
-    ///draw?
+    ///Draw patterns?
     if(draw)
     {
         colorize_pattern(d, image, horizontal);
@@ -684,19 +683,19 @@ bool decode(int serienummer, Decoder &d, bool draw)
     return true;
 }
 
-bool decode_all(int aantalseries, vector<Decoder> &dec, bool draw)
+bool decode_all(int aantalseries, vector<Decoder> &dec, bool draw, string mode)
 {
     bool gelukt;
     for(int i=0; i< aantalseries; i++)
     {
         Decoder d;
-        cout<<"decode "<<i<<endl;
-        cout<<endl;
-        gelukt = decode(i, d, draw);
+        cout<<"decode serie "<<i<<endl;
+        gelukt = decode(i, d, draw, mode);
         if(!gelukt)
             return false;
 
         dec.push_back(d);
+        cout<<endl;
     }
 
     return true;
@@ -704,6 +703,7 @@ bool decode_all(int aantalseries, vector<Decoder> &dec, bool draw)
 
 bool calibrate(vector<Decoder> dec, vector<vector<Point2f> > corners, int aantalseries)
 {
+    clock_t time1 = clock();
     vector<vector<Point2f> > pcorners;
     int window = 10; ///the value for window is halve the size of the desired homography window
 
@@ -804,7 +804,8 @@ bool calibrate(vector<Decoder> dec, vector<vector<Point2f> > corners, int aantal
                                                 CV_CALIB_FIX_K3 /*+ CV_CALIB_FIX_K4 + CV_CALIB_FIX_K5,
                                                 TermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 100, 1e-5)*/);
     cout<<"Stereo RMS error: "<<stereo_error<<endl;
-
+    clock_t time2 = clock();
+    cout<<"tijd calib: "<< (float)(time2-time1)/CLOCKS_PER_SEC<<endl;
     ///Save calibration:
 
     FileStorage fs("camera_projector.xml", FileStorage::WRITE);
@@ -836,200 +837,204 @@ vector<Point4f> naarPoint4f(Mat src)
     return resultaat;
 }
 
-void calculate3DPoints()
+vector<Visualizer> calculate3DPoints_all(string mode, int aantalseries)
 {
-    Mat cameraMatrix;
-    Mat projMatrix;
-    Mat rotMat;
-    Mat transMat;
+    bool draw = false;
+    vector<Decoder> dec;
+    decode_all(aantalseries, dec, draw, "scan");
+    vector<Visualizer> viz;
 
-    ///Get intrinsic and extrinsic camera parameters
-    FileStorage fs("camera_projector.xml", FileStorage::READ);
-
-    fs["camera_matrix"] >> cameraMatrix;
-    fs["projector_matrix"] >> projMatrix;
-
-    fs["rotation"] >> rotMat;
-    if(rotMat.empty())
-        cout<<"rotleeg"<<endl;
-
-    fs["translation"] >> transMat;
-
-    if(transMat.empty())
-        cout<<"tranleeg"<<endl;
-
-    vector<Mat> beelden ;
-    string path = "./results/serie0/frame";
-    string einde = ".bmp";
-
-    ///Read every image in a serie
-    for(int i=2; i<(NOP_v+NOP_h)*2; i++)
+    for(int k = 0; k< aantalseries; k++)
     {
-        ostringstream beeldnr;
-        beeldnr << i;
-        Mat newmat_i = imread(path + beeldnr.str() + einde,0);
-        if(newmat_i.empty())
-            cout<<"no image"<<endl;
-
-        Mat newmat_float;
-        newmat_i.convertTo(newmat_float, CV_32FC1, 1/255.0);
-        beelden.push_back(newmat_float);
-    }
-
-    Decoder d;
-
-    ///Calculate the matrices Ld and Lg of the series (Direct light and Global Light respectively)
-    Mat newmat = Mat(beelden[NOP_v].rows, beelden[NOP_v].cols, CV_32FC1);
-    Mat newmat2 = Mat(beelden[1].size(), CV_8UC3);
-
-    ///initialize Decoder
-    d.minimum.push_back(newmat.clone());
-    d.minimum.push_back(newmat.clone());
-    d.maximum.push_back(newmat.clone());
-    d.maximum.push_back(newmat.clone());
-    d.Ld.push_back(newmat.clone());
-    d.Ld.push_back(newmat.clone());
-    d.Lg.push_back(newmat.clone());
-    d.Lg.push_back(newmat.clone());
-    d.pattern_image.push_back(newmat.clone());
-    d.pattern_image.push_back(newmat.clone());
-        vector<Mat> image;
-    image.push_back(newmat2.clone());
-    image.push_back(newmat2.clone());
-    int vertical =1;
-    int horizontal = 0;
-    ostringstream serienr;
-    serienr << 0;
-    string location = "./results/serie" + serienr.str()+"/lightcomponents.xml";
-
-    calculate_light_components(d, beelden, vertical, location);
-    location = "./results/serie" + serienr.str()+"/patterns.xml";
-    get_pattern_image(d, beelden, vertical, location);
-
-    location = "./results/serie" + serienr.str()+"/lightcomponents.xml";
-    calculate_light_components(d, beelden, horizontal, location);
-    location = "./results/serie" + serienr.str()+"/patterns.xml";
-    get_pattern_image(d, beelden, horizontal, location);
-
-    colorize_pattern(d, image, horizontal);
-    colorize_pattern(d, image, vertical);
-
-    vector<Point2f> cam_points;
-    vector<Point2f> proj_points;
-    for(int x = 0; x<beelden[0].cols; x++)
-    {
-        for(int y = 0; y<beelden[0].rows; y++)
+        Decoder d = dec[k];
+        Visualizer v;
+        vector<Point2f> cam_points;
+        vector<Point2f> proj_points;
+        for(int x = 0; x<camera_width; x++)
         {
-            if (d.pattern_image[0].at<float>(y,x) >= (pow(2, NOP_v+2)) || d.pattern_image[1].at<float>(y,x) >= (pow(2, NOP_v+2)))
+            for(int y = 0; y<camera_height; y++)
             {
-                continue;
-            }
-            else
-            {
-                cam_points.push_back(Point2f(x,y));
-                proj_points.push_back(Point2f(d.pattern_image[1].at<float>(y,x), d.pattern_image[0].at<float>(y,x))); ///pattern point is (vertical pattern, horizontal pattern)
+                if (d.pattern_image[0].at<float>(y,x) >= (pow(2, NOP_v+2)) || d.pattern_image[1].at<float>(y,x) >= (pow(2, NOP_v+2)))
+                {
+                    continue;
+                }
+                else
+                {
+                    cam_points.push_back(Point2f(x,y));
+                    proj_points.push_back(Point2f(d.pattern_image[1].at<float>(y,x), d.pattern_image[0].at<float>(y,x))); ///pattern point is (vertical pattern, horizontal pattern)
+                }
             }
         }
-    }
 
+        ///Building 3D point cloud
+        Mat cameraMatrix;
+        Mat projMatrix;
+        Mat rotMat;
+        Mat transMat;
 
+        ///Get intrinsic and extrinsic camera parameters
+        FileStorage fs("camera_projector.xml", FileStorage::READ);
 
-    Mat projmat1 = Mat::eye(Size(4,3), CV_64F);
-    for(int i=0; i<projmat1.rows; i++)
-    {
-        for(int j=0; j<projmat1.cols; j++)
+        fs["camera_matrix"] >> cameraMatrix;
+        fs["projector_matrix"] >> projMatrix;
+
+        fs["rotation"] >> rotMat;
+        if(rotMat.empty())
+            cout<<"rotleeg"<<endl;
+
+        fs["translation"] >> transMat;
+
+        if(transMat.empty())
+            cout<<"tranleeg"<<endl;
+
+        Mat projmat1 = Mat::eye(Size(4,3), CV_64F);
+        for(int i=0; i<projmat1.rows; i++)
         {
-            if(j==i && j<3)
+            for(int j=0; j<projmat1.cols; j++)
             {
-                projmat1.at<double>(i,j)=1;
-                cout<<" "<<projmat1.at<double>(i,j);
+                if(j==i && j<3)
+                {
+                    projmat1.at<double>(i,j)=1;
+                    //cout<<" "<<projmat1.at<double>(i,j);
+                }
+                else
+                {
+                    projmat1.at<double>(i,j)=0;
+                    //cout<<" "<<projmat1.at<double>(i,j);
+                }
             }
-            else
+            //cout   <<endl;
+        }
+
+        Mat projmat2 = Mat::eye(Size(4,3), CV_64F);
+        for(int i=0; i<projmat2.rows; i++)
+        {
+            for(int j=0; j<projmat2.cols; j++)
             {
-                projmat1.at<double>(i,j)=0;
-                cout<<" "<<projmat1.at<double>(i,j);
+                if(j<3)
+                {
+                    projmat2.at<double>(i,j)=rotMat.at<double>(i,j);
+                }
+                else
+                {
+                    projmat2.at<double>(i,j)=transMat.at<double>(i,0);
+                }
             }
         }
-        cout   <<endl;
-    }
-    cout<<"eenheidsmatrix + 0" <<endl;
 
-    Mat projmat2 = Mat::eye(Size(4,3), CV_64F);
-    for(int i=0; i<projmat2.rows; i++)
+        Mat P0, P1;
+
+        Mat driedpunten;
+
+        P0 = cameraMatrix * projmat1;
+        P1 = projMatrix * projmat2;
+
+        Mat cam, proj;
+        cam = Mat(cam_points);
+        proj = Mat(proj_points);
+
+        clock_t time1 = clock();
+
+        triangulatePoints(P0, P1, cam, proj, driedpunten);
+        clock_t time2 = clock();
+        cout<<"tijd trianguleren"<<(float)(time2-time1)/CLOCKS_PER_SEC<<endl;
+        v.pointcloud.push_back(driedpunten);
+        v.cam_points = cam_points;
+        viz.push_back(v);
+    }
+
+    ///Visualize 3D point Cloud as 2D image
+    for(int k = 0; k< aantalseries; k++)
     {
-        for(int j=0; j<projmat2.cols; j++)
+        Mat driepunten = viz[k].pointcloud;
+        vector<Point4f> tussen;
+        tussen = naarPoint4f(driepunten);
+
+        Mat img = Mat(camera_height, camera_width, CV_32FC1);
+        float ma = 0;
+        float mi = 999999;
+        float afstand;
+        vector<float> afstandjes;
+        for(int i = 0; i< tussen.size(); i++)
         {
-            if(j<3)
+            afstand = sqrt(pow(tussen[i].x, 2) + pow(tussen[i].y, 2) + pow(tussen[i].z, 2));
+            if(afstand<1500 && afstand > 500)
             {
-                projmat2.at<double>(i,j)=rotMat.at<double>(i,j);
+                if(afstand>ma)
+                    ma = afstand;
+
+                if(afstand < mi)
+                    mi = afstand;
             }
-            else
-            {
-                projmat2.at<double>(i,j)=transMat.at<double>(i,0);
-            }
+            afstandjes.push_back(afstand);
+        }
+
+        for(int i = 0; i< tussen.size(); i++)
+        {
+            img.at<float>(viz[k].cam_points[i].y, viz[k].cam_points[i].x) = ((afstandjes[i] - mi) / (ma - mi) )*255;
+        }
+        Mat img_u;
+        img.convertTo(img_u, CV_8UC1);
+        tonen(img_u, "bla");
+
+        vector<int> compression_params;
+        compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION );
+        //Kies 0 om geen compressie door te voeren
+        compression_params.push_back(0);
+        try {
+            imwrite("3Dto2Dmapping.png", img_u, compression_params);
+        }
+        catch (int runtime_error){
+            fprintf(stderr, "Exception converting image to JPPEG format: %s\n");
+    //        return 1;
         }
     }
-
-    Mat P0, P1;
-
-    Mat driedpunten;
-
-    P0 = cameraMatrix * projmat1;
-    P1 = projMatrix * projmat2;
-
-    Mat cam, proj;
-    cout<<cam_points.size()<<endl;
-    cout<<proj_points.size()<<endl;
-    cam = Mat(cam_points);
-    proj = Mat(proj_points);
-
-    triangulatePoints(P0, P1, cam, proj, driedpunten);
-    vector<Point4f> tussen;
-    tussen = naarPoint4f(driedpunten);
-
-    Mat img = Mat(beelden[0].size(), CV_32FC1);
-    float ma = 0;
-    float mi = 999999;
-    float afstand;
-    vector<float> afstandjes;
-    for(int i = 0; i< cam_points.size(); i++)
-    {
-        afstand = sqrt(pow(tussen[i].x, 2) + pow(tussen[i].y, 2) + pow(tussen[i].z, 2));
-        if(afstand>ma)
-            ma = afstand;
-
-        if(afstand < mi)
-            mi = afstand;
-
-        afstandjes.push_back(afstand);
-    }
-
-    cout<<ma<<" "<<mi<<endl;
-
-    for(int i = 0; i< tussen.size(); i++)
-    {
-        img.at<float>(cam_points[i].y, cam_points[i].x) = ((afstandjes[i] - mi) / (ma - mi) * 255);
-    }
-
-    tonen(img, "bla");
+    return viz;
 }
 
-void delete_files(int aantalseries)
+boost::shared_ptr<pcl::visualization::PCLVisualizer> visualize3Dpoints(vector<Visualizer> visual)
 {
-    for(int i =0; i<aantalseries; i++)
+    Visualizer vis = visual[0];
+    double X,Y,Z;
+    char pr=100, pg=100, pb=100;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZ>);//(new pcl::pointcloud<pcl::pointXYZ>);
+
+    for(int i=0;i<vis.pointcloud.cols;i++)
     {
-        ostringstream conv;
-        conv << i;
-        string path = "./picture/serie" + conv.str() + "/";
-        string eind = ".xml";
-        int j;
-        string wegdoen = path + "pattern" + eind;
-        j = remove(wegdoen.c_str());
-        wegdoen = path + "lightcomponents" + eind;
-        j = remove(wegdoen.c_str());
+        //std::cout<<i<<endl;
+        X = vis.pointcloud.at<float>(0,i) / vis.pointcloud.at<float>(3,i);
+        Y = vis.pointcloud.at<float>(1,i) / vis.pointcloud.at<float>(3,i);
+        Z = vis.pointcloud.at<float>(2,i) / vis.pointcloud.at<float>(3,i);
+
+        pcl::PointXYZ point;
+        point.x = X;
+        point.y = Y;
+        point.z = Z;
+
+        point_cloud_ptr -> points.push_back(point);
     }
 
+
+    point_cloud_ptr->width = (int)point_cloud_ptr->points.size();
+    point_cloud_ptr->height = 1;
+
+    //pcl::PLYWriter::write("bla.ply", point_cloud_ptr);
+
+    pcl::io::savePCDFileASCII ("test_pcd.pcd", *point_cloud_ptr);
+
+    boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
+    viewer->setBackgroundColor(0, 0, 0);
+    viewer->addPointCloud<pcl::PointXYZ> (point_cloud_ptr, "sample cloud");
+    viewer->addCoordinateSystem(1.0);
+    viewer->initCameraParameters();
+    viewer->registerKeyboardCallback (keyboardEventOccurred, (void*)&viewer);
+    viewer->registerMouseCallback (mouseEventOccurred, (void*)&viewer);
+
+    viewer->setCameraPosition(0, 0, 200, 0,0,0, 0,0,1);
+
+    return viewer;
 }
+
 ///Arguments sequence: value for b, value for m, threshold, projector width, projector height
 int main(int argc, char *argv[])
 {
@@ -1039,30 +1044,45 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-
     bool flag = true;
     b = atof(argv[1]);
     m = atof(argv[2]);
     thresh = atof(argv[3]);
     projector_width = atoi(argv[4]);
     projector_height = atoi(argv[5]);
-    string dir = "./picture/";
-    vector<string> files;
+    string dir_calib = "./picture/";
+    string dir_scan = "./scan/";
+
+    vector<string> files_calib, files_scan;
     bool gelukt_f = false;
     bool gelukt_d = false;
     bool gelukt_c = false;
     vector<Decoder> dec;
     vector<vector<Point2f> > corners;
+    int calib_series, scan_series;
+    vector<Visualizer> visual;
 
-    ///Count the number of series
-    getdir(dir, files);
-    for(uint i=0; i<files.size(); i++)
+    ///Count the number of calibration series
+    getdir(dir_calib, files_calib);
+    for(uint i=0; i<files_calib.size(); i++)
     {
-        aantalseries = i;
+        calib_series = i;
     }
     ///Remove ".." and "." directoy from the count
-    aantalseries-=1;
-    cout<<"aantal series: "<<aantalseries<<endl;
+    calib_series-=1;
+
+    cout<<"aantal calibratie series: "<<calib_series<<endl;
+
+    ///Count the number of scan series
+    getdir(dir_scan, files_scan);
+    for(uint i=0; i<files_scan.size(); i++)
+    {
+        scan_series = i;
+    }
+    ///Remove ".." and "." directoy from the count
+    scan_series-=1;
+
+    cout<<"aantal calibratie series: "<<scan_series<<endl;
     int vertical_patterns=0;
 
     ///Get dimensions
@@ -1083,17 +1103,14 @@ int main(int argc, char *argv[])
     cout<<"number of vertical patterns: "<<NOP_v<<"\n"
           "number of horizontal patterns: "<<NOP_h<<endl;
 
-    ///Verwijderen wanneer op alle sets gewerkt moet worden:
-    //aantalseries=1;
-
     while(flag)
     {
         cout<<"Choose your option:\n"
             " g = get calibration files\n"
             " f = find chessboard corners for each serie\n"
-            " d = decode\n"
+            " d = decode calibration images\n"
             " c = calibrate\n"
-            " x = delete decoding files\n"
+            " r = bereken 3d punten \n"
             " t = teken 3d punten\n"
             " q = quit program"<<endl;
         char keuze;
@@ -1103,56 +1120,79 @@ int main(int argc, char *argv[])
         if(keuze == 'g')
         {
             ostringstream conv;
-            conv << aantalseries;
+            conv << calib_series;
             string path = "./picture/serie"+conv.str();
             mkdir(path.c_str(), 0700);
-            bool gelukt = get_calib_images(300, aantalseries);
+            bool gelukt = get_images(300, calib_series, "calibration");
             if(gelukt)
-                aantalseries++;
+                calib_series++;
         }
 
         else if(keuze == 'f')
         {
-            vector<vector<Point2f> > chessboardcorners(aantalseries);
-            gelukt_f = findcorners(chessboardcorners, aantalseries);
+            vector<vector<Point2f> > chessboardcorners(calib_series);
+            gelukt_f = findcorners(chessboardcorners, calib_series);
             if(gelukt_f)
                 corners = chessboardcorners;
         }
 
         else if(keuze == 'd')
         {
-            bool draw = true;
-            gelukt_d = decode_all(aantalseries, dec, draw);
+            bool draw = false;
+            clock_t time1 = clock();
+            gelukt_d = decode_all(calib_series, dec, draw, "calibration");
+            clock_t time2 = clock();
+            cout<<"tijd decode: "<< (float)(time2-time1)/CLOCKS_PER_SEC<<endl;
         }
 
         else if(keuze == 'c')
         {
-            if(gelukt_f && gelukt_d)
+            clock_t time1 = clock();
+            if(!gelukt_f)
             {
-                gelukt_c = calibrate(dec, corners, aantalseries);
-            }
-            else
-            {
-                cout<<"To calibrate, first find corners and decode"<<endl;
-                vector<vector<Point2f> > chessboardcorners(aantalseries);
-                gelukt_f = findcorners(chessboardcorners, aantalseries);
+                clock_t time2 = clock();
+                vector<vector<Point2f> > chessboardcorners(calib_series);
+                gelukt_f = findcorners(chessboardcorners, calib_series);
                 if(gelukt_f)
                     corners = chessboardcorners;
-                bool draw = false;
-                gelukt_d = decode_all(aantalseries, dec, draw);
-                gelukt_c = calibrate(dec, corners, aantalseries);
-
+                clock_t time3 = clock();
+                cout<<"tijd findcorners: "<< (float)(time3-time2)/CLOCKS_PER_SEC<<endl;
             }
+            if(!gelukt_d)
+            {
+                clock_t time4 = clock();
+                bool draw = false;
+                gelukt_d = decode_all(calib_series, dec, draw, "calibration");
+                clock_t time5 = clock();
+                cout<<"tijd decode: "<< (float)(time5-time4)/CLOCKS_PER_SEC<<endl;
+            }
+
+            if(gelukt_f && gelukt_d)
+            {
+                gelukt_c = calibrate(dec, corners, calib_series);
+            }
+            clock_t time6 = clock();
+            cout<<"tijd calibrate: "<< (float)(time6-time1)/CLOCKS_PER_SEC<<endl;
         }
 
-        else if( keuze == 'x')
+        else if(keuze == 'r')
         {
-            delete_files(aantalseries);
+            clock_t time1 = clock();
+            visual = calculate3DPoints_all("scan", scan_series);
+            clock_t time2 = clock();
+            cout<<"tijd teken: "<< (float)(time2-time1)/CLOCKS_PER_SEC<<endl;
         }
 
         else if(keuze == 't')
         {
-            calculate3DPoints();
+            boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
+            viewer = visualize3Dpoints(visual);
+            cerr<<"viewer"<<endl;
+            while (!viewer->wasStopped ())
+            {
+                viewer->spinOnce (100);
+                boost::this_thread::sleep (boost::posix_time::microseconds (100000));
+            }
         }
 
         else if(keuze == 'q')
