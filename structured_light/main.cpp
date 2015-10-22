@@ -1066,51 +1066,6 @@ void undst(int calib_serie, int scan_serie)
         cout<<"No camera matrix or distortion coefficient found. Please calibrate before undistorting images"<<endl;
     }
 
-
-    /*for(int j = 0; j< calib_serie; j++)
-    {
-        ostringstream serienr;
-        serienr << j;
-        Mat tmp;
-        string path = "./picture/serie" + serienr.str() + "/frame_rect";
-        string einde = ".bmp";
-        tmp = imread(path + "2" + einde, 0);
-        if(!tmp.empty())
-        {
-            cout<<"Calibration serie "<< j <<" has already been undistorted"<<endl;
-            continue;
-        }
-        else
-            path = "./picture/serie" + serienr.str() + "/frame";
-
-        for(int i=0; i<(NOP_v+NOP_h)*2; i++)
-        {
-            ostringstream beeldnr;
-            beeldnr << i;
-            Mat u;
-            Mat newmat_i = imread(path + beeldnr.str() + einde,0);
-            if(newmat_i.empty())
-                cout<<"no image"<< i << endl;
-
-            undistort(newmat_i, u, cam, dist);
-
-            //tonen(u, "undistorted");
-
-            vector<int> compression_params;
-            compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION );
-            //Kies 0 om geen compressie door te voeren
-            compression_params.push_back(0);
-
-            try {
-                imwrite(path +"_rect"+ beeldnr.str()+ einde, u, compression_params);
-            }
-            catch (int runtime_error){
-                fprintf(stderr, "Exception converting image to JPPEG format: %s\n");
-                return;
-            }
-        }
-    }*/
-
     for(int j = 0; j<scan_serie; j++)
     {
         ostringstream serienr;
