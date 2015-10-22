@@ -1,5 +1,0 @@
-<RCC>
-    <qresource prefix="/SynchronousGrabQt">
-        <file>SynchronousGrab.png</file>
-    </qresource>
-</RCC>
