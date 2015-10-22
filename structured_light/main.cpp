@@ -324,19 +324,12 @@ bool findcorners(vector<vector<Point2f> > &chessboardcorners, int aantalseries)
         ostringstream conv;
         conv << i;
 
-        string path = "./picture/serie" + conv.str()+"/frame_rect0.bmp";
+        string path = "./picture/serie" + conv.str()+"/frame0.bmp";
         board = imread(path, 0);
         if(board.empty())
         {
-            cout<<"No undistorted image found, using normal image"<<endl;
-            path = "./picture/serie" + conv.str()+"/frame0.bmp";
-
-            board = imread(path, 0);
-            if(board.empty())
-            {
-                cout<<"No image found"<<i<<endl;
-                continue;
-            }
+            cout<<"No image found"<<i<<endl;
+            continue;
         }
 
         bool found1_1 = findChessboardCorners(board, boardSize, chessboardcorners[i],CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_NORMALIZE_IMAGE);
@@ -628,13 +621,13 @@ bool decode(int serienummer, Decoder &d, bool draw, string mode)
     string einde = ".bmp";
     if(mode.compare("calibration") == 0)
     {
-        path = "./picture/serie" + serienr.str() + "/frame_rect";
+        /*path = "./picture/serie" + serienr.str() + "/frame_rect";
         Mat tmp = imread(path + "2" + einde, 0);
         if(tmp.empty())
         {
-            cout<<"no undistorted calibration images found. Using normal images"<<endl;
+            cout<<"no undistorted calibration images found. Using normal images"<<endl;*/
             path = "./picture/serie" + serienr.str() + "/frame";
-        }
+        //}
     }
     else if(mode.compare("scan") == 0)
     {
@@ -833,6 +826,7 @@ bool calibrate(vector<Decoder> dec, vector<vector<Point2f> > corners, int aantal
     fs << "camera_matrix" << cam_mat;
     fs << "projector_matrix" << proj_mat;
     fs << "distortion_camera" << cam_dist;
+    fs << "distorion_projector" << proj_dist;
     fs.release();
 
     return true;
@@ -861,8 +855,7 @@ vector<Visualizer> calculate3DPoints_all(string mode, int aantalseries)
     vector<Decoder> dec;
     vector<Visualizer> viz;
 
-    decode_all(aantalseries, dec, draw, "scan");
-
+    decode_all(aantalseries, dec, draw, mode);
 
     for(int k = 0; k< aantalseries; k++)
     {
@@ -958,11 +951,12 @@ vector<Visualizer> calculate3DPoints_all(string mode, int aantalseries)
         triangulatePoints(P0, P1, cam, proj, driedpunten);
         clock_t time2 = clock();
         cout<<"tijd trianguleren"<<(float)(time2-time1)/CLOCKS_PER_SEC<<endl;
+        cout<<"We hebben "<<cam.size()<<" punten getrianguleerd"<<endl;
         v.pointcloud.push_back(driedpunten);
         v.cam_points = cam_points;
         viz.push_back(v);
     }
-
+    /*
     ///Visualize 3D point Cloud as 2D image
     for(int k = 0; k< aantalseries; k++)
     {
@@ -1008,49 +1002,55 @@ vector<Visualizer> calculate3DPoints_all(string mode, int aantalseries)
             fprintf(stderr, "Exception converting image to JPPEG format: %s\n");
     //        return 1;
         }
-    }
+    }*/
     return viz;
 }
 
-boost::shared_ptr<pcl::visualization::PCLVisualizer> visualize3Dpoints(vector<Visualizer> visual)
+void visualize3Dpoints(vector<Visualizer> visual)
 {
-    Visualizer vis = visual[0];
-    double X,Y,Z;
-    char pr=100, pg=100, pb=100;
-    pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZ>);//(new pcl::pointcloud<pcl::pointXYZ>);
-
-    for(int i=0;i<vis.pointcloud.cols;i++)
+    for(int k=0; k<visual.size(); k++)
     {
-        //std::cout<<i<<endl;
-        X = vis.pointcloud.at<float>(0,i) / vis.pointcloud.at<float>(3,i);
-        Y = vis.pointcloud.at<float>(1,i) / vis.pointcloud.at<float>(3,i);
-        Z = vis.pointcloud.at<float>(2,i) / vis.pointcloud.at<float>(3,i);
+        ostringstream conv;
+        conv << k;
 
-        pcl::PointXYZ point;
-        point.x = X;
-        point.y = Y;
-        point.z = Z;
+        Visualizer vis = visual[k];
+        double X,Y,Z;
+        pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZ>);//(new pcl::pointcloud<pcl::pointXYZ>);
 
-        point_cloud_ptr -> points.push_back(point);
+        for(int i=0;i<vis.pointcloud.cols;i++)
+        {
+            //std::cout<<i<<endl;
+            X = vis.pointcloud.at<float>(0,i) / vis.pointcloud.at<float>(3,i);
+            Y = vis.pointcloud.at<float>(1,i) / vis.pointcloud.at<float>(3,i);
+            Z = vis.pointcloud.at<float>(2,i) / vis.pointcloud.at<float>(3,i);
+
+            pcl::PointXYZ point;
+            point.x = X;
+            point.y = Y;
+            point.z = -Z;
+            //cout<<"x: "<<point.x<<" y: "<<point.y<<" z: "<<point.z<<endl;
+
+            point_cloud_ptr -> points.push_back(point);
+        }
+
+
+        point_cloud_ptr->width = (int)point_cloud_ptr->points.size();
+        point_cloud_ptr->height = 1;
+
+        pcl::io::savePCDFileASCII ("./scan/serie" + conv.str() + "/serie"+conv.str()+".pcd", *point_cloud_ptr);
+        cout<<"serie "<<k<<" saved as PCD"<<endl;
+        /*boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
+        viewer->setBackgroundColor(0, 0, 0);
+        viewer->addPointCloud<pcl::PointXYZ> (point_cloud_ptr, "sample cloud");
+        viewer->addCoordinateSystem(1.0);
+        viewer->initCameraParameters();
+        viewer->registerKeyboardCallback (keyboardEventOccurred, (void*)&viewer);
+        viewer->registerMouseCallback (mouseEventOccurred, (void*)&viewer);
+
+        viewer->setCameraPosition(0, 0, 200, 0,0,0, 0,0,1);
+
+        return viewer;*/
     }
-
-
-    point_cloud_ptr->width = (int)point_cloud_ptr->points.size();
-    point_cloud_ptr->height = 1;
-
-    pcl::io::savePCDFileASCII ("test_pcd_rect.pcd", *point_cloud_ptr);
-
-    boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
-    viewer->setBackgroundColor(0, 0, 0);
-    viewer->addPointCloud<pcl::PointXYZ> (point_cloud_ptr, "sample cloud");
-    viewer->addCoordinateSystem(1.0);
-    viewer->initCameraParameters();
-    viewer->registerKeyboardCallback (keyboardEventOccurred, (void*)&viewer);
-    viewer->registerMouseCallback (mouseEventOccurred, (void*)&viewer);
-
-    viewer->setCameraPosition(0, 0, 200, 0,0,0, 0,0,1);
-
-    return viewer;
 }
 
 void undst(int calib_serie, int scan_serie)
@@ -1067,7 +1067,7 @@ void undst(int calib_serie, int scan_serie)
     }
 
 
-    for(int j = 0; j< calib_serie; j++)
+    /*for(int j = 0; j< calib_serie; j++)
     {
         ostringstream serienr;
         serienr << j;
@@ -1109,7 +1109,7 @@ void undst(int calib_serie, int scan_serie)
                 return;
             }
         }
-    }
+    }*/
 
     for(int j = 0; j<scan_serie; j++)
     {
@@ -1180,7 +1180,8 @@ int main(int argc, char *argv[])
     bool gelukt_c = false;
     vector<Decoder> dec;
     vector<vector<Point2f> > corners;
-    int calib_series, scan_series;
+    int calib_series=0;
+    int scan_series=0;
     vector<Visualizer> visual;
 
     ///Count the number of calibration series
@@ -1229,12 +1230,13 @@ int main(int argc, char *argv[])
         cout<<"Choose your option:\n"
             " g = get calibration files\n"
             " m = get scan files\n"
-            " u = undistort all images\n"
             " f = find chessboard corners for each serie\n"
             " d = decode calibration images\n"
             " c = calibrate\n"
+            " u = undistort scan images\n"
             " r = calculate 3D points \n"
             " t = visualize 3D points\n"
+            " a = do all(calibrate, calculate 3D and visualize)\n"
             " q = quit program"<<endl;
         char keuze;
         cin >> keuze;
@@ -1256,9 +1258,9 @@ int main(int argc, char *argv[])
             conv << scan_series;
             string path = "./scan/serie"+conv.str();
             mkdir(path.c_str(), 0700);
-            bool gelukt = get_images(300, calib_series, "scan");
+            bool gelukt = get_images(300, scan_series, "scan");
             if(gelukt)
-                calib_series++;
+                scan_series++;
         }
         else if(keuze == 'u')
         {
@@ -1316,19 +1318,38 @@ int main(int argc, char *argv[])
             clock_t time1 = clock();
             visual = calculate3DPoints_all("scan", scan_series);
             clock_t time2 = clock();
-            cout<<"tijd teken: "<< (float)(time2-time1)/CLOCKS_PER_SEC<<endl;
+            cout<<"tijd bereken: "<< (float)(time2-time1)/CLOCKS_PER_SEC<<endl;
         }
 
         else if(keuze == 't')
         {
-            boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
+            /*boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
             viewer = visualize3Dpoints(visual);
             cerr<<"viewer"<<endl;
             while (!viewer->wasStopped ())
             {
                 viewer->spinOnce (100);
                 boost::this_thread::sleep (boost::posix_time::microseconds (100000));
-            }
+            }*/
+            clock_t time1 = clock();
+            visualize3Dpoints(visual);
+            clock_t time2 = clock();
+            cout<<"tijd teken: "<< (float)(time2-time1)/CLOCKS_PER_SEC<<endl;
+        }
+        else if(keuze == 'a')
+        {
+            ///Calculate
+            clock_t time1 = clock();
+            visual = calculate3DPoints_all("scan", scan_series);
+            clock_t time8 = clock();
+            cout<<"tijd calculate: "<< (float)(time8-time1)/CLOCKS_PER_SEC<<endl;
+
+            ///Visualize
+            clock_t time9 = clock();
+            visualize3Dpoints(visual);
+            clock_t time10 = clock();
+            cout<<"tijd visualize: "<< (float)(time10-time9)/CLOCKS_PER_SEC<<endl;
+            cout<<"tijd alles"<< (float)(time10-time1)/CLOCKS_PER_SEC<<" voor "<<calib_series<<" calibratieseries en "<<scan_series<<" scanseries"<<endl;
         }
 
         else if(keuze == 'q')
