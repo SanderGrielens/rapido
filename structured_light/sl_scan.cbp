@@ -79,17 +79,15 @@
 				<Option parameters="0.5 5 5 1280 800" />
 				<Compiler>
 					<Add option="-O2" />
-					<Add directory="/home/svw/Documents/rapido/Camera_sdk/Vimba_1_3" />
 					<Add directory="/usr/include/pcl-1.7" />
 					<Add directory="/usr/include/eigen3" />
 					<Add directory="/usr/include/vtk-5.8" />
+					<Add directory="../Camera_sdk/Vimba_1_3" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
 					<Add option="-lboost_system" />
 					<Add option="-lboost_thread" />
-					<Add library="/home/svw/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit/libVimbaC.so" />
-					<Add library="/home/svw/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit/libVimbaCPP.so" />
 					<Add library="/usr/lib/libvtkalglib.so" />
 					<Add library="/usr/lib/libvtkCharts.so" />
 					<Add library="/usr/lib/libvtkCommon.so" />
@@ -133,7 +131,9 @@
 					<Add library="/usr/lib/libpcl_surface.so" />
 					<Add library="/usr/lib/libpcl_tracking.so" />
 					<Add library="/usr/lib/libpcl_visualization.so" />
-					<Add directory="/home/svw/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit" />
+					<Add library="../Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit/libVimbaC.so" />
+					<Add library="../Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit/libVimbaCPP.so" />
+					<Add directory="../Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit" />
 				</Linker>
 			</Target>
 		</Build>

@@ -470,10 +470,10 @@
 1445511530 source:/home/svw/Documents/rapido/structured_light/main.cpp
 	"functies.hpp"
 
-1444824180 source:/home/sander/Documents/rapido/structured_light/functies.cpp
+1445522052 source:/home/sander/Documents/rapido/structured_light/functies.cpp
 	"functies.hpp"
 
-1445324987 /home/sander/Documents/rapido/structured_light/functies.hpp
+1445522052 /home/sander/Documents/rapido/structured_light/functies.hpp
 	<iostream>
 	<opencv2/opencv.hpp>
 	<vector>
@@ -487,6 +487,7 @@
 	<sstream>
 	<time.h>
 	<limits>
+	<ctime>
 	<sys/types.h>
 	<dirent.h>
 	<errno.h>
@@ -496,11 +497,17 @@
 	"Common/StreamSystemInfo.h"
 	"Common/ErrorCodeToMessage.h"
 	"VimbaCPP/Include/VimbaSystem.h"
+	<boost/thread/thread.hpp>
+	<pcl/common/common_headers.h>
+	<pcl/features/normal_3d.h>
+	<pcl/io/pcd_io.h>
+	<pcl/visualization/pcl_visualizer.h>
+	<pcl/console/parse.h>
 
-1445334480 source:/home/sander/Documents/rapido/structured_light/main.cpp
+1445522063 source:/home/sander/Documents/rapido/structured_light/main.cpp
 	"functies.hpp"
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/VimbaCPP.h
+1445522052 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/VimbaCPP.h
 	<VimbaCPP/Include/VimbaCPPCommon.h>
 	<VimbaCPP/Include/Camera.h>
 	<VimbaCPP/Include/Interface.h>
@@ -513,14 +520,14 @@
 	<VimbaCPP/Include/IFrameObserver.h>
 	<VimbaCPP/Include/Frame.h>
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/VimbaCPPCommon.h
+1445522052 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/VimbaCPPCommon.h
 	<vector>
 	<string>
 	"VimbaC/Include/VmbCommonTypes.h"
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaC/Include/VmbCommonTypes.h
+1445522052 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaC/Include/VmbCommonTypes.h
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/Camera.h
+1445522052 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/Camera.h
 	<vector>
 	<string>
 	<VimbaC/Include/VimbaC.h>
@@ -532,14 +539,14 @@
 	<VimbaCPP/Include/SharedPointerDefines.h>
 	<VimbaCPP/Include/Camera.hpp>
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaC/Include/VimbaC.h
+1445522052 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaC/Include/VimbaC.h
 	"VmbCommonTypes.h"
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/IRegisterDevice.h
+1445522052 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/IRegisterDevice.h
 	<VimbaC/Include/VmbCommonTypes.h>
 	<vector>
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/FeatureContainer.h
+1445522052 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/FeatureContainer.h
 	<VimbaC/Include/VmbCommonTypes.h>
 	<VimbaCPP/Include/VimbaCPPCommon.h>
 	<VimbaCPP/Include/BasicLockable.h>
@@ -547,30 +554,30 @@
 	<VimbaCPP/Include/Feature.h>
 	<VimbaCPP/Include/FeatureContainer.hpp>
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/BasicLockable.h
+1445522052 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/BasicLockable.h
 	<VimbaCPP/Include/VimbaCPPCommon.h>
 	<VimbaCPP/Include/SharedPointerDefines.h>
 	<VimbaCPP/Include/Mutex.h>
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/SharedPointerDefines.h
+1445522052 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/SharedPointerDefines.h
 	<VimbaCPP/Include/SharedPointer.h>
 	<VimbaCPP/Include/UserSharedPointerDefines.h>
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/SharedPointer.h
+1445522052 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/SharedPointer.h
 	<VimbaCPP/Include/Mutex.h>
 	<VimbaCPP/Include/SharedPointer_impl.h>
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/Mutex.h
+1445522052 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/Mutex.h
 	<VimbaCPP/Include/VimbaCPPCommon.h>
 	<windows.h>
 	<pthread.h>
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/SharedPointer_impl.h
+1445522052 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/SharedPointer_impl.h
 	<VimbaCPP/Include/SharedPointer.h>
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/UserSharedPointerDefines.h
+1445522052 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/UserSharedPointerDefines.h
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/Feature.h
+1445522052 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/Feature.h
 	<vector>
 	<map>
 	<VimbaC/Include/VimbaC.h>
@@ -580,25 +587,25 @@
 	<VimbaCPP/Include/EnumEntry.h>
 	<VimbaCPP/Include/Feature.hpp>
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/IFeatureObserver.h
+1445522052 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/IFeatureObserver.h
 	<VimbaCPP/Include/VimbaCPPCommon.h>
 	<VimbaCPP/Include/SharedPointerDefines.h>
 	<VimbaCPP/Include/Feature.h>
 	<vector>
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/EnumEntry.h
+1445522052 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/EnumEntry.h
 	<string>
 	<VimbaC/Include/VimbaC.h>
 	<VimbaCPP/Include/VimbaCPPCommon.h>
 	<VimbaCPP/Include/EnumEntry.hpp>
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/EnumEntry.hpp
+1445522052 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/EnumEntry.hpp
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/Feature.hpp
+1445522052 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/Feature.hpp
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/FeatureContainer.hpp
+1445522052 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/FeatureContainer.hpp
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/Frame.h
+1445522052 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/Frame.h
 	<VimbaC/Include/VimbaC.h>
 	<VimbaCPP/Include/VimbaCPPCommon.h>
 	<VimbaCPP/Include/SharedPointerDefines.h>
@@ -606,28 +613,28 @@
 	<VimbaCPP/Include/AncillaryData.h>
 	<vector>
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/IFrameObserver.h
+1445522052 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/IFrameObserver.h
 	<VimbaCPP/Include/VimbaCPPCommon.h>
 	<VimbaCPP/Include/SharedPointerDefines.h>
 	<VimbaCPP/Include/Frame.h>
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/AncillaryData.h
+1445522052 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/AncillaryData.h
 	<VimbaC/Include/VmbCommonTypes.h>
 	<VimbaCPP/Include/VimbaCPPCommon.h>
 	<VimbaCPP/Include/FeatureContainer.h>
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/Camera.hpp
+1445522052 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/Camera.hpp
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/Interface.h
+1445522052 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/Interface.h
 	<VimbaC/Include/VimbaC.h>
 	<VimbaCPP/Include/VimbaCPPCommon.h>
 	<VimbaCPP/Include/FeatureContainer.h>
 	<vector>
 	<VimbaCPP/Include/Interface.hpp>
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/Interface.hpp
+1445522052 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/Interface.hpp
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/VimbaSystem.h
+1445522052 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/VimbaSystem.h
 	<vector>
 	<VimbaC/Include/VimbaC.h>
 	<VimbaCPP/Include/VimbaCPPCommon.h>
@@ -640,51 +647,51 @@
 	<VimbaCPP/Include/IInterfaceListObserver.h>
 	<VimbaCPP/Include/VimbaSystem.hpp>
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/LoggerDefines.h
+1445522052 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/LoggerDefines.h
 	<VimbaCPP/Include/UserLoggerDefines.h>
 	<VimbaCPP/Include/FileLogger.h>
 	<VimbaCPP/Include/UserLoggerDefines.h>
 	<VimbaCPP/Include/VimbaSystem.h>
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/UserLoggerDefines.h
+1445522052 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/UserLoggerDefines.h
 	<VimbaCPP/Include/FileLogger.h>
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/FileLogger.h
+1445522052 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/FileLogger.h
 	<string>
 	<stdio.h>
 	<fstream>
 	<VimbaCPP/Include/SharedPointerDefines.h>
 	<VimbaCPP/Include/Mutex.h>
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/ICameraFactory.h
+1445522052 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/ICameraFactory.h
 	<VimbaC/Include/VimbaC.h>
 	<VimbaCPP/Include/VimbaCPPCommon.h>
 	<VimbaCPP/Include/SharedPointerDefines.h>
 	<VimbaCPP/Include/Camera.h>
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/ICameraListObserver.h
+1445522052 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/ICameraListObserver.h
 	<VimbaCPP/Include/VimbaCPPCommon.h>
 	<VimbaCPP/Include/SharedPointerDefines.h>
 	<VimbaCPP/Include/Camera.h>
 	<vector>
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/IInterfaceListObserver.h
+1445522052 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/IInterfaceListObserver.h
 	<VimbaCPP/Include/VimbaCPPCommon.h>
 	<VimbaCPP/Include/SharedPointerDefines.h>
 	<VimbaCPP/Include/Interface.h>
 	<vector>
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/VimbaSystem.hpp
+1445522052 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/VimbaCPP/Include/VimbaSystem.hpp
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/Common/StreamSystemInfo.h
+1445522063 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/Common/StreamSystemInfo.h
 	<exception>
 	"VimbaCPP/Include/VimbaCPP.h"
 
-1444660687 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/Common/ErrorCodeToMessage.h
+1445522063 /home/sander/Documents/rapido/Camera_sdk/Vimba_1_3/Common/ErrorCodeToMessage.h
 	<string>
 	"VimbaCPP/Include/VimbaCPP.h"
 
-1444660521 source:/home/sander/Documents/rapido/structured_light/Bitmap.cpp
+1445522052 source:/home/sander/Documents/rapido/structured_light/Bitmap.cpp
 	<stdio.h>
 	<string.h>
 	<stdlib.h>
