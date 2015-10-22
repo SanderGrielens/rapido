@@ -324,16 +324,20 @@ bool findcorners(vector<vector<Point2f> > &chessboardcorners, int aantalseries)
         ostringstream conv;
         conv << i;
 
-        string path = "./picture/serie" + conv.str()+"/frame0.bmp";
+        string path = "./picture/serie" + conv.str()+"/frame_rect0.bmp";
         board = imread(path, 0);
         if(board.empty())
         {
-            cout<<"leeg "<<i<<endl;
-            continue;
-        }
+            cout<<"No undistorted image found, using normal image"<<endl;
+            path = "./picture/serie" + conv.str()+"/frame0.bmp";
 
-        //bool found1_1 = findChessboardCorners(board, boardSize, chessboardcorners[i],
-                                                //CV_CALIB_CB_ADAPTIVE_THRESH + CV_CALIB_CB_NORMALIZE_IMAGE + CV_CALIB_CB_FILTER_QUADS);
+            board = imread(path, 0);
+            if(board.empty())
+            {
+                cout<<"No image found"<<i<<endl;
+                continue;
+            }
+        }
 
         bool found1_1 = findChessboardCorners(board, boardSize, chessboardcorners[i],CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_NORMALIZE_IMAGE);
 
@@ -621,13 +625,26 @@ bool decode(int serienummer, Decoder &d, bool draw, string mode)
     ostringstream serienr;
     serienr << serienummer;
     string path;
+    string einde = ".bmp";
     if(mode.compare("calibration") == 0)
     {
-        path = "./picture/serie" + serienr.str() + "/frame";
+        path = "./picture/serie" + serienr.str() + "/frame_rect";
+        Mat tmp = imread(path + "2" + einde, 0);
+        if(tmp.empty())
+        {
+            cout<<"no undistorted calibration images found. Using normal images"<<endl;
+            path = "./picture/serie" + serienr.str() + "/frame";
+        }
     }
     else if(mode.compare("scan") == 0)
     {
-        path = "./scan/serie" + serienr.str() + "/frame";
+        path = "./scan/serie" + serienr.str() + "/frame_rect";
+        Mat tmp = imread(path + "2" + einde, 0);
+        if(tmp.empty())
+        {
+            cout<<"No undistorted scan images found. Using normal images"<<endl;
+            path = "./scan/serie" + serienr.str() + "/frame";
+        }
     }
     else
     {
@@ -635,7 +652,7 @@ bool decode(int serienummer, Decoder &d, bool draw, string mode)
         return false;
     }
 
-    string einde = ".bmp";
+
 
     ///Reading every image in a serie
     for(int i=2; i<(NOP_v+NOP_h)*2; i++)
@@ -815,6 +832,7 @@ bool calibrate(vector<Decoder> dec, vector<vector<Point2f> > corners, int aantal
     fs << "essential" << E;
     fs << "camera_matrix" << cam_mat;
     fs << "projector_matrix" << proj_mat;
+    fs << "distortion_camera" << cam_dist;
     fs.release();
 
     return true;
@@ -841,8 +859,10 @@ vector<Visualizer> calculate3DPoints_all(string mode, int aantalseries)
 {
     bool draw = false;
     vector<Decoder> dec;
-    decode_all(aantalseries, dec, draw, "scan");
     vector<Visualizer> viz;
+
+    decode_all(aantalseries, dec, draw, "scan");
+
 
     for(int k = 0; k< aantalseries; k++)
     {
@@ -1018,9 +1038,7 @@ boost::shared_ptr<pcl::visualization::PCLVisualizer> visualize3Dpoints(vector<Vi
     point_cloud_ptr->width = (int)point_cloud_ptr->points.size();
     point_cloud_ptr->height = 1;
 
-    //pcl::PLYWriter::write("bla.ply", point_cloud_ptr);
-
-    pcl::io::savePCDFileASCII ("test_pcd.pcd", *point_cloud_ptr);
+    pcl::io::savePCDFileASCII ("test_pcd_rect.pcd", *point_cloud_ptr);
 
     boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
     viewer->setBackgroundColor(0, 0, 0);
@@ -1033,6 +1051,109 @@ boost::shared_ptr<pcl::visualization::PCLVisualizer> visualize3Dpoints(vector<Vi
     viewer->setCameraPosition(0, 0, 200, 0,0,0, 0,0,1);
 
     return viewer;
+}
+
+void undst(int calib_serie, int scan_serie)
+{
+    FileStorage fs("camera_projector.xml", FileStorage::READ);
+    Mat cam;
+    Mat dist;
+    fs["camera_matrix"] >> cam;
+    fs["distortion_camera"] >> dist;
+
+    if(cam.empty() || dist.empty())
+    {
+        cout<<"No camera matrix or distortion coefficient found. Please calibrate before undistorting images"<<endl;
+    }
+
+
+    for(int j = 0; j< calib_serie; j++)
+    {
+        ostringstream serienr;
+        serienr << j;
+        Mat tmp;
+        string path = "./picture/serie" + serienr.str() + "/frame_rect";
+        string einde = ".bmp";
+        tmp = imread(path + "2" + einde, 0);
+        if(!tmp.empty())
+        {
+            cout<<"Calibration serie "<< j <<" has already been undistorted"<<endl;
+            continue;
+        }
+        else
+            path = "./picture/serie" + serienr.str() + "/frame";
+
+        for(int i=0; i<(NOP_v+NOP_h)*2; i++)
+        {
+            ostringstream beeldnr;
+            beeldnr << i;
+            Mat u;
+            Mat newmat_i = imread(path + beeldnr.str() + einde,0);
+            if(newmat_i.empty())
+                cout<<"no image"<< i << endl;
+
+            undistort(newmat_i, u, cam, dist);
+
+            //tonen(u, "undistorted");
+
+            vector<int> compression_params;
+            compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION );
+            //Kies 0 om geen compressie door te voeren
+            compression_params.push_back(0);
+
+            try {
+                imwrite(path +"_rect"+ beeldnr.str()+ einde, u, compression_params);
+            }
+            catch (int runtime_error){
+                fprintf(stderr, "Exception converting image to JPPEG format: %s\n");
+                return;
+            }
+        }
+    }
+
+    for(int j = 0; j<scan_serie; j++)
+    {
+        ostringstream serienr;
+        serienr << j;
+        Mat tmp;
+        string path = "./scan/serie" + serienr.str() + "/frame_rect";
+        string einde = ".bmp";
+        tmp = imread(path + "2" + einde, 0);
+        if(!tmp.empty())
+        {
+            cout<<"Scan serie "<< j <<" has already been undistorted"<<endl;
+            continue;
+        }
+        else
+            path = "./scan/serie" + serienr.str() + "/frame";
+
+        for(int i=0; i<(NOP_v+NOP_h)*2; i++)
+        {
+            ostringstream beeldnr;
+            beeldnr << i;
+            Mat u;
+            Mat newmat_i = imread(path + beeldnr.str() + einde,0);
+            if(newmat_i.empty())
+                cout<<"no image"<< i << endl;
+
+            undistort(newmat_i, u, cam, dist);
+
+            //tonen(u, "undistorted");
+
+            vector<int> compression_params;
+            compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION );
+            //Kies 0 om geen compressie door te voeren
+            compression_params.push_back(0);
+
+            try {
+                imwrite(path +"_rect"+ beeldnr.str()+ einde, u, compression_params);
+            }
+            catch (int runtime_error){
+                fprintf(stderr, "Exception converting image to JPPEG format: %s\n");
+                return;
+            }
+        }
+    }
 }
 
 ///Arguments sequence: value for b, value for m, threshold, projector width, projector height
@@ -1107,11 +1228,12 @@ int main(int argc, char *argv[])
     {
         cout<<"Choose your option:\n"
             " g = get calibration files\n"
+            " u = undistort all images\n"
             " f = find chessboard corners for each serie\n"
             " d = decode calibration images\n"
             " c = calibrate\n"
-            " r = bereken 3d punten \n"
-            " t = teken 3d punten\n"
+            " r = calculate 3D points \n"
+            " t = visualize 3D points\n"
             " q = quit program"<<endl;
         char keuze;
         cin >> keuze;
@@ -1127,7 +1249,10 @@ int main(int argc, char *argv[])
             if(gelukt)
                 calib_series++;
         }
-
+        else if(keuze == 'u')
+        {
+            undst(calib_series, scan_series);
+        }
         else if(keuze == 'f')
         {
             vector<vector<Point2f> > chessboardcorners(calib_series);
