@@ -1228,6 +1228,7 @@ int main(int argc, char *argv[])
     {
         cout<<"Choose your option:\n"
             " g = get calibration files\n"
+            " m = get scan files\n"
             " u = undistort all images\n"
             " f = find chessboard corners for each serie\n"
             " d = decode calibration images\n"
@@ -1246,6 +1247,16 @@ int main(int argc, char *argv[])
             string path = "./picture/serie"+conv.str();
             mkdir(path.c_str(), 0700);
             bool gelukt = get_images(300, calib_series, "calibration");
+            if(gelukt)
+                calib_series++;
+        }
+        else if(keuze == 'm')
+        {
+            ostringstream conv;
+            conv << scan_series;
+            string path = "./scan/serie"+conv.str();
+            mkdir(path.c_str(), 0700);
+            bool gelukt = get_images(300, calib_series, "scan");
             if(gelukt)
                 calib_series++;
         }
