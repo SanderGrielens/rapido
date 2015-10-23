@@ -1036,7 +1036,8 @@ void visualize3Dpoints(vector<Visualizer> visual)
 
         point_cloud_ptr->width = (int)point_cloud_ptr->points.size();
         point_cloud_ptr->height = 1;
-
+        pcl::PLYWriter plywriter;
+        plywrite.write("./scan/serie" + conv.str() + "/serie"+conv.str()+".ply", *point_cloud_ptr, );
         pcl::io::savePCDFileASCII ("./scan/serie" + conv.str() + "/serie"+conv.str()+".pcd", *point_cloud_ptr);
         cout<<"serie "<<k<<" saved as PCD"<<endl;
         /*boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));

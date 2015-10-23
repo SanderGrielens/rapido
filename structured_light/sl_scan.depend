@@ -252,7 +252,7 @@
 1444822896 source:/home/svw/Documents/rapido/structured_light/functies.cpp
 	"functies.hpp"
 
-1445433080 /home/svw/Documents/rapido/structured_light/functies.hpp
+1445585803 /home/svw/Documents/rapido/structured_light/functies.hpp
 	<iostream>
 	<opencv2/opencv.hpp>
 	<vector>
@@ -280,6 +280,7 @@
 	<pcl/common/common_headers.h>
 	<pcl/features/normal_3d.h>
 	<pcl/io/pcd_io.h>
+	<pcl/io/ply_io.h>
 	<pcl/visualization/pcl_visualizer.h>
 	<pcl/console/parse.h>
 
@@ -2534,4 +2535,35 @@
 
 1314193028 /usr/include/vtk-5.8/vtkUnstructuredGrid.h
 	"vtkPointSet.h"
+
+1410384177 /usr/include/pcl-1.7/pcl/io/ply_io.h
+	<pcl/io/boost.h>
+	<pcl/io/file_io.h>
+	<pcl/io/ply/ply_parser.h>
+	<pcl/PolygonMesh.h>
+	<sstream>
+
+1410384177 /usr/include/pcl-1.7/pcl/io/ply/ply_parser.h
+	<fstream>
+	<iostream>
+	<istream>
+	<sstream>
+	<string>
+	<vector>
+	<pcl/io/boost.h>
+	<pcl/io/ply/ply.h>
+	<pcl/io/ply/io_operators.h>
+	<pcl/pcl_macros.h>
+
+1410384177 /usr/include/pcl-1.7/pcl/io/ply/ply.h
+	<pcl/io/boost.h>
+	<pcl/io/ply/byte_order.h>
+
+1410384177 /usr/include/pcl-1.7/pcl/io/ply/byte_order.h
+	<boost/detail/endian.hpp>
+
+1410384177 /usr/include/pcl-1.7/pcl/io/ply/io_operators.h
+	<istream>
+	<limits>
+	<ostream>
 
