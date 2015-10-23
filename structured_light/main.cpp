@@ -342,7 +342,6 @@ bool findcorners(vector<vector<Point2f> > &chessboardcorners, int aantalseries)
         cornerSubPix(board, chessboardcorners[i], Size(11,11), Size(-1,-1), TermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 300, 0.001));
         cvtColor(board, board, CV_GRAY2BGR);
         drawChessboardCorners( board, boardSize, chessboardcorners[i], found1_1 );
-
         //tonen(board, "zijn ze gevonden?");
     }
     return true;
