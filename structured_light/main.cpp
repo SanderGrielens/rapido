@@ -630,13 +630,13 @@ bool decode(int serienummer, Decoder &d, bool draw, string mode)
     }
     else if(mode.compare("scan") == 0)
     {
-        path = "./scan/serie" + serienr.str() + "/frame_rect";
+        /*path = "./scan/serie" + serienr.str() + "/frame_rect";
         Mat tmp = imread(path + "2" + einde, 0);
         if(tmp.empty())
         {
-            cout<<"No undistorted scan images found. Using normal images"<<endl;
+            cout<<"No undistorted scan images found. Using normal images"<<endl;*/
             path = "./scan/serie" + serienr.str() + "/frame";
-        }
+        //}
     }
     else
     {
@@ -856,39 +856,73 @@ vector<Visualizer> calculate3DPoints_all(string mode, int aantalseries)
 
     decode_all(aantalseries, dec, draw, mode);
 
+        ///Get intrinsic and extrinsic camera parameters
+    FileStorage fs("camera_projector.xml", FileStorage::READ);
+    Mat cameraMatrix;
+    Mat projMatrix;
+    Mat camdist;
+    Mat projdist;
+    Mat cam = Mat(1626, 1234, CV_32FC2);
+    Mat cam_uc;
+
+    fs["camera_matrix"] >> cameraMatrix;
+    fs["projector_matrix"] >> projMatrix;
+
+    fs["distortion_camera"] >> camdist;
+    fs["distorion_projector"] >> projdist;
+
+    for(int i = 0; i<1626; i++)
+    {
+        for(int j = 0; j< 1234; j++)
+        {
+            cam.at<Vec2f>(i,j)[0] = j;
+            cam.at<Vec2f>(i,j)[1] = i;
+        }
+    }
+    if(!cam.empty())
+        undistort(cam, cam_uc, cameraMatrix, camdist);
+    else
+    {
+        cout<<"No data to undistort"<<endl;
+        exit(-1);
+    }
+
     for(int k = 0; k< aantalseries; k++)
     {
         Decoder d = dec[k];
         Visualizer v;
         vector<Point2f> cam_points;
         vector<Point2f> proj_points;
+        Mat hor = d.pattern_image[0];
+        Mat ver = d.pattern_image[1];
+        Mat cam_up;
+        undistort(cam.clone(), cam_up, projMatrix, projdist);
+
         for(int x = 0; x<camera_width; x++)
         {
             for(int y = 0; y<camera_height; y++)
             {
-                if (d.pattern_image[0].at<float>(y,x) >= (pow(2, NOP_v+2)) || d.pattern_image[1].at<float>(y,x) >= (pow(2, NOP_v+2)))
+                float a = cam_up.at<Vec2f>(y,x)[0];
+                float b = cam_up.at<Vec2f>(y,x)[1];
+
+                if (hor.at<float>(b,a) >= (pow(2, NOP_v+2)) || ver.at<float>(b,a) >= (pow(2, NOP_v+2)))
                 {
                     continue;
                 }
                 else
                 {
-                    cam_points.push_back(Point2f(x,y));
-                    proj_points.push_back(Point2f(d.pattern_image[1].at<float>(y,x), d.pattern_image[0].at<float>(y,x))); ///pattern point is (vertical pattern, horizontal pattern)
+                    cam_points.push_back(Point2f(cam_uc.at<Vec2f>(y,x)[0],cam_uc.at<Vec2f>(y,x)[1]));
+                    Point2f punt = Point2f(ver.at<float>(b,a), hor.at<float>(b,a));
+                    proj_points.push_back(punt);///pattern point is (vertical pattern, horizontal pattern)
+                    //proj_points.push_back(Point2f(d.pattern_image[1].at<float>(y,x), d.pattern_image[0].at<float>(y,x))); ///pattern point is (vertical pattern, horizontal pattern)
                 }
             }
         }
 
         ///Building 3D point cloud
-        Mat cameraMatrix;
-        Mat projMatrix;
         Mat rotMat;
         Mat transMat;
 
-        ///Get intrinsic and extrinsic camera parameters
-        FileStorage fs("camera_projector.xml", FileStorage::READ);
-
-        fs["camera_matrix"] >> cameraMatrix;
-        fs["projector_matrix"] >> projMatrix;
 
         fs["rotation"] >> rotMat;
         if(rotMat.empty())
@@ -934,23 +968,40 @@ vector<Visualizer> calculate3DPoints_all(string mode, int aantalseries)
             }
         }
 
-        Mat P0, P1;
-
-        Mat driedpunten;
-
-        P0 = cameraMatrix * projmat1;
-        P1 = projMatrix * projmat2;
-
         Mat cam, proj;
         cam = Mat(cam_points);
         proj = Mat(proj_points);
+        Mat driedpunten;
+
+
+        ///With Stereorectify:
+        /*Mat R1, R2, P0, P1, Q;
+        stereoRectify(cameraMatrix, camdist, projMatrix, projdist, Size(camera_width, camera_height), rotMat, transMat, R1, R2, P0, P1, Q);*/
+
+        ///Home made projection matrices:
+
+
+        Mat P0, P1;
+
+        P0 = cameraMatrix * projmat2;
+        P1 = projMatrix * projmat1;
+
 
         clock_t time1 = clock();
+        /*for(int i =0; i< cam_points.size(); i++)
+        {
+            Point3d p3d;
+            double *distance;
+            triangulate_stereo( cameraMatrix ,camdist, projMatrix, projdist, rotMat.t(), transMat, Point2d(cam.at<Vec2f>(i, 0)), Point2d(proj.at<Vec2f>(i, 0)), p3d,  distance);
+            driedpunten.push_back(p3d);
+        }*/
 
-        triangulatePoints(P0, P1, cam, proj, driedpunten);
+        triangulatePoints(P1, P0, cam, proj, driedpunten);
+
+
         clock_t time2 = clock();
         cout<<"tijd trianguleren"<<(float)(time2-time1)/CLOCKS_PER_SEC<<endl;
-        cout<<"We hebben "<<cam.size()<<" punten getrianguleerd"<<endl;
+        cout<<"We hebben "<<cam_points.size()<<" punten getrianguleerd"<<endl;
         v.pointcloud.push_back(driedpunten);
         v.cam_points = cam_points;
         viz.push_back(v);
@@ -1026,7 +1077,7 @@ void visualize3Dpoints(vector<Visualizer> visual)
             pcl::PointXYZ point;
             point.x = X;
             point.y = Y;
-            point.z = -Z;
+            point.z = Z;
             //cout<<"x: "<<point.x<<" y: "<<point.y<<" z: "<<point.z<<endl;
 
             point_cloud_ptr -> points.push_back(point);
@@ -1036,8 +1087,8 @@ void visualize3Dpoints(vector<Visualizer> visual)
         point_cloud_ptr->width = (int)point_cloud_ptr->points.size();
         point_cloud_ptr->height = 1;
         pcl::PLYWriter plywriter;
-        plywrite.write("./scan/serie" + conv.str() + "/serie"+conv.str()+".ply", *point_cloud_ptr, );
-        pcl::io::savePCDFileASCII ("./scan/serie" + conv.str() + "/serie"+conv.str()+".pcd", *point_cloud_ptr);
+        plywriter.write("./scan/serie" + conv.str() + "/serie"+conv.str()+".ply", *point_cloud_ptr, true);
+        pcl::io::savePCDFileBinary("./scan/serie" + conv.str() + "/serie"+conv.str()+".pcd", *point_cloud_ptr);
         cout<<"serie "<<k<<" saved as PCD"<<endl;
         /*boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
         viewer->setBackgroundColor(0, 0, 0);
@@ -1156,6 +1207,8 @@ int main(int argc, char *argv[])
     {
         scan_series = i;
     }
+    ///Remove line if you want to work on all scan series
+    //scan_series =2;
     ///Remove ".." and "." directoy from the count
     scan_series-=1;
 

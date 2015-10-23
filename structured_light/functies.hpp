@@ -60,6 +60,13 @@ unsigned char AVTReleaseBitmap( AVTBitmap * const pBitmap );
 unsigned char AVTWriteBitmapToFile( AVTBitmap const * const pBitmap, char const * const pFileName );
 
 ///SL SPECIFIC FUNCTIONS AND STRUCTS
+cv::Point3d approximate_ray_intersection(const cv::Point3d & v1, const cv::Point3d & q1,
+                                                    const cv::Point3d & v2, const cv::Point3d & q2,
+                                                    double * distance/*, double * out_lambda1, double * out_lambda2*/);
+
+void triangulate_stereo(const cv::Mat & K1, const cv::Mat & kc1, const cv::Mat & K2, const cv::Mat & kc2,
+                                  const cv::Mat & Rt, const cv::Mat & T, const cv::Point2d & p1, const cv::Point2d & p2,
+                                  cv::Point3d & p3d, double * distance);
 struct Decoder
 {
     vector<Mat> minimum;
