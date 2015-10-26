@@ -774,7 +774,7 @@ bool calibrate(vector<Decoder> dec, vector<vector<Point2f> > corners, int aantal
     }
 
     int cal_flags = 0
-                + CV_CALIB_FIX_PRINCIPAL_POINT
+                //+ CV_CALIB_FIX_PRINCIPAL_POINT
                 //+ cv::CALIB_FIX_K1
                 //+ cv::CALIB_FIX_K2
                 //+ cv::CALIB_ZERO_TANGENT_DIST
@@ -805,12 +805,13 @@ bool calibrate(vector<Decoder> dec, vector<vector<Point2f> > corners, int aantal
     Mat R, T, E, F;
     double stereo_error = cv::stereoCalibrate(objectpoints, corners, pcorners, cam_mat, cam_dist, proj_mat, proj_dist,
                                                 imageSize , R, T, E, F,
-                                                CV_CALIB_FIX_INTRINSIC+
-                                                CV_CALIB_FIX_ASPECT_RATIO +
-                                                /*CV_CALIB_ZERO_TANGENT_DIST +*/
-                                                CV_CALIB_SAME_FOCAL_LENGTH +
-                                                CV_CALIB_RATIONAL_MODEL +
-                                                CV_CALIB_FIX_K3 /*+ CV_CALIB_FIX_K4 + CV_CALIB_FIX_K5,
+                                                //CV_CALIB_FIX_INTRINSIC+
+                                                CV_CALIB_USE_INTRINSIC_GUESS
+                                                //CV_CALIB_FIX_ASPECT_RATIO +
+                                                //CV_CALIB_ZERO_TANGENT_DIST +
+                                                //CV_CALIB_SAME_FOCAL_LENGTH +
+                                                //CV_CALIB_RATIONAL_MODEL +
+                                                /*CV_CALIB_FIX_K3 + CV_CALIB_FIX_K4 + CV_CALIB_FIX_K5,
                                                 TermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 100, 1e-5)*/);
     cout<<"Stereo RMS error: "<<stereo_error<<endl;
     clock_t time2 = clock();
@@ -857,7 +858,7 @@ vector<Visualizer> calculate3DPoints_all(string mode, int aantalseries)
     decode_all(aantalseries, dec, draw, mode);
 
         ///Get intrinsic and extrinsic camera parameters
-    FileStorage fs("camera_projector.xml", FileStorage::READ);
+    FileStorage fs("./camera_projector.xml", FileStorage::READ);
     Mat cameraMatrix;
     Mat projMatrix;
     Mat camdist;
@@ -891,13 +892,58 @@ vector<Visualizer> calculate3DPoints_all(string mode, int aantalseries)
     {
         Decoder d = dec[k];
         Visualizer v;
-        vector<Point2f> cam_points;
-        vector<Point2f> proj_points;
+        vector<Point2d> cam_points;
+        vector<Point2d> proj_points;
         Mat hor = d.pattern_image[0];
         Mat ver = d.pattern_image[1];
         Mat cam_up;
         undistort(cam.clone(), cam_up, projMatrix, projdist);
+        /*int teller_v = 0;
+        int teller_h = 0;
+        int teller = 0;
 
+        for(int x = 0; x<camera_width; x++)
+        {
+            for(int y = 0; y<camera_height; y++)
+            {
+                float a = cam_up.at<Vec2f>(y,x)[0];
+                float b = cam_up.at<Vec2f>(y,x)[1];
+                float c;
+                float d;
+                if (hor.at<float>(b,a) >= (pow(2, NOP_v+2)) || ver.at<float>(b,a) >= (pow(2, NOP_v+2)))
+                {
+                    continue;
+                }
+
+                //filter out double horizontal values
+                int z=1;
+                while(hor.at<float>(b,a) == hor.at<float>(cam_up.at<Vec2f>(y+z,x)[1], a) && z< camera_height)
+                {
+                    z++;
+                }
+                z--;
+                int w =1;
+                while(ver.at<float>(b,a) == ver.at<float>(b, cam_up.at<Vec2f>(y, x+w)[0]))
+                {
+                    w++;
+                }
+                w--;
+                if(w > 0)
+                {
+                    teller++;
+                    teller_v+=w;
+                }
+                d = ver.at<float>(b, cam_up.at<Vec2f>(y, x+w/2)[0]);
+                c = hor.at<float>(cam_up.at<Vec2f>(y-z/2,x)[1], a);
+
+                cam_points.push_back(Point2d(cam_uc.at<Vec2f>(y+z/2,x)[0],cam_uc.at<Vec2f>(y,x+w/2)[1]));
+                Point2d punt = Point2d(d, c);
+                proj_points.push_back(punt);///pattern point is (vertical pattern, horizontal pattern);
+
+                y+=z;
+            }
+        }
+        cout<<"zoveel punten eruit gefilterd: "<<teller<<endl;*/
         for(int x = 0; x<camera_width; x++)
         {
             for(int y = 0; y<camera_height; y++)
@@ -911,18 +957,18 @@ vector<Visualizer> calculate3DPoints_all(string mode, int aantalseries)
                 }
                 else
                 {
-                    cam_points.push_back(Point2f(cam_uc.at<Vec2f>(y,x)[0],cam_uc.at<Vec2f>(y,x)[1]));
-                    Point2f punt = Point2f(ver.at<float>(b,a), hor.at<float>(b,a));
+                    cam_points.push_back(Point2d(cam_uc.at<Vec2f>(y,x)[0],cam_uc.at<Vec2f>(y,x)[1]));
+                    Point2d punt = Point2d(ver.at<float>(b,a), hor.at<float>(b,a));
                     proj_points.push_back(punt);///pattern point is (vertical pattern, horizontal pattern)
                     //proj_points.push_back(Point2f(d.pattern_image[1].at<float>(y,x), d.pattern_image[0].at<float>(y,x))); ///pattern point is (vertical pattern, horizontal pattern)
                 }
             }
         }
 
+
         ///Building 3D point cloud
         Mat rotMat;
         Mat transMat;
-
 
         fs["rotation"] >> rotMat;
         if(rotMat.empty())
@@ -941,15 +987,12 @@ vector<Visualizer> calculate3DPoints_all(string mode, int aantalseries)
                 if(j==i && j<3)
                 {
                     projmat1.at<double>(i,j)=1;
-                    //cout<<" "<<projmat1.at<double>(i,j);
                 }
                 else
                 {
                     projmat1.at<double>(i,j)=0;
-                    //cout<<" "<<projmat1.at<double>(i,j);
                 }
             }
-            //cout   <<endl;
         }
 
         Mat projmat2 = Mat::eye(Size(4,3), CV_64F);
@@ -971,21 +1014,24 @@ vector<Visualizer> calculate3DPoints_all(string mode, int aantalseries)
         Mat cam, proj;
         cam = Mat(cam_points);
         proj = Mat(proj_points);
-        Mat driedpunten;
+        Mat driedpunten = Mat(1, cam_points.size(), CV_64FC4);
 
 
         ///With Stereorectify:
         /*Mat R1, R2, P0, P1, Q;
-        stereoRectify(cameraMatrix, camdist, projMatrix, projdist, Size(camera_width, camera_height), rotMat, transMat, R1, R2, P0, P1, Q);*/
+        stereoRectify(cameraMatrix, camdist, projMatrix, projdist, Size(camera_width, camera_height), rotMat, transMat, R1, R2, P0, P1, Q);
 
+        cout<<"P0: "<< P0<<endl;
+
+        cout<<"P1 "<< P1<<endl;
+*/
         ///Home made projection matrices:
 
 
         Mat P0, P1;
 
-        P0 = cameraMatrix * projmat2;
-        P1 = projMatrix * projmat1;
-
+        P0 = cameraMatrix * projmat1;
+        P1 = projMatrix * projmat2;
 
         clock_t time1 = clock();
         /*for(int i =0; i< cam_points.size(); i++)
@@ -996,11 +1042,11 @@ vector<Visualizer> calculate3DPoints_all(string mode, int aantalseries)
             driedpunten.push_back(p3d);
         }*/
 
-        triangulatePoints(P1, P0, cam, proj, driedpunten);
+        triangulatePoints(P0, P1, cam, proj, driedpunten);
 
 
         clock_t time2 = clock();
-        cout<<"tijd trianguleren"<<(float)(time2-time1)/CLOCKS_PER_SEC<<endl;
+        cout<<"tijd trianguleren "<<(float)(time2-time1)/CLOCKS_PER_SEC<<endl;
         cout<<"We hebben "<<cam_points.size()<<" punten getrianguleerd"<<endl;
         v.pointcloud.push_back(driedpunten);
         v.cam_points = cam_points;
@@ -1070,14 +1116,14 @@ void visualize3Dpoints(vector<Visualizer> visual)
         for(int i=0;i<vis.pointcloud.cols;i++)
         {
             //std::cout<<i<<endl;
-            X = vis.pointcloud.at<float>(0,i) / vis.pointcloud.at<float>(3,i);
-            Y = vis.pointcloud.at<float>(1,i) / vis.pointcloud.at<float>(3,i);
-            Z = vis.pointcloud.at<float>(2,i) / vis.pointcloud.at<float>(3,i);
+            X = vis.pointcloud.at<double>(0,i) / vis.pointcloud.at<double>(3,i);
+            Y = vis.pointcloud.at<double>(1,i) / vis.pointcloud.at<double>(3,i);
+            Z = vis.pointcloud.at<double>(2,i) / vis.pointcloud.at<double>(3,i);
 
             pcl::PointXYZ point;
             point.x = X;
             point.y = Y;
-            point.z = Z;
+            point.z = -Z;
             //cout<<"x: "<<point.x<<" y: "<<point.y<<" z: "<<point.z<<endl;
 
             point_cloud_ptr -> points.push_back(point);
@@ -1164,6 +1210,7 @@ void undst(int calib_serie, int scan_serie)
 
 ///Arguments sequence: value for b, value for m, threshold, projector width, projector height
 int main(int argc, char *argv[])
+
 {
     if(argc<6)
     {

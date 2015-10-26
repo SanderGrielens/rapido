@@ -79,7 +79,7 @@ struct Decoder
 struct Visualizer
 {
     Mat pointcloud;
-    vector<Point2f> cam_points;
+    vector<Point2d> cam_points;
 } ;
 
 int getdir (string dir, vector<string> &files);
