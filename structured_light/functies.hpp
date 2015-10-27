@@ -33,6 +33,13 @@
 #include <pcl/io/ply_io.h>
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/console/parse.h>
+#include <pcl/io/vtk_io.h>
+#include <pcl/point_types.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/kdtree/kdtree_flann.h>
+#include <pcl/features/normal_3d.h>
+#include <pcl/surface/gp3.h>
+
 
 using namespace std;
 using namespace cv;
