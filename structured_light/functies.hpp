@@ -27,6 +27,7 @@
 #include "VimbaCPP/Include/VimbaSystem.h"
 
 #include <boost/thread/thread.hpp>
+#include <pcl/io/vtk_lib_io.h>
 #include <pcl/common/common_headers.h>
 #include <pcl/features/normal_3d.h>
 #include <pcl/io/pcd_io.h>
@@ -39,7 +40,8 @@
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/features/normal_3d.h>
 #include <pcl/surface/gp3.h>
-
+#include <pcl/surface/organized_fast_mesh.h>
+#include <omp.h>
 
 using namespace std;
 using namespace cv;

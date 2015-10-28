@@ -452,6 +452,7 @@ void get_pattern_image(Decoder &d, vector<Mat> beelden, int dir)
     bit = holder;
     //cout<<"bit: "<<bit<<endl;
 
+
     for(int j =0; j< beelden[NOP].rows; j++)
     {
         for(int k =0; k<beelden[NOP].cols; k++)
@@ -471,6 +472,7 @@ void get_pattern_image(Decoder &d, vector<Mat> beelden, int dir)
     ///Go over each image pair (img and his inverse) and check for each pixel it's value. Add it to pattern[dir]
     /// If a pixel is in a lighted area, we add 2 raised to the power of the frame. This way we get a gray code pattern for each pixel in pattern[dir].
     /// Pattern[dir] is of type 32 bit float. If you have more than 32 patterns, change the type of pattern[dir].
+
     for(int i = start; i<=NOP ; i+=2)
     {
         bit--;
@@ -502,6 +504,7 @@ void get_pattern_image(Decoder &d, vector<Mat> beelden, int dir)
     }
 
     ///Convert pattern from gray code to binary
+
     for(int i=0;i<d.pattern_image[dir].rows;i++)
     {
         for(int j=0; j<d.pattern_image[dir].cols;j++)
@@ -560,6 +563,7 @@ void colorize_pattern(Decoder &d, vector<Mat> &image, int dir)
     float n = 4.f;
     float dt = 255.f/n;
     int set = 0;
+
     for(int i = 0; i< d.pattern_image[dir].rows; i++)
     {
         for(int j = 0; j< d.pattern_image[dir].cols; j++)
@@ -647,6 +651,7 @@ bool decode(int serienummer, Decoder &d, bool draw, string mode)
 
 
     ///Reading every image in a serie
+
     for(int i=2; i<(NOP_v+NOP_h)*2; i++)
     {
         ostringstream beeldnr;
@@ -695,6 +700,7 @@ bool decode(int serienummer, Decoder &d, bool draw, string mode)
 bool decode_all(int aantalseries, vector<Decoder> &dec, bool draw, string mode)
 {
     bool gelukt;
+
     for(int i=0; i< aantalseries; i++)
     {
         Decoder d;
@@ -719,7 +725,8 @@ bool calibrate(vector<Decoder> dec, vector<vector<Point2f> > corners, int aantal
     vector<vector<Point3f> > objectpoints;
     vector<cv::Point3f> world_corners;
 
-    for (int h=0; h<6; h++)
+
+    for(int h=0; h<6; h++)
     {
         for (int w=0; w<8; w++)
         {
@@ -876,6 +883,50 @@ vector<Visualizer> calculate3DPoints_all(string mode, int aantalseries)
         }
     }
 
+    Mat rotMat;
+    Mat transMat;
+
+    fs["rotation"] >> rotMat;
+    if(rotMat.empty())
+        cout<<"rotleeg"<<endl;
+
+    fs["translation"] >> transMat;
+
+    if(transMat.empty())
+        cout<<"tranleeg"<<endl;
+
+    Mat projmat1 = Mat::eye(Size(4,3), CV_64F);
+    for(int i=0; i<projmat1.rows; i++)
+    {
+        for(int j=0; j<projmat1.cols; j++)
+        {
+            if(j==i && j<3)
+            {
+                projmat1.at<double>(i,j)=1;
+            }
+            else
+            {
+                projmat1.at<double>(i,j)=0;
+            }
+        }
+    }
+
+    Mat projmat2 = Mat::eye(Size(4,3), CV_64F);
+    for(int i=0; i<projmat2.rows; i++)
+    {
+        for(int j=0; j<projmat2.cols; j++)
+        {
+            if(j<3)
+            {
+                projmat2.at<double>(i,j)=rotMat.at<double>(i,j);
+            }
+            else
+            {
+                projmat2.at<double>(i,j)=transMat.at<double>(i,0);
+            }
+        }
+    }
+
     fs["camera_matrix"] >> cameraMatrix;
     fs["projector_matrix"] >> projMatrix;
 
@@ -892,80 +943,93 @@ vector<Visualizer> calculate3DPoints_all(string mode, int aantalseries)
         cout<<"No data to undistort"<<endl;
         exit(-1);
     }
+
+    #pragma omp parallel for
     for(int k = 0; k< aantalseries; k++)
     {
         Decoder d = dec[k];
         Visualizer v;
+        vector<Point2d> c_p;
+        vector<Point2d> p_p;
+        vector<Point2d> c_pp;
+        vector<Point2d> p_pp;
         vector<Point2d> cam_points;
         vector<Point2d> proj_points;
+        vector<Point2d> un;
+        Mat rechts = Mat::zeros(camera_height, camera_width, CV_8UC1);
+        Mat beneden = rechts.clone();
         Mat hor = d.pattern_image[0]; //gives y coordinate(variates in Y direction)
         Mat ver = d.pattern_image[1]; //gives x coordinate(variates in x direction)
-        GaussianBlur(hor, hor, Size(1,5), 1.5, 0);
-        GaussianBlur(ver, ver, Size(5,1), 1.5, 0);
+        //GaussianBlur(hor, hor, Size(1,5), 1.5, 0);
+        //GaussianBlur(ver, ver, Size(5,1), 1.5, 0);
+        int teller =0;
 
         for(int x = 0; x<camera_width; x++)
         {
             for(int y = 0; y<camera_height; y++)
             {
-                float a = cam_up.at<Vec2f>(y,x)[0]; //current x
-                float b = cam_up.at<Vec2f>(y,x)[1]; //current y
-
-                if (hor.at<float>(b,a) >= (pow(2, NOP_v+2)) || ver.at<float>(b,a) >= (pow(2, NOP_v+2)))
+                int tel = 1;
+                if (hor.at<float>(y,x) >= (pow(2, NOP_v+2)) || ver.at<float>(y,x) >= (pow(2, NOP_v+2)))
                 {
                     continue;
                 }
-                else
+                if(hor.at<float>(y,x) == hor.at<float>(y+1, x))
                 {
-                    cam_points.push_back(Point2d(cam_uc.at<Vec2f>(y,x)[0],cam_uc.at<Vec2f>(y,x)[1]));
-                    Point2d punt = Point2d(ver.at<float>(b,a), hor.at<float>(b,a));
+                    tel = 2;
+                    while(hor.at<float>(y,x) == hor.at<float>(y+tel, x))
+                    {
+                        tel++;
+                    }
+                }
+
+                beneden.at<uchar>(y,x) = tel;
+                y+=tel;
+            }
+        }
+
+        for(int y = 0; y<camera_height; y++)
+        {
+            for(int x = 0; x<camera_width; x++)
+            {
+                int tel = 1;
+                if (hor.at<float>(y,x) >= (pow(2, NOP_v+2)) || ver.at<float>(y,x) >= (pow(2, NOP_v+2)))
+                {
+                    continue;
+                }
+                if(ver.at<float>(y,x) == ver.at<float>(y, x+1))
+                {
+                    tel = 2;
+                    while(ver.at<float>(y,x) == ver.at<float>(y, x+tel))
+                    {
+                        tel++;
+                    }
+                }
+
+                rechts.at<uchar>(y,x) = tel;
+                x+=tel;
+            }
+        }
+
+        for(int x = 0; x<camera_width; x++)
+        {
+            for(int y =0; y< camera_height; y++)
+            {
+                int onder = beneden.at<uchar>(y,x);
+                int opzij = rechts.at<uchar>(y,x);
+                if(onder >0 && opzij >0 && x+opzij/2 < camera_width && y + onder/2 <  camera_height)
+                {
+                    cam_points.push_back(Point2d(x + (opzij/2),y+(onder/2)));
+                    Point2d punt = Point2d(ver.at<float>(y + (onder/2),x+(opzij/2)), hor.at<float>(y+(onder/2),x+(opzij/2)));
                     proj_points.push_back(punt);///pattern point (x,y) coordinates is (vertical pattern, horizontal pattern)
                 }
+                else
+                    teller++;
             }
         }
+
+        cout<<"gefilterde punten: "<<teller<<endl;
+
         ///Building 3D point cloud
-        Mat rotMat;
-        Mat transMat;
-
-        fs["rotation"] >> rotMat;
-        if(rotMat.empty())
-            cout<<"rotleeg"<<endl;
-
-        fs["translation"] >> transMat;
-
-        if(transMat.empty())
-            cout<<"tranleeg"<<endl;
-
-        Mat projmat1 = Mat::eye(Size(4,3), CV_64F);
-        for(int i=0; i<projmat1.rows; i++)
-        {
-            for(int j=0; j<projmat1.cols; j++)
-            {
-                if(j==i && j<3)
-                {
-                    projmat1.at<double>(i,j)=1;
-                }
-                else
-                {
-                    projmat1.at<double>(i,j)=0;
-                }
-            }
-        }
-
-        Mat projmat2 = Mat::eye(Size(4,3), CV_64F);
-        for(int i=0; i<projmat2.rows; i++)
-        {
-            for(int j=0; j<projmat2.cols; j++)
-            {
-                if(j<3)
-                {
-                    projmat2.at<double>(i,j)=rotMat.at<double>(i,j);
-                }
-                else
-                {
-                    projmat2.at<double>(i,j)=transMat.at<double>(i,0);
-                }
-            }
-        }
 
         Mat cam, proj;
         cam = Mat(cam_points);
@@ -979,63 +1043,16 @@ vector<Visualizer> calculate3DPoints_all(string mode, int aantalseries)
         P0 = cameraMatrix * projmat1;
         P1 = projMatrix * projmat2;
 
-        clock_t time1 = clock();
+        //clock_t time1 = clock();
         triangulatePoints(P0, P1, cam, proj, driedpunten);
-        clock_t time2 = clock();
-        cout<<"tijd trianguleren "<<(float)(time2-time1)/CLOCKS_PER_SEC<<endl;
-
+        //clock_t time2 = clock();
+        //cout<<"tijd trianguleren "<<(float)(time2-time1)/CLOCKS_PER_SEC<<endl;
         cout<<"We hebben "<<cam_points.size()<<" punten getrianguleerd"<<endl;
         v.pointcloud.push_back(driedpunten);
         v.cam_points = cam_points;
         viz.push_back(v);
     }
-    /*
-    ///Visualize 3D point Cloud as 2D image
-    for(int k = 0; k< aantalseries; k++)
-    {
-        Mat driepunten = viz[k].pointcloud;
-        vector<Point4f> tussen;
-        tussen = naarPoint4f(driepunten);
 
-        Mat img = Mat(camera_height, camera_width, CV_32FC1);
-        float ma = 0;
-        float mi = 999999;
-        float afstand;
-        vector<float> afstandjes;
-        for(int i = 0; i< tussen.size(); i++)
-        {
-            afstand = sqrt(pow(tussen[i].x, 2) + pow(tussen[i].y, 2) + pow(tussen[i].z, 2));
-            if(afstand<1500 && afstand > 500)
-            {
-                if(afstand>ma)
-                    ma = afstand;
-
-                if(afstand < mi)
-                    mi = afstand;
-            }
-            afstandjes.push_back(afstand);
-        }
-
-        for(int i = 0; i< tussen.size(); i++)
-        {
-            img.at<float>(viz[k].cam_points[i].y, viz[k].cam_points[i].x) = ((afstandjes[i] - mi) / (ma - mi) )*255;
-        }
-        Mat img_u;
-        img.convertTo(img_u, CV_8UC1);
-        tonen(img_u, "bla");
-
-        vector<int> compression_params;
-        compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION );
-        //Kies 0 om geen compressie door te voeren
-        compression_params.push_back(0);
-        try {
-            imwrite("3Dto2Dmapping.png", img_u, compression_params);
-        }
-        catch (int runtime_error){
-            fprintf(stderr, "Exception converting image to JPPEG format: %s\n");
-    //        return 1;
-        }
-    }*/
     return viz;
 }
 
@@ -1068,56 +1085,11 @@ void visualize3Dpoints(vector<Visualizer> visual)
 
 
         point_cloud_ptr->width = (int)point_cloud_ptr->points.size();
-        point_cloud_ptr->height = 1;
+        point_cloud_ptr->height =1;
         pcl::PLYWriter plywriter;
         plywriter.write("./scan/serie" + conv.str() + "/serie"+conv.str()+".ply", *point_cloud_ptr, true);
         pcl::io::savePCDFileBinary("./scan/serie" + conv.str() + "/serie"+conv.str()+".pcd", *point_cloud_ptr);
         cout<<"serie "<<k<<" saved as PCD"<<endl;
-        // Normal estimation*
-          pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> n;
-          pcl::PointCloud<pcl::Normal>::Ptr normals (new pcl::PointCloud<pcl::Normal>);
-          pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
-          tree->setInputCloud (point_cloud_ptr);
-          n.setInputCloud (point_cloud_ptr);
-          n.setSearchMethod (tree);
-          n.setKSearch (20);
-          n.compute (*normals);
-          //* normals should not contain the point normals + surface curvatures
-
-          // Concatenate the XYZ and normal fields*
-          pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals (new pcl::PointCloud<pcl::PointNormal>);
-          pcl::concatenateFields (*point_cloud_ptr, *normals, *cloud_with_normals);
-          //* cloud_with_normals = cloud + normals
-
-          // Create search tree*
-          pcl::search::KdTree<pcl::PointNormal>::Ptr tree2 (new pcl::search::KdTree<pcl::PointNormal>);
-          tree2->setInputCloud (cloud_with_normals);
-
-          // Initialize objects
-          pcl::GreedyProjectionTriangulation<pcl::PointNormal> gp3;
-          pcl::PolygonMesh triangles;
-
-          // Set the maximum distance between connected points (maximum edge length)
-          gp3.setSearchRadius (0.025);
-
-          // Set typical values for the parameters
-          gp3.setMu (2.5);
-          gp3.setMaximumNearestNeighbors (100);
-          gp3.setMaximumSurfaceAngle(M_PI/4); // 45 degrees
-          gp3.setMinimumAngle(M_PI/18); // 10 degrees
-          gp3.setMaximumAngle(2*M_PI/3); // 120 degrees
-          gp3.setNormalConsistency(false);
-
-          // Get result
-          gp3.setInputCloud (cloud_with_normals);
-          gp3.setSearchMethod (tree2);
-          gp3.reconstruct (triangles);
-
-          // Additional vertex information
-          std::vector<int> parts = gp3.getPartIDs();
-          std::vector<int> states = gp3.getPointStates();
-          pcl::io::saveVTKFile("mesh.vtk", triangles);
-          pcl::io::savePLYFile("./scan/serie" + conv.str() + "/triangles"+conv.str()+".ply", triangles);
     }
 }
 
@@ -1262,7 +1234,7 @@ int main(int argc, char *argv[])
             " u = undistort scan images\n"
             " r = calculate 3D points \n"
             " t = visualize 3D points\n"
-            " a = do all(calibrate, calculate 3D and visualize)\n"
+            " a = do all(calculate 3D and visualize)\n"
             " q = quit program"<<endl;
         char keuze;
         cin >> keuze;
@@ -1349,14 +1321,6 @@ int main(int argc, char *argv[])
 
         else if(keuze == 't')
         {
-            /*boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
-            viewer = visualize3Dpoints(visual);
-            cerr<<"viewer"<<endl;
-            while (!viewer->wasStopped ())
-            {
-                viewer->spinOnce (100);
-                boost::this_thread::sleep (boost::posix_time::microseconds (100000));
-            }*/
             clock_t time1 = clock();
             visualize3Dpoints(visual);
             clock_t time2 = clock();
@@ -1375,7 +1339,7 @@ int main(int argc, char *argv[])
             visualize3Dpoints(visual);
             clock_t time10 = clock();
             cout<<"tijd visualize: "<< (float)(time10-time9)/CLOCKS_PER_SEC<<endl;
-            cout<<"tijd alles"<< (float)(time10-time1)/CLOCKS_PER_SEC<<" voor "<<calib_series<<" calibratieseries en "<<scan_series<<" scanseries"<<endl;
+            cout<<"tijd alles"<< (float)(time10-time1)/CLOCKS_PER_SEC<<" voor "<<scan_series<<" scanseries"<<endl;
         }
 
         else if(keuze == 'q')
