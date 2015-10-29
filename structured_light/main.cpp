@@ -392,6 +392,7 @@ void calculate_light_components(Decoder &d, vector<Mat> beelden, int dir)
     string LD = "ld"+ richting;
     string LG = "lg"+richting;
 
+    #pragma omp parallel for
     for(int i =0; i< y; i++)
     {
         for(int j =0; j<x; j++)
@@ -452,7 +453,7 @@ void get_pattern_image(Decoder &d, vector<Mat> beelden, int dir)
     bit = holder;
     //cout<<"bit: "<<bit<<endl;
 
-
+    #pragma omp parallel for
     for(int j =0; j< beelden[NOP].rows; j++)
     {
         for(int k =0; k<beelden[NOP].cols; k++)
@@ -470,9 +471,9 @@ void get_pattern_image(Decoder &d, vector<Mat> beelden, int dir)
     }
 
     ///Go over each image pair (img and his inverse) and check for each pixel it's value. Add it to pattern[dir]
-    /// If a pixel is in a lighted area, we add 2 raised to the power of the frame. This way we get a gray code pattern for each pixel in pattern[dir].
+    /// If a pixel is in a lighted area, we add 2 raised to the power of (k - the frame number). This way we get a gray code pattern for each pixel in pattern[dir].
     /// Pattern[dir] is of type 32 bit float. If you have more than 32 patterns, change the type of pattern[dir].
-
+    //#pragma omp parallel for
     for(int i = start; i<=NOP ; i+=2)
     {
         bit--;
@@ -504,7 +505,7 @@ void get_pattern_image(Decoder &d, vector<Mat> beelden, int dir)
     }
 
     ///Convert pattern from gray code to binary
-
+    #pragma omp parallel for
     for(int i=0;i<d.pattern_image[dir].rows;i++)
     {
         for(int j=0; j<d.pattern_image[dir].cols;j++)
@@ -651,7 +652,6 @@ bool decode(int serienummer, Decoder &d, bool draw, string mode)
 
 
     ///Reading every image in a serie
-
     for(int i=2; i<(NOP_v+NOP_h)*2; i++)
     {
         ostringstream beeldnr;
@@ -664,6 +664,7 @@ bool decode(int serienummer, Decoder &d, bool draw, string mode)
         newmat_i.convertTo(newmat_float, CV_32FC1);
         beelden.push_back(newmat_float);
     }
+
 
     camera_width = beelden[0].cols;
     camera_height = beelden[0].rows;
@@ -707,11 +708,13 @@ bool decode_all(int aantalseries, vector<Decoder> &dec, bool draw, string mode)
         cout<<"decode serie "<<i<<endl;
         gelukt = decode(i, d, draw, mode);
         if(!gelukt)
-            return false;
+            break;
 
         dec.push_back(d);
         cout<<endl;
     }
+    if(!gelukt)
+        return false;
 
     return true;
 }
@@ -944,7 +947,7 @@ vector<Visualizer> calculate3DPoints_all(string mode, int aantalseries)
         exit(-1);
     }
 
-    #pragma omp parallel for
+    //#pragma omp parallel for
     for(int k = 0; k< aantalseries; k++)
     {
         Decoder d = dec[k];
@@ -963,7 +966,7 @@ vector<Visualizer> calculate3DPoints_all(string mode, int aantalseries)
         //GaussianBlur(hor, hor, Size(1,5), 1.5, 0);
         //GaussianBlur(ver, ver, Size(5,1), 1.5, 0);
         int teller =0;
-
+        //#pragma omp parallel for
         for(int x = 0; x<camera_width; x++)
         {
             for(int y = 0; y<camera_height; y++)
@@ -986,7 +989,7 @@ vector<Visualizer> calculate3DPoints_all(string mode, int aantalseries)
                 y+=tel;
             }
         }
-
+        //#pragma omp parallel for
         for(int y = 0; y<camera_height; y++)
         {
             for(int x = 0; x<camera_width; x++)
@@ -1009,7 +1012,7 @@ vector<Visualizer> calculate3DPoints_all(string mode, int aantalseries)
                 x+=tel;
             }
         }
-
+        //#pragma omp parallel for
         for(int x = 0; x<camera_width; x++)
         {
             for(int y =0; y< camera_height; y++)
@@ -1058,6 +1061,7 @@ vector<Visualizer> calculate3DPoints_all(string mode, int aantalseries)
 
 void visualize3Dpoints(vector<Visualizer> visual)
 {
+    //#pragma omp parallel for
     for(int k=0; k<visual.size(); k++)
     {
         ostringstream conv;
