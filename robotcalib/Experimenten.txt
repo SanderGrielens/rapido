@@ -1,0 +1,14 @@
+Camera calibratie:
+-Stereo vision camera(Ensenso):
+	Geen calibratie nodig indien grijswaarden gevraagd. SDK van Ensenso bevat code voor de 2 grijze beelden om te zetten naar een 3D puntenwolk.
+	Indien kleur: Derde camera erboven plaatsen en kleur calibreren.
+-Structured Light:
+	Code om projector en camera te calibreren t.o.v. elkaar bestaat.
+-TOF:
+
+-Multi flash:
+
+-Laser line triangulation:
+
+-Gewone camera(RGB of grijs):
+
