@@ -20,6 +20,10 @@
 using namespace std;
 using namespace cv;
 
+///Ensenso:
+void get_en_image();
+
+
 ///Structured light:
 struct Decoder
 {
@@ -32,7 +36,7 @@ struct Decoder
 
 Decoder init_decoder();
 vector<Mat> generate_pattern(int NOP_v, int NOP_h, int projector_width, int projector_height);
-bool get_images(int delay, int serie, int width, int height);
+bool get_sl_images(int delay, int serie, int width, int height);
 int getdir (string dir, vector<string> &files);
 bool findcorners(vector<vector<Point2f> > &chessboardcorners, int aantalseries, int width, int height);
 int check_bit(float value1, float value2, float Ld, float Lg, float m);

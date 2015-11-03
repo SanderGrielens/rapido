@@ -19,28 +19,6 @@ Camera calibratie:
 	-Laser line triangulation:
 		Gaat momenteel niet-->opstelling staat in Diepenbeek.
 
-Hoe te installeren:
--------------------
-	-Gewone camera(RGB of grijs):
-
-
-	-Stereo vision camera(Ensenso):
-		Installeer de Ensenso SDK, te vinden op http://www.ensenso.com/support/sdk-download/
-		Volgorde: Eerste de uEye driver installeren, dan pas de ensensoSDK.
-
-	-Structured Light:
-		We gebruiken een Manta GigE camera. Deze maakt gebruik van de Vimba SDK. De nodige libraries en headers staan mee in de repository.
-
-	-TOF:
-
-
-	-Multi flash:
-
-
-	-Laser line triangulation:
-
-	
-
 Robot - Camera calibratie:
 --------------------------
 	Gebruik maken van markers/checkerboard vastgebonden op de robot. 
@@ -60,6 +38,3 @@ Robot - Camera calibratie:
 
 	-Gewone camera(RGB of grijs):
 		Locatie van de robot + grootte van de markers / het checkerboard gebruiken om 3D coordinaten te berekenen.
-
-
-

@@ -41,6 +41,7 @@ int main()
         if(keuze=='e')
         {
 
+
         }
         else if(keuze=='n')
         {
@@ -66,7 +67,7 @@ int main()
                 conv << calib_sl_series;
                 string path = "./calib_sl/serie"+conv.str();
                 mkdir(path.c_str(), 0700);
-                bool gelukt = get_images(300, calib_sl_series, p_w, p_h);
+                bool gelukt = get_sl_images(300, calib_sl_series, p_w, p_h);
                 if(gelukt)
                     calib_sl_series++;
                 else

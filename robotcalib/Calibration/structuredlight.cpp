@@ -118,7 +118,7 @@ vector<Mat> generate_pattern(int NOP_v, int NOP_h, int projector_width, int proj
     return result;
 }
 
-bool get_images(int delay, int serie, int width, int height)
+bool get_sl_images(int delay, int serie, int width, int height)
 {
     vector<Mat> pattern;
     cout<<"serienummer: "<<serie<<endl;
