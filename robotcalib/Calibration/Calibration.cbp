@@ -17,6 +17,7 @@
 				</Compiler>
 				<Linker>
 					<Add option="-lNxLib64" />
+					<Add option="-lueye_api" />
 					<Add library="../../Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit/libVimbaCPP.so" />
 					<Add library="../../Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit/libVimbaC.so" />
 					<Add directory="../../Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit" />
