@@ -16,6 +16,7 @@
 					<Add directory="../../Camera_sdk/Vimba_1_3" />
 				</Compiler>
 				<Linker>
+					<Add option="-lNxLib64" />
 					<Add library="../../Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit/libVimbaCPP.so" />
 					<Add library="../../Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit/libVimbaC.so" />
 					<Add directory="../../Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit" />
@@ -45,6 +46,7 @@
 		<Unit filename="Bitmap.cpp" />
 		<Unit filename="calibration.cpp" />
 		<Unit filename="calibration.hpp" />
+		<Unit filename="ensenso.cpp" />
 		<Unit filename="main.cpp" />
 		<Unit filename="structuredlight.cpp" />
 		<Extensions>

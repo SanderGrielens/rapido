@@ -40,6 +40,7 @@ int main()
 
         if(keuze=='e')
         {
+            get_en_image();
 
 
         }

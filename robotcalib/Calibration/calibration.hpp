@@ -11,6 +11,9 @@
 #include <stdlib.h>
 #include <iostream>
 #include <sys/stat.h>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/videoio/videoio.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 #include "VimbaCPP/Include/VimbaCPP.h"
 #include "Common/StreamSystemInfo.h"

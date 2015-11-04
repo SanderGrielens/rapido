@@ -24,19 +24,19 @@ void get_en_image()
 		NxLibCommand saveImage(cmdSaveImage);
 		//   raw left
 		saveImage.parameters()[itmNode] = camera[itmImages][itmRaw][itmLeft].path;
-		saveImage.parameters()[itmFilename] = "raw_left.png";
+		saveImage.parameters()[itmFilename] = "calib_en/raw_left.png";
 		saveImage.execute();
 		//   raw right
 		saveImage.parameters()[itmNode] = camera[itmImages][itmRaw][itmRight].path;
-		saveImage.parameters()[itmFilename] = "raw_right.png";
+		saveImage.parameters()[itmFilename] = "calib_en/raw_right.png";
 		saveImage.execute();
 		//   rectified left
 		saveImage.parameters()[itmNode] = camera[itmImages][itmRectified][itmLeft].path;
-		saveImage.parameters()[itmFilename] = "rectified_left.png";
+		saveImage.parameters()[itmFilename] = "calib_en/rectified_left.png";
 		saveImage.execute();
 		//   rectified right
 		saveImage.parameters()[itmNode] = camera[itmImages][itmRectified][itmRight].path;
-		saveImage.parameters()[itmFilename] = "rectified_right.png";
+		saveImage.parameters()[itmFilename] = "calib_en/rectified_right.png";
 		saveImage.execute();
 	} catch (NxLibException& e) { // Display NxLib API exceptions, if any
 		printf("An NxLib API error with code %d (%s) occurred while accessing item %s.\n", e.getErrorCode(), e.getErrorText().c_str(), e.getItemPath().c_str());
@@ -44,5 +44,14 @@ void get_en_image()
 	} catch (...) { // Display other exceptions
 		printf("Something, somewhere went terribly wrong!\n");
 	}
+
+	/*VideoCapture cap(CV_CAP_PVAPI);
+    if(!cap.isOpened())  // check if we succeeded
+        cout<<"Not working"<<endl;
+
+    Mat frame;
+    cap >> frame;
+*/
+    //tonen(frame,"kijk");
 }
 
