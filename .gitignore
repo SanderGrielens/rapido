@@ -11,4 +11,5 @@ robotcalib/Calibration/bin/*
 robotcalib/Calibration/calib_sl/*
 robotcalib/Calibration/obj/*
 robotcalib/Calibration/Calibration.*
+robotcalib/Calibration/calib_en/*.png
 !robotcalib/Calibration/Calibration.cbp

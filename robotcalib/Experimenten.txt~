@@ -4,11 +4,11 @@ Camera calibratie:
 		Calibreren a.d.h.v. checkerboard of circulair patroon en kijker wat er nauwkeuriger is.
 
 	-Stereo vision camera(Ensenso):
-		Geen calibratie nodig indien grijswaarden gevraagd. SDK van Ensenso bevat code voor de 2 grijze beelden om te zetten naar een 3D puntenwolk.
-		Indien kleur: Derde camera erboven plaatsen en kleur calibreren a.d.h.v. checkerboard of circulair patroon.
+		Geen calibratie nodig indien grijswaarden gevraagd. SDK van Ensenso bevat code voor de 2 grijze beelden om te zetten naar een 3D puntenwolk. -->OK
+		Indien kleur: Derde camera erboven plaatsen en kleur calibreren a.d.h.v. checkerboard of circulair patroon--> SDK van IDS nodig(manufacturer RGB camera).
 
 	-Structured Light:
-		Code om projector en camera te calibreren t.o.v. elkaar bestaat. Dit gebeurt a.d.h.v. een checkerboard.
+		Code om projector en camera te calibreren t.o.v. elkaar bestaat. Dit gebeurt a.d.h.v. een checkerboard. --> OK
 
 	-TOF:
 		Calibreren van grijswaarde beelden bij de TOF.
@@ -18,6 +18,28 @@ Camera calibratie:
 
 	-Laser line triangulation:
 		Gaat momenteel niet-->opstelling staat in Diepenbeek.
+
+Hoe te installeren:
+-------------------
+	-Gewone camera(RGB of grijs):
+
+
+	-Stereo vision camera(Ensenso):
+		Installeer de Ensenso SDK, te vinden op http://www.ensenso.com/support/sdk-download/
+		Volgorde: Eerste de uEye driver installeren, dan pas de ensensoSDK.
+
+	-Structured Light:
+		We gebruiken een Manta GigE camera. Deze maakt gebruik van de Vimba SDK. De nodige libraries en headers staan mee in de repository.
+
+	-TOF:
+
+
+	-Multi flash:
+
+
+	-Laser line triangulation:
+
+	
 
 Robot - Camera calibratie:
 --------------------------
@@ -38,3 +60,6 @@ Robot - Camera calibratie:
 
 	-Gewone camera(RGB of grijs):
 		Locatie van de robot + grootte van de markers / het checkerboard gebruiken om 3D coordinaten te berekenen.
+
+
+
