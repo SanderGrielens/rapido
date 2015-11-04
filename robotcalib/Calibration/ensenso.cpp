@@ -95,7 +95,7 @@ void get_en_image()
 
       //Bild aus dem Speicher auslesen und als Datei speichern
       IMAGE_FILE_PARAMS ImageFileParams;
-      ImageFileParams.pwchFileName = L"./snap_BGR8.png";
+      ImageFileParams.pwchFileName = L"./calib_en/snap_BGR8.png";
       ImageFileParams.pnImageID = NULL;
       ImageFileParams.ppcImageMem = NULL;
       ImageFileParams.nQuality = 0;
@@ -104,7 +104,7 @@ void get_en_image()
       nRet = is_ImageFile(hCam, IS_IMAGE_FILE_CMD_SAVE, (void*) &ImageFileParams, sizeof(ImageFileParams));
       printf("Status is_ImageFile %d\n",nRet);
 
-      ImageFileParams.pwchFileName = L"./snap_BGR8.bmp";
+      ImageFileParams.pwchFileName = L"./calib_en/snap_BGR8.bmp";
       ImageFileParams.pnImageID = NULL;
       ImageFileParams.ppcImageMem = NULL;
       ImageFileParams.nQuality = 0;
@@ -113,7 +113,7 @@ void get_en_image()
       nRet = is_ImageFile(hCam, IS_IMAGE_FILE_CMD_SAVE, (void*) &ImageFileParams, sizeof(ImageFileParams));
       printf("Status is_ImageFile %d\n",nRet);
 
-      ImageFileParams.pwchFileName = L"./snap_BGR8.jpg";
+      ImageFileParams.pwchFileName = L"./calib_en/snap_BGR8.jpg";
       ImageFileParams.pnImageID = NULL;
       ImageFileParams.ppcImageMem = NULL;
       ImageFileParams.nQuality = 0;
