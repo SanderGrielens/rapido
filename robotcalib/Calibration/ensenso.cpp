@@ -156,3 +156,32 @@ void get_en_image()
     //tonen(frame,"kijk");
 }
 
+pcl::PointCloud<pcl::PointXYZ> get_en_cloud()
+{
+    //boost::shared_ptr<pcl::visualization::CloudViewer> viewer_ptr;
+
+    /** @brief PCL Ensenso object pointer */
+    pcl::EnsensoGrabber::Ptr ensenso_ptr;
+
+    //viewer_ptr.reset (new pcl::visualization::CloudViewer("Ensenso 3D cloud viewer"));
+    ensenso_ptr.reset (new pcl::EnsensoGrabber);
+    ensenso_ptr->openTcpPort ();
+    ensenso_ptr->openDevice ();
+
+    pcl::PointCloud<pcl::PointXYZ> cloud;
+
+    ensenso_ptr->grabSingleCloud(cloud);
+
+ /*   boost::function<void(const PointCloudXYZ::Ptr&)> f = boost::bind (&grabberCallback, _1);
+    ensenso_ptr->registerCallback (f);
+    ensenso_ptr->start ();
+
+    while (!viewer_ptr->wasStopped ())
+    {
+        boost::this_thread::sleep (boost::posix_time::milliseconds (1000));
+        std::cout << "FPS: " << ensenso_ptr->getFramesPerSecond () << std::endl;
+    }*/
+
+    ensenso_ptr->closeDevice ();
+    return cloud;
+}

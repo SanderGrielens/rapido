@@ -40,9 +40,17 @@ int main()
 
         if(keuze=='e')
         {
-            get_en_image();
-
-
+            cout<<"Press 'c' to get calibration images, or 'p' to get the pointcloud"<<endl;
+            char antwoord;
+            cin >> antwoord;
+            if(antwoord == 'c')
+            {
+                get_en_image();
+            }
+            else if(antwoord == 'p')
+            {
+                pcl::PointCloud<pcl::PointXYZ> a = get_en_cloud();
+            }
         }
         else if(keuze=='n')
         {

@@ -2,6 +2,7 @@
 #define __NXLIB_FUNCTIONS_H__
 
 #include "nxLibConstants.h"
+#include <ueye.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -51,7 +52,7 @@ static char const* ATTR_UNUSED nxLibTranslateReturnCode(NXLIBINT returnCode) {
 		#endif
 		#define NXLIB_APIERROR(NAME, VALUE) case VALUE: return #NAME; break
 		#include "nxLibApiErrors.h"
-	default: 
+	default:
 		return 0; break;
 	}
 	return 0;
@@ -124,11 +125,11 @@ static char const* ATTR_UNUSED nxLibTranslateReturnCode(NXLIBINT returnCode) {
 			return compare(returnCode, std::string(value));
 		}
 		template <typename T>
-		int compare(T const& value) const { 
-			int r; 
-			int result = compare(&r, value); 
-			checkReturnCode(r); 
-			return result; 
+		int compare(T const& value) const {
+			int r;
+			int result = compare(&r, value);
+			checkReturnCode(r);
+			return result;
 		}
 
 		// Specialization for integers below (will always compare as double!)
@@ -156,8 +157,8 @@ static char const* ATTR_UNUSED nxLibTranslateReturnCode(NXLIBINT returnCode) {
 		void set(int* returnCode, bool value) const {
 			nxLibSetBool(returnCode, path.c_str(), value);
 		}
-		void set(int* returnCode, std::string const& value) const { 
-			set(returnCode, value.c_str()); 
+		void set(int* returnCode, std::string const& value) const {
+			set(returnCode, value.c_str());
 		}
 		void set(int* returnCode, char const * const value) const {
 			nxLibSetString(returnCode, path.c_str(), value);
@@ -233,7 +234,7 @@ static char const* ATTR_UNUSED nxLibTranslateReturnCode(NXLIBINT returnCode) {
 			checkReturnCode(returnCode);
 			return result;
 		}
-		template <typename T> T as() const { 
+		template <typename T> T as() const {
 			int returnCode;
 			T value = as<T>(&returnCode);
 			checkReturnCode(returnCode);
@@ -250,37 +251,37 @@ static char const* ATTR_UNUSED nxLibTranslateReturnCode(NXLIBINT returnCode) {
 		bool isBool  (int* returnCode) const { return type(returnCode) == NxLibItemTypeBool;   }
 		bool isArray (int* returnCode) const { return type(returnCode) == NxLibItemTypeArray;  }
 		bool isObject(int* returnCode) const { return type(returnCode) == NxLibItemTypeObject; }
-		bool isNull() const { 
+		bool isNull() const {
 			int result;
 			bool res = isNull(&result);
 			checkReturnCode(result);
 			return res;
 		}
-		bool isString() const { 
+		bool isString() const {
 			int result;
 			bool res = isString(&result);
 			checkReturnCode(result);
 			return res;
 		}
-		bool isNumber() const { 
+		bool isNumber() const {
 			int result;
 			bool res = isNumber(&result);
 			checkReturnCode(result);
 			return res;
 		}
-		bool isBool() const { 
+		bool isBool() const {
 			int result;
 			bool res = isBool(&result);
 			checkReturnCode(result);
 			return res;
 		}
-		bool isArray() const { 
+		bool isArray() const {
 			int result;
 			bool res = isArray(&result);
 			checkReturnCode(result);
 			return res;
 		}
-		bool isObject() const { 
+		bool isObject() const {
 			int result;
 			bool res = isObject(&result);
 			checkReturnCode(result);
@@ -581,7 +582,7 @@ static char const* ATTR_UNUSED nxLibTranslateReturnCode(NXLIBINT returnCode) {
 	template <> inline bool        NxLibItem::as<bool>            (int* returnCode) const { return asBool(returnCode); }
 
 	class NxLibCommand {
-	public: 
+	public:
 		NxLibCommand(std::string const& commandName) { this->commandName = commandName; }
 	protected:
 		template <typename T> void assignIfGiven(T* ptr, T const& value) const { if (ptr) (*ptr) = value; }
@@ -597,7 +598,7 @@ static char const* ATTR_UNUSED nxLibTranslateReturnCode(NXLIBINT returnCode) {
 	public:
 		NxLibItem const parameters() const { return NxLibItem()[itmExecute][itmParameters]; }
 		NxLibItem const result()     const { return NxLibItem()[itmExecute][itmResult    ]; }
-		
+
 		void execute(bool wait = true) const {
 			int result;
 			execute(&result, wait);

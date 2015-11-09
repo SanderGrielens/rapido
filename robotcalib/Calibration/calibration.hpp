@@ -15,6 +15,9 @@
 
 #include <ueye.h>
 
+#include <pcl/io/ensenso_grabber.h>
+#include <pcl/visualization/cloud_viewer.h>
+
 #include "VimbaCPP/Include/VimbaCPP.h"
 #include "Common/StreamSystemInfo.h"
 #include "Common/ErrorCodeToMessage.h"
@@ -25,6 +28,7 @@ using namespace cv;
 
 ///Ensenso:
 void get_en_image();
+pcl::PointCloud<pcl::PointXYZ> get_en_cloud();
 
 
 ///Structured light:
