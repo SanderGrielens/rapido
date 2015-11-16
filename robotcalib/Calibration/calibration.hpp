@@ -17,6 +17,7 @@
 
 #include <pcl/io/ensenso_grabber.h>
 #include <pcl/io/ply_io.h>
+#include <pcl/io/pcd_io.h>
 #include <pcl/visualization/cloud_viewer.h>
 
 #include "VimbaCPP/Include/VimbaCPP.h"

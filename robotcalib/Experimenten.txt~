@@ -4,8 +4,11 @@ Camera calibratie:
 		Calibreren a.d.h.v. checkerboard of circulair patroon en kijker wat er nauwkeuriger is.
 
 	-Stereo vision camera(Ensenso):
-		Geen calibratie nodig indien grijswaarden gevraagd. SDK van Ensenso bevat code voor de 2 grijze beelden om te zetten naar een 3D puntenwolk. -->OK
-		Indien kleur: Derde camera erboven plaatsen en kleur calibreren a.d.h.v. checkerboard of circulair patroon--> SDK van IDS nodig(manufacturer RGB camera).
+		Grijswaarden camera's zijn gecalibreerd.
+		RGB camera kan gecalibreerd worden t.o.v. de grijswaarden m.b.h.v. nxView. Dit programma zit in de SDK van Ensenso.
+		Code voor beelden uit RGB en grijswaarde te lezen is present.
+		Code om depthmaps als .ply uit te lezen uit grijswaarde camera's is present. Deze hebben een slechte diepte resolutie.
+		OPMERKING: Kabel van stereovisie is gemerkt aan de ethernet connectie met papiertape.
 
 	-Structured Light:
 		Code om projector en camera te calibreren t.o.v. elkaar bestaat. Dit gebeurt a.d.h.v. een checkerboard. --> OK
