@@ -17,7 +17,7 @@
 					<Add directory="/usr/local/include/pcl-1.8" />
 					<Add directory="/usr/include/eigen3" />
 					<Add directory="/usr/include/vtk-5.8" />
-					<Add directory="/home/svw/Documents/rapido/robotcalib/Calibration/calib_en" />
+					<Add directory="calib_en" />
 				</Compiler>
 				<Linker>
 					<Add option="-lNxLib64" />
@@ -26,7 +26,6 @@
 					<Add option="-lboost_thread" />
 					<Add library="../../Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit/libVimbaCPP.so" />
 					<Add library="../../Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit/libVimbaC.so" />
-					<Add library="/usr/local/lib/libboost_thread.so" />
 					<Add library="/lib/x86_64-linux-gnu/libpthread-2.19.so" />
 					<Add library="/usr/lib/libvtkalglib.so" />
 					<Add library="/usr/lib/libvtkCharts.so" />
@@ -75,7 +74,7 @@
 					<Add library="/usr/local/lib/libpcl_tracking.so" />
 					<Add library="/usr/local/lib/libpcl_visualization.so" />
 					<Add directory="../../Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit" />
-					<Add directory="/home/svw/Documents/rapido/robotcalib/Calibration/calib_en" />
+					<Add directory="calib_en" />
 				</Linker>
 			</Target>
 			<Target title="Release">

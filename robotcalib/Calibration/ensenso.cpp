@@ -183,5 +183,7 @@ pcl::PointCloud<pcl::PointXYZ> get_en_cloud()
     }*/
 
     ensenso_ptr->closeDevice ();
+    vector<int> lijst;
+    pcl::removeNaNFromPointCloud(cloud, cloud, lijst );
     return cloud;
 }

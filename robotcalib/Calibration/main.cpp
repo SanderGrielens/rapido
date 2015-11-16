@@ -51,8 +51,13 @@ int main()
             {
                 pcl::PointCloud<pcl::PointXYZ> a = get_en_cloud();
                 pcl::PLYWriter plywriter;
+<<<<<<< HEAD
                 plywriter.write("Ensenso.ply", a, true);
                 pcl::io::savePCDFileBinary("Ensenso.pcd", a);
+=======
+                plywriter.write("./calib_en/Ensenso.ply", a, false);
+                //pcl::io::savePCDFileBinary("Ensenso.pcd", a);
+>>>>>>> 6baea977de5cfb212ff2e4e8bc58be0e79ce8f04
             }
         }
         else if(keuze=='n')
