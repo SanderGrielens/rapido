@@ -861,7 +861,7 @@ vector<Point4f> naarPoint4f(Mat src)
 
 vector<Visualizer> calculate3DPoints_all(string mode, int aantalseries)
 {
-    bool draw = false;
+    bool draw = true;
     vector<Decoder> dec;
     vector<Visualizer> viz;
 

@@ -85,12 +85,69 @@
 				<Compiler>
 					<Add option="-O2" />
 					<Add directory="../../Camera_sdk/Vimba_1_3/VimbaCPP" />
+					<Add directory="../../Camera_sdk/Vimba_1_3" />
+					<Add directory="/usr/local/include/pcl-1.8" />
+					<Add directory="/usr/include/eigen3" />
+					<Add directory="/usr/include/vtk-5.8" />
+					<Add directory="calib_en" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
+					<Add option="-lNxLib64" />
+					<Add option="-lueye_api" />
+					<Add option="-lboost_system" />
+					<Add option="-lboost_thread" />
 					<Add library="../../Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit/libVimbaC.so" />
 					<Add library="../../Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit/libVimbaCPP.so" />
+					<Add library="/lib/x86_64-linux-gnu/libpthread-2.19.so" />
+					<Add library="/usr/lib/libvtkalglib.so" />
+					<Add library="/usr/lib/libvtkCharts.so" />
+					<Add library="/usr/lib/libvtkCommon.so" />
+					<Add library="/usr/lib/libvtkDICOMParser.so" />
+					<Add library="/usr/lib/libvtkexoIIc.so" />
+					<Add library="/usr/lib/libvtkFiltering.so" />
+					<Add library="/usr/lib/libvtkftgl.so" />
+					<Add library="/usr/lib/libvtkGenericFiltering.so" />
+					<Add library="/usr/lib/libvtkGeovis.so" />
+					<Add library="/usr/lib/libvtkGraphics.so" />
+					<Add library="/usr/lib/libvtkHybrid.so" />
+					<Add library="/usr/lib/libvtkImaging.so" />
+					<Add library="/usr/lib/libvtkInfovis.so" />
+					<Add library="/usr/lib/libvtkIO.so" />
+					<Add library="/usr/lib/libvtkmetaio.so" />
+					<Add library="/usr/lib/libvtkParallel.so" />
+					<Add library="/usr/lib/libvtkproj4.so" />
+					<Add library="/usr/lib/libvtkQtChart.so" />
+					<Add library="/usr/lib/libvtkRendering.so" />
+					<Add library="/usr/lib/libvtksys.so" />
+					<Add library="/usr/lib/libvtkverdict.so" />
+					<Add library="/usr/lib/libvtkViews.so" />
+					<Add library="/usr/lib/libvtkVolumeRendering.so" />
+					<Add library="/usr/lib/libvtkWidgets.so" />
+					<Add library="/usr/lib/libvtkWrappingTools-6.0.a" />
+					<Add library="/usr/local/lib/libpcl_2d.so" />
+					<Add library="/usr/local/lib/libpcl_common.so" />
+					<Add library="/usr/local/lib/libpcl_features.so" />
+					<Add library="/usr/local/lib/libpcl_filters.so" />
+					<Add library="/usr/local/lib/libpcl_io.so" />
+					<Add library="/usr/local/lib/libpcl_io_ply.so" />
+					<Add library="/usr/local/lib/libpcl_kdtree.so" />
+					<Add library="/usr/local/lib/libpcl_keypoints.so" />
+					<Add library="/usr/local/lib/libpcl_ml.so" />
+					<Add library="/usr/local/lib/libpcl_octree.so" />
+					<Add library="/usr/local/lib/libpcl_outofcore.so" />
+					<Add library="/usr/local/lib/libpcl_people.so" />
+					<Add library="/usr/local/lib/libpcl_recognition.so" />
+					<Add library="/usr/local/lib/libpcl_registration.so" />
+					<Add library="/usr/local/lib/libpcl_sample_consensus.so" />
+					<Add library="/usr/local/lib/libpcl_search.so" />
+					<Add library="/usr/local/lib/libpcl_segmentation.so" />
+					<Add library="/usr/local/lib/libpcl_stereo.so" />
+					<Add library="/usr/local/lib/libpcl_surface.so" />
+					<Add library="/usr/local/lib/libpcl_tracking.so" />
+					<Add library="/usr/local/lib/libpcl_visualization.so" />
 					<Add directory="../../Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit" />
+					<Add directory="calib_en" />
 				</Linker>
 			</Target>
 		</Build>
