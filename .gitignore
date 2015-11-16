@@ -2,6 +2,9 @@ structured_light/bin/Release/sl_scan
 structured_light/bin/Debug/sl_scan
 structured_light/obj/*
 structured_light/scan/*
+!structured_light/scan/dummy.txt
+structured_light/picture/*
+!structured_light/picture/dummy.txt
 structured_light/sl_scan.cbp
 structured_light/sl_scan.depend
 structured_light/sl_scan.layout
