@@ -30,7 +30,7 @@ using namespace std;
 using namespace cv;
 
 ///Ensenso:
-void get_en_image();
+void get_en_image(pcl::PointCloud<pcl::PointXYZ>&);
 pcl::PointCloud<pcl::PointXYZ> get_en_cloud();
 
 

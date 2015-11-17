@@ -43,7 +43,12 @@ int main()
             cout<<"Press 'c' to get calibration images, or 'p' to get the pointcloud"<<endl;
             char antwoord;
             cin >> antwoord;
-            if(antwoord == 'c')
+            pcl::PointCloud<pcl::PointXYZ> a;
+            get_en_image(a);
+            pcl::PLYWriter plywriter;
+            pcl::io::savePCDFileBinary("./calib_en/Ensenso.pcd", a);
+            plywriter.write("./calib_en/Ensenso.ply", a, false);
+            /*if(antwoord == 'c')
             {
                 get_en_image();
             }
@@ -53,7 +58,7 @@ int main()
                 pcl::PLYWriter plywriter;
                 pcl::io::savePCDFileBinary("./calib_en/Ensenso.pcd", a);
                 plywriter.write("./calib_en/Ensenso.ply", a, false);
-            }
+            }*/
         }
         else if(keuze=='n')
         {

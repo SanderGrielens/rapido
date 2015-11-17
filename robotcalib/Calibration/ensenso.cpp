@@ -1,7 +1,20 @@
 #include "calibration.hpp"
 #include "calib_en/nxLib.h"
 
-void get_en_image()
+void ensensoExceptionHandling (const NxLibException &ex,
+                          std::string func_nam)
+{
+  PCL_ERROR ("%s: NxLib error %s (%d) occurred while accessing item %s.\n", func_nam.c_str (), ex.getErrorText ().c_str (), ex.getErrorCode (),
+            ex.getItemPath ().c_str ());
+  if (ex.getErrorCode () == NxLibExecutionFailed)
+  {
+    NxLibCommand cmd ("");
+    PCL_WARN ("\n%s\n", cmd.result ().asJson (true, 4, false).c_str ());
+  }
+}
+
+
+void get_en_image(pcl::PointCloud<pcl::PointXYZ> &cloud)
 {
     char flag = 'g';
     int i = 0;
@@ -27,6 +40,35 @@ void get_en_image()
             // Capture an image
             NxLibCommand (cmdCapture).execute();
 
+            // Stereo matching task
+            NxLibCommand (cmdComputeDisparityMap).execute ();
+
+            // Convert disparity map into XYZ data for each pixel
+            NxLibCommand (cmdComputePointMap).execute ();
+
+            // Get info about the computed point map and copy it into a std::vector
+            double timestamp;
+            std::vector<float> pointMap;
+            int width, height;
+            camera[itmImages][itmRaw][itmLeft].getBinaryDataInfo (0, 0, 0, 0, 0, &timestamp);  // Get raw image timestamp
+            camera[itmImages][itmPointMap].getBinaryDataInfo (&width, &height, 0, 0, 0, 0);
+            camera[itmImages][itmPointMap].getBinaryData (pointMap, 0);
+
+            // Copy point cloud and convert in meters
+            //cloud.header.stamp = getPCLStamp (timestamp);
+            cloud.resize (height * width);
+            cloud.width = width;
+            cloud.height = height;
+            cloud.is_dense = false;
+
+            // Copy data in point cloud (and convert milimeters in meters)
+            for (size_t i = 0; i < pointMap.size (); i += 3)
+            {
+              cloud.points[i / 3].x = pointMap[i] / 1000.0;
+              cloud.points[i / 3].y = pointMap[i + 1] / 1000.0;
+              cloud.points[i / 3].z = pointMap[i + 2] / 1000.0;
+            }
+
             NxLibCommand (cmdRectifyImages).execute();
 
             // Save images
@@ -50,7 +92,12 @@ void get_en_image()
         } catch (NxLibException& e) { // Display NxLib API exceptions, if any
             printf("An NxLib API error with code %d (%s) occurred while accessing item %s.\n", e.getErrorCode(), e.getErrorText().c_str(), e.getItemPath().c_str());
             if (e.getErrorCode() == NxLibExecutionFailed) printf("/Execute:\n%s\n", NxLibItem(itmExecute).asJson(true).c_str());
-        } catch (...) { // Display other exceptions
+        }
+        catch (NxLibException &ex)
+        {
+            ensensoExceptionHandling (ex, "grabSingleCloud");
+        }
+        catch (...) { // Display other exceptions
             printf("Something, somewhere went terribly wrong!\n");
         }
 
@@ -121,39 +168,12 @@ void get_en_image()
         nRet = is_ImageFile(hCam, IS_IMAGE_FILE_CMD_SAVE, (void*) &ImageFileParams, sizeof(ImageFileParams));
         printf("Status is_ImageFile %d\n",nRet);
 
-        /*ImageFileParams.pwchFileName = L"./calib_en/snap_BGR8.bmp";
-        ImageFileParams.pnImageID = NULL;
-        ImageFileParams.ppcImageMem = NULL;
-        ImageFileParams.nQuality = 0;
-        ImageFileParams.nFileType = IS_IMG_BMP;
-
-        nRet = is_ImageFile(hCam, IS_IMAGE_FILE_CMD_SAVE, (void*) &ImageFileParams, sizeof(ImageFileParams));
-        printf("Status is_ImageFile %d\n",nRet);
-
-        ImageFileParams.pwchFileName = L"./calib_en/snap_BGR8.jpg";
-        ImageFileParams.pnImageID = NULL;
-        ImageFileParams.ppcImageMem = NULL;
-        ImageFileParams.nQuality = 0;
-        ImageFileParams.nFileType = IS_IMG_JPG;
-
-        nRet = is_ImageFile(hCam, IS_IMAGE_FILE_CMD_SAVE, (void*) &ImageFileParams, sizeof(ImageFileParams));
-        printf("Status is_ImageFile %d\n",nRet);*/
-
         //Kamera wieder freigeben
         is_ExitCamera(hCam);
         cout<<"To quit capturing calibration images, choose q. Else, choose any other letter."<<endl;
         cin >> flag;
         i++;
     }
-
-	/*VideoCapture cap(CV_CAP_PVAPI);
-    if(!cap.isOpened())  // check if we succeeded
-        cout<<"Not working"<<endl;
-
-    Mat frame;
-    cap >> frame;
-    */
-    //tonen(frame,"kijk");
 }
 
 pcl::PointCloud<pcl::PointXYZ> get_en_cloud()
