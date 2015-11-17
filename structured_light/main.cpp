@@ -1081,7 +1081,7 @@ void visualize3Dpoints(vector<Visualizer> visual)
             pcl::PointXYZ point;
             point.x = X;
             point.y = Y;
-            point.z = -Z;
+            point.z = Z;
             //cout<<"x: "<<point.x<<" y: "<<point.y<<" z: "<<point.z<<endl;
 
             point_cloud_ptr -> points.push_back(point);
