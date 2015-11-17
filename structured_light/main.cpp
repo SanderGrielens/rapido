@@ -733,7 +733,7 @@ bool calibrate(vector<Decoder> dec, vector<vector<Point2f> > corners, int aantal
     {
         for (int w=0; w<8; w++)
         {
-            world_corners.push_back(cv::Point3f(28.55555555f * w, 28.55555555f * h, 0.f));
+            world_corners.push_back(cv::Point3f(0.02855555555f * w, 0.02855555555f * h, 0.f));
         }
     }
 
@@ -1191,7 +1191,7 @@ int main(int argc, char *argv[])
         calib_series = i;
     }
     ///Remove ".." and "." directoy from the count
-    calib_series-=1;
+    calib_series-=2;
 
     cout<<"aantal calibratie series: "<<calib_series<<endl;
 
@@ -1204,9 +1204,9 @@ int main(int argc, char *argv[])
     ///Remove line if you want to work on all scan series
     //scan_series =2;
     ///Remove ".." and "." directoy from the count
-    scan_series-=1;
+    scan_series-=2;
 
-    cout<<"aantal calibratie series: "<<scan_series<<endl;
+    cout<<"aantal scan series: "<<scan_series<<endl;
     int vertical_patterns=0;
 
     ///Get dimensions
