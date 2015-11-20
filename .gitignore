@@ -18,3 +18,7 @@ robotcalib/Calibration/calib_en/*.png
 !robotcalib/Calibration/Calibration.cbp
 robotcalib/Calibration/calib_en/Ensenso.ply
 structured_light/*an*
+errordet/bin/*
+errordet/errordet.*
+!errordet/errordet.cbp
+errordet/obj/*
