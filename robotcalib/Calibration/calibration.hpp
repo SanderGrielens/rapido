@@ -44,18 +44,27 @@ struct Decoder
     vector<Mat> pattern_image;
 } ;
 
+struct Visualizer
+{
+    Mat pointcloud;
+    vector<Point2d> cam_points;
+} ;
+
 Decoder init_decoder();
 vector<Mat> generate_pattern(int NOP_v, int NOP_h, int projector_width, int projector_height);
-bool get_sl_images(int delay, int serie, int width, int height);
+bool get_sl_images(int delay, string path, int serie, int width, int height);
 int getdir (string dir, vector<string> &files);
-bool findcorners(vector<vector<Point2f> > &chessboardcorners, int aantalseries, int width, int height);
+bool findcorners(vector<vector<Point2f> > &chessboardcorners, string path, int aantalseries, int width, int height);
 int check_bit(float value1, float value2, float Ld, float Lg, float m);
 void calculate_light_components(Decoder &d, vector<Mat> beelden, int dir, float b);
 void get_pattern_image(Decoder &d, vector<Mat> beelden, int dir, float m, float thresh);
 void colorize_pattern(Decoder &d, vector<Mat> &image, int dir, int projector_width, int projector_height);
-bool decode(int serienummer, Decoder &d, bool draw, float b, float m, float thresh, int p_w, int p_h);
-bool decode_all(int aantalseries, vector<Decoder> &dec, bool draw, float b, float m, float thresh, int projector_width, int projector_height);
+bool decode(int serienummer, Decoder &d, bool draw, string path, float b, float m, float thresh, int p_w, int p_h);
+bool decode_all(int aantalseries, vector<Decoder> &dec, bool draw, string path, float b, float m, float thresh, int projector_width, int projector_height);
 bool calibrate_sl(vector<Decoder> dec, vector<vector<Point2f> > corners, int aantalseries, int projector_width, int projector_height);
+vector<Visualizer> calculate3DPoints_all(string mode, int aantalseries);
+void calculate3DPoints(vector<Point2f> &chessboardcorners, Decoder d);
+bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_width, int projector_height);
 
 
 

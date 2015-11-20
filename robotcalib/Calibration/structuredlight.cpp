@@ -118,11 +118,10 @@ vector<Mat> generate_pattern(int NOP_v, int NOP_h, int projector_width, int proj
     return result;
 }
 
-bool get_sl_images(int delay, int serie, int width, int height)
+bool get_sl_images(int delay, string path, int serie, int width, int height)
 {
     vector<Mat> pattern;
     cout<<"serienummer: "<<serie<<endl;
-    ostringstream conv;
 
     int vertical_patterns=0;
     ///Get dimensions
@@ -140,8 +139,6 @@ bool get_sl_images(int delay, int serie, int width, int height)
     }
     NOP_h = horizontal_patterns;
 
-
-    conv << serie;
     CameraPtr camera ;
     FramePtr frame;
     char * pCameraID = NULL;
@@ -271,7 +268,7 @@ bool get_sl_images(int delay, int serie, int width, int height)
 
         string pFileName;
         ///Save camera image
-        pFileName = "./calib_sl/serie" + conv.str() + "/frame" + convert.str()+ ".bmp";
+        pFileName = path + "/frame" + convert.str()+ ".bmp";
 
         AVTWriteBitmapToFile( &bitmap, pFileName.c_str() );
     }
@@ -279,7 +276,7 @@ bool get_sl_images(int delay, int serie, int width, int height)
     return true;
 }
 
-bool findcorners(vector<vector<Point2f> > &chessboardcorners, int aantalseries, int width, int height)
+bool findcorners(vector<vector<Point2f> > &chessboardcorners, string path, int aantalseries, int width, int height)
 {
     Mat board;
     Size boardSize(8,6);
@@ -306,8 +303,8 @@ bool findcorners(vector<vector<Point2f> > &chessboardcorners, int aantalseries, 
         ostringstream conv;
         conv << i;
 
-        string path = "./calib_sl/serie" + conv.str()+"/frame0.bmp";
-        board = imread(path, 0);
+        string pad = path + conv.str()+"/frame0.bmp";
+        board = imread(pad, 0);
         if(board.empty())
         {
             cout<<"No image found"<<i<<endl;
@@ -594,22 +591,22 @@ void colorize_pattern(Decoder &d, vector<Mat> &image, int dir, int projector_wid
 
 }
 
-bool decode(int serienummer, Decoder &d, bool draw, float b, float m, float thresh, int p_w, int p_h)
+bool decode(int serienummer, Decoder &d, bool draw, string path, float b, float m, float thresh, int p_w, int p_h)
 {
     vector<Mat> beelden ;
     ostringstream serienr;
     serienr << serienummer;
-    string path;
+    string pad;
     string einde = ".bmp";
 
-    path = "./calib_sl/serie" + serienr.str() + "/frame";
+    pad = path + serienr.str() + "/frame";
 
     ///Reading every image in a serie
     for(int i=2; i<(NOP_v+NOP_h)*2; i++)
     {
         ostringstream beeldnr;
         beeldnr << i;
-        Mat newmat_i = imread(path + beeldnr.str() + einde,0);
+        Mat newmat_i = imread(pad + beeldnr.str() + einde,0);
         if(newmat_i.empty())
             cout<<"no image"<<endl;
 
@@ -651,7 +648,7 @@ bool decode(int serienummer, Decoder &d, bool draw, float b, float m, float thre
     return true;
 }
 
-bool decode_all(int aantalseries, vector<Decoder> &dec, bool draw, float b, float m, float thresh, int projector_width, int projector_height)
+bool decode_all(int aantalseries, vector<Decoder> &dec, bool draw, string path, float b, float m, float thresh, int projector_width, int projector_height)
 {
     bool gelukt;
 
@@ -659,7 +656,7 @@ bool decode_all(int aantalseries, vector<Decoder> &dec, bool draw, float b, floa
     {
         Decoder d;
         cout<<"decode serie "<<i<<endl;
-        gelukt = decode(i, d, draw, b, m, thresh, projector_width, projector_height);
+        gelukt = decode(i, d, draw, path, b, m, thresh, projector_width, projector_height);
         if(!gelukt)
             break;
 
@@ -794,3 +791,364 @@ bool calibrate_sl(vector<Decoder> dec, vector<vector<Point2f> > corners, int aan
 
     return true;
 }
+
+vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b, float m, float thresh, int projector_width, int projector_height)
+{
+    bool draw = true;
+    vector<Decoder> dec;
+    vector<Visualizer> viz;
+
+    decode_all(aantalseries, dec, draw, path, b, m, thresh, projector_width, projector_height);
+
+        ///Get intrinsic and extrinsic camera parameters
+    FileStorage fs("./calib_sl/camera_projector.xml", FileStorage::READ);
+    Mat cameraMatrix;
+    Mat projMatrix;
+    Mat camdist;
+    Mat projdist;
+    Mat came = Mat(1234,1626, CV_32FC2);
+    Mat cam_uc, cam_up;
+
+    for(int i = 0; i<1626; i++) //x
+    {
+        for(int j = 0; j< 1234; j++) //y
+        {
+            came.at<Vec2f>(j,i)[1] = j; // y-channel
+            came.at<Vec2f>(j,i)[0] = i; // x -channel
+            //cout<<i<<" "<<j<<" "<<came.at<Vec2f>(j,i)[0]<<" "<<came.at<Vec2f>(j,i)[1]<<endl;
+        }
+    }
+
+    Mat rotMat;
+    Mat transMat;
+
+    fs["rotation"] >> rotMat;
+    if(rotMat.empty())
+        cout<<"rotleeg"<<endl;
+
+    fs["translation"] >> transMat;
+
+    if(transMat.empty())
+        cout<<"tranleeg"<<endl;
+
+    Mat projmat1 = Mat::eye(Size(4,3), CV_64F);
+    for(int i=0; i<projmat1.rows; i++)
+    {
+        for(int j=0; j<projmat1.cols; j++)
+        {
+            if(j==i && j<3)
+            {
+                projmat1.at<double>(i,j)=1;
+            }
+            else
+            {
+                projmat1.at<double>(i,j)=0;
+            }
+        }
+    }
+
+    Mat projmat2 = Mat::eye(Size(4,3), CV_64F);
+    for(int i=0; i<projmat2.rows; i++)
+    {
+        for(int j=0; j<projmat2.cols; j++)
+        {
+            if(j<3)
+            {
+                projmat2.at<double>(i,j)=rotMat.at<double>(i,j);
+            }
+            else
+            {
+                projmat2.at<double>(i,j)=transMat.at<double>(i,0);
+            }
+        }
+    }
+
+    fs["camera_matrix"] >> cameraMatrix;
+    fs["projector_matrix"] >> projMatrix;
+
+    fs["distortion_camera"] >> camdist;
+    fs["distorion_projector"] >> projdist;
+
+    if(!came.empty())
+    {
+        undistort(came.clone(), cam_uc, cameraMatrix, camdist);
+        undistort(came.clone(), cam_up, projMatrix, projdist);
+    }
+    else
+    {
+        cout<<"No data to undistort"<<endl;
+        exit(-1);
+    }
+
+    //#pragma omp parallel for
+    for(int k = 0; k< aantalseries; k++)
+    {
+        Decoder d = dec[k];
+        Visualizer v;
+        vector<Point2d> c_p;
+        vector<Point2d> p_p;
+        vector<Point2d> c_pp;
+        vector<Point2d> p_pp;
+        vector<Point2d> cam_points;
+        vector<Point2d> proj_points;
+        vector<Point2d> un;
+        Mat rechts = Mat::zeros(camera_height, camera_width, CV_8UC1);
+        Mat beneden = rechts.clone();
+        Mat hor = d.pattern_image[0]; //gives y coordinate(variates in Y direction)
+        Mat ver = d.pattern_image[1]; //gives x coordinate(variates in x direction)
+        //GaussianBlur(hor, hor, Size(1,5), 1.5, 0);
+        //GaussianBlur(ver, ver, Size(5,1), 1.5, 0);
+        int teller =0;
+        //#pragma omp parallel for
+        for(int x = 0; x<camera_width; x++)
+        {
+            for(int y = 0; y<camera_height; y++)
+            {
+                int tel = 1;
+                if (hor.at<float>(y,x) >= (pow(2, NOP_v+2)) || ver.at<float>(y,x) >= (pow(2, NOP_v+2)))
+                {
+                    continue;
+                }
+                if(hor.at<float>(y,x) == hor.at<float>(y+1, x))
+                {
+                    tel = 2;
+                    while(hor.at<float>(y,x) == hor.at<float>(y+tel, x))
+                    {
+                        tel++;
+                    }
+                }
+
+                beneden.at<uchar>(y,x) = tel;
+                y+=tel;
+            }
+        }
+        //#pragma omp parallel for
+        for(int y = 0; y<camera_height; y++)
+        {
+            for(int x = 0; x<camera_width; x++)
+            {
+                int tel = 1;
+                if (hor.at<float>(y,x) >= (pow(2, NOP_v+2)) || ver.at<float>(y,x) >= (pow(2, NOP_v+2)))
+                {
+                    continue;
+                }
+                if(ver.at<float>(y,x) == ver.at<float>(y, x+1))
+                {
+                    tel = 2;
+                    while(ver.at<float>(y,x) == ver.at<float>(y, x+tel))
+                    {
+                        tel++;
+                    }
+                }
+
+                rechts.at<uchar>(y,x) = tel;
+                x+=tel;
+            }
+        }
+        //#pragma omp parallel for
+        for(int x = 0; x<camera_width; x++)
+        {
+            for(int y =0; y< camera_height; y++)
+            {
+                int onder = beneden.at<uchar>(y,x);
+                int opzij = rechts.at<uchar>(y,x);
+                if(onder >0 && opzij >0 && x+opzij/2 < camera_width && y + onder/2 <  camera_height)
+                {
+                    cam_points.push_back(Point2d(x + (opzij/2),y+(onder/2)));
+                    Point2d punt = Point2d(ver.at<float>(y + (onder/2),x+(opzij/2)), hor.at<float>(y+(onder/2),x+(opzij/2)));
+                    proj_points.push_back(punt);///pattern point (x,y) coordinates is (vertical pattern, horizontal pattern)
+                }
+                else
+                    teller++;
+            }
+        }
+
+        cout<<"gefilterde punten: "<<teller<<endl;
+
+        ///Building 3D point cloud
+
+        Mat cam, proj;
+        cam = Mat(cam_points);
+        proj = Mat(proj_points);
+        Mat driedpunten = Mat(1, cam_points.size(), CV_64FC4);
+        //GaussianBlur(proj, proj, Size(5, 5), 1.5, 0);
+
+        ///Home made projection matrices:
+        Mat P0, P1;
+
+        P0 = cameraMatrix * projmat1;
+        P1 = projMatrix * projmat2;
+
+        //clock_t time1 = clock();
+        triangulatePoints(P0, P1, cam, proj, driedpunten);
+        //clock_t time2 = clock();
+        //cout<<"tijd trianguleren "<<(float)(time2-time1)/CLOCKS_PER_SEC<<endl;
+        cout<<"We hebben "<<cam_points.size()<<" punten getrianguleerd"<<endl;
+        v.pointcloud.push_back(driedpunten);
+        v.cam_points = cam_points;
+        viz.push_back(v);
+
+            double X,Y,Z;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZ>);//(new pcl::pointcloud<pcl::pointXYZ>);
+
+    for(int i=0;i<driedpunten.cols;i++)
+    {
+        //std::cout<<i<<endl;
+        X = driedpunten.at<double>(0,i) / driedpunten.at<double>(3,i);
+        Y = driedpunten.at<double>(1,i) / driedpunten.at<double>(3,i);
+        Z = driedpunten.at<double>(2,i) / driedpunten.at<double>(3,i);
+
+        pcl::PointXYZ point;
+        point.x = X;
+        point.y = Y;
+        point.z = Z;
+        cout<<"x: "<<point.x<<" y: "<<point.y<<" z: "<<point.z<<endl;
+
+        point_cloud_ptr -> points.push_back(point);
+    }
+
+
+    point_cloud_ptr->width = (int)point_cloud_ptr->points.size();
+    point_cloud_ptr->height =1;
+    pcl::PLYWriter plywriter;
+    plywriter.write("./test.ply", *point_cloud_ptr, false);
+    pcl::io::savePCDFileBinary("./test.pcd", *point_cloud_ptr);
+    }
+
+    return viz;
+}
+
+void calculate3DPoints(vector<Point2f> &c, Decoder d)
+{
+    vector<Point2f> cam_points;
+    vector<Point2f> proj_points;
+
+    for(int l = 0; l< c.size(); l++) //for each chessboard corner
+    {
+        if (d.pattern_image[0].at<float>(c[l].y,c[l].x) >= (pow(2, NOP_v+2)) || d.pattern_image[1].at<float>(c[l].y,c[l].x) >= (pow(2, NOP_v+2)))
+        {
+            continue;
+        }
+        else
+        {
+            cam_points.push_back(Point2f(c[l].y,c[l].x));
+            proj_points.push_back(Point2f(d.pattern_image[1].at<float>(c[l].y,c[l].x), d.pattern_image[0].at<float>(c[l].y,c[l].x))); ///pattern point is (vertical pattern, horizontal pattern)
+        }
+    }
+
+    cout<<"cam_points.size: "<<cam_points.size()<<endl;
+    cout<<"proj_points.size: "<<proj_points.size()<<endl;
+
+        ///Get intrinsic and extrinsic camera parameters
+    FileStorage fs("./calib_sl/camera_projector.xml", FileStorage::READ);
+    Mat cameraMatrix;
+    Mat projMatrix;
+    Mat rotMat;
+    Mat transMat;
+
+    fs["camera_matrix"] >> cameraMatrix;
+    fs["projector_matrix"] >> projMatrix;
+
+    fs["rotation"] >> rotMat;
+    if(rotMat.empty())
+        cout<<"rotleeg"<<endl;
+
+    fs["translation"] >> transMat;
+
+    if(transMat.empty())
+        cout<<"tranleeg"<<endl;
+
+    Mat projmat1 = Mat::eye(Size(4,3), CV_64F);
+    for(int i=0; i<projmat1.rows; i++)
+    {
+        for(int j=0; j<projmat1.cols; j++)
+        {
+            if(j==i && j<3)
+            {
+                projmat1.at<double>(i,j)=1;
+            }
+            else
+            {
+                projmat1.at<double>(i,j)=0;
+            }
+        }
+    }
+
+    Mat projmat2 = Mat::eye(Size(4,3), CV_64F);
+    for(int i=0; i<projmat2.rows; i++)
+    {
+        for(int j=0; j<projmat2.cols; j++)
+        {
+            if(j<3)
+            {
+                projmat2.at<double>(i,j)=rotMat.at<double>(i,j);
+            }
+            else
+            {
+                projmat2.at<double>(i,j)=transMat.at<double>(i,0);
+            }
+        }
+    }
+
+    Mat cam, proj;
+    cam = Mat(cam_points);
+    proj = Mat(proj_points);
+    Mat driedpunten = Mat(1, cam_points.size(), CV_64FC4);
+    //GaussianBlur(proj, proj, Size(5, 5), 1.5, 0);
+
+    ///Home made projection matrices:
+    Mat P0, P1;
+
+    P0 = cameraMatrix * projmat1;
+    P1 = projMatrix * projmat2;
+
+    //clock_t time1 = clock();
+    triangulatePoints(P0, P1, cam, proj, driedpunten);
+    //clock_t time2 = clock();
+    //cout<<"tijd trianguleren "<<(float)(time2-time1)/CLOCKS_PER_SEC<<endl;
+    cout<<"We hebben "<<cam_points.size()<<" punten getrianguleerd"<<endl;
+
+
+    double X,Y,Z;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZ>);//(new pcl::pointcloud<pcl::pointXYZ>);
+
+    for(int i=0;i<driedpunten.cols;i++)
+    {
+        //std::cout<<i<<endl;
+        X = driedpunten.at<double>(0,i) / driedpunten.at<double>(3,i);
+        Y = driedpunten.at<double>(1,i) / driedpunten.at<double>(3,i);
+        Z = driedpunten.at<double>(2,i) / driedpunten.at<double>(3,i);
+
+        pcl::PointXYZ point;
+        point.x = X;
+        point.y = Y;
+        point.z = Z;
+        cout<<"x: "<<point.x<<" y: "<<point.y<<" z: "<<point.z<<endl;
+
+        point_cloud_ptr -> points.push_back(point);
+    }
+
+
+    point_cloud_ptr->width = (int)point_cloud_ptr->points.size();
+    point_cloud_ptr->height =1;
+    pcl::PLYWriter plywriter;
+    plywriter.write("./test.ply", *point_cloud_ptr, false);
+    pcl::io::savePCDFileBinary("./test.pcd", *point_cloud_ptr);
+}
+
+bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_width, int projector_height)
+{
+    ///First, we'll use a chessboard as unique points to find
+    vector <vector<Point2f> > chessboardcorners(1);
+    bool gelukt_f = findcorners(chessboardcorners, path, 1, projector_width, projector_height);
+    /*///Get the pointcloud
+    vector<Visualizer> viz =  calculate3DPoints_all(path, 1,  b, m, thresh, projector_width, projector_height);
+*/
+    bool draw = false;
+    Decoder d;
+    bool gelukt = decode(0, d, draw, path, b, m, thresh, projector_width, projector_height);
+    calculate3DPoints(chessboardcorners[0], d);
+
+
+}
+

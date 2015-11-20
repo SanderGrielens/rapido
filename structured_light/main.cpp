@@ -342,6 +342,7 @@ bool findcorners(vector<vector<Point2f> > &chessboardcorners, int aantalseries)
         cornerSubPix(board, chessboardcorners[i], Size(11,11), Size(-1,-1), TermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 300, 0.001));
         cvtColor(board, board, CV_GRAY2BGR);
         drawChessboardCorners( board, boardSize, chessboardcorners[i], found1_1 );
+
         //tonen(board, "zijn ze gevonden?");
     }
     return true;
@@ -1045,6 +1046,9 @@ vector<Visualizer> calculate3DPoints_all(string mode, int aantalseries)
 
         P0 = cameraMatrix * projmat1;
         P1 = projMatrix * projmat2;
+
+        cout<<P0<<endl;
+        cout<<P1<<endl;
 
         //clock_t time1 = clock();
         triangulatePoints(P0, P1, cam, proj, driedpunten);

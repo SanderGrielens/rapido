@@ -22,3 +22,5 @@ errordet/bin/*
 errordet/errordet.*
 !errordet/errordet.cbp
 errordet/obj/*
+robotcalib/Calibration/robot_sl0/*
+!robotcalib/Calibration/robot_sl0/dummy.txt

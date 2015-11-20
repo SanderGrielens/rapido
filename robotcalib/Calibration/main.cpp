@@ -23,12 +23,12 @@ int main()
         calib_sl_series = i;
     }
     ///Remove ".." and "." directoy from the count
-    calib_sl_series-=1;
+    calib_sl_series-=2;
 
     while(flag)
     {
-        cout<<"Which camera do you want to calibrate?\n"
-          " e: Ensenso **under construction**\n"
+        cout<<"What do you want to calibrate?\n"
+          " e: Ensenso \n"
           " n: Normal camera **under construction**\n"
           " s: Structured Light\n"
           " t: TOF **under construction**\n"
@@ -66,51 +66,76 @@ int main()
         }
         else if(keuze=='s')
         {
-            int p_w = 1280;
-            int p_h = 800;
-            float b = 0.5;
-            float m = 5;
-            float thresh = 25;
-            /*cout<<"Please give the projector resolution. First the width, then the height:"<<endl;
-            cin >> p_w;
-            cin >> p_h;*/
-            cout<<"The resolution you gave is: "<<p_w<<"x"<<p_h<<endl;
-            cout<<"Do you wish to make new calibration images? y/n"<<endl;
-            char antwoord;
-            cin >> antwoord;
-            while(antwoord == 'y')
+            bool vlag = false;
+            while(!vlag)
             {
-                ostringstream conv;
-                conv << calib_sl_series;
-                string path = "./calib_sl/serie"+conv.str();
-                mkdir(path.c_str(), 0700);
-                bool gelukt = get_sl_images(300, calib_sl_series, p_w, p_h);
-                if(gelukt)
-                    calib_sl_series++;
-                else
-                    cout<<"failed to get serie: "<<calib_sl_series<<endl;
-                cout<<"Another?"<<endl;
+                int p_w = 1280;
+                int p_h = 800;
+                float b = 0.5;
+                float m = 5;
+                float thresh = 1;
+                /*cout<<"Please give the projector resolution. First the width, then the height:"<<endl;
+                cin >> p_w;
+                cin >> p_h;*/
+
+                cout<<"To calibrate the sensor, press s\n"
+                        "To calibrate the robot with reference to the sensor, press r"<<endl;
+                char antwoord;
                 cin >> antwoord;
-            }
 
-            if(!gelukt_f)
-            {
-                vector<vector<Point2f> > chessboardcorners(calib_sl_series);
-                gelukt_f = findcorners(chessboardcorners, calib_sl_series, p_w, p_h);
-                if(gelukt_f)
-                    corners = chessboardcorners;
-            }
-            if(!gelukt_d)
-            {
-                bool draw = false;
-                gelukt_d = decode_all(calib_sl_series, dec, draw, b, m, thresh, p_w, p_h);
-            }
+                if(antwoord == 's')
+                {
+                    cout<<"The resolution you gave is: "<<p_w<<"x"<<p_h<<endl;
+                    cout<<"Do you wish to make new calibration images? y/n"<<endl;
+                    char antwoord;
+                    cin >> antwoord;
+                    while(antwoord == 'y')
+                    {
+                        ostringstream conv;
+                        conv << calib_sl_series;
+                        string path = "./calib_sl/serie"+conv.str();
+                        mkdir(path.c_str(), 0700);
+                        bool gelukt = get_sl_images(300, path, calib_sl_series, p_w, p_h);
+                        if(gelukt)
+                            calib_sl_series++;
+                        else
+                            cout<<"failed to get serie: "<<calib_sl_series<<endl;
+                        cout<<"Another?"<<endl;
+                        cin >> antwoord;
+                    }
 
-            if(gelukt_f && gelukt_d)
-            {
-                gelukt_c = calibrate_sl(dec, corners, calib_sl_series, p_w, p_h);
-                if(!gelukt_c)
-                    cout<<"Structured Light setup failed to calibrate."<<endl;
+                    if(!gelukt_f)
+                    {
+                        string path = "./calib_sl/serie";
+                        vector<vector<Point2f> > chessboardcorners(calib_sl_series);
+                        gelukt_f = findcorners(chessboardcorners, path, calib_sl_series, p_w, p_h);
+                        if(gelukt_f)
+                            corners = chessboardcorners;
+                    }
+                    if(!gelukt_d)
+                    {
+                        string path = "./calib_sl/serie";
+                        bool draw = false;
+                        gelukt_d = decode_all(calib_sl_series, dec, draw, path, b, m, thresh, p_w, p_h);
+                    }
+
+                    if(gelukt_f && gelukt_d)
+                    {
+                        gelukt_c = calibrate_sl(dec, corners, calib_sl_series, p_w, p_h);
+                        if(!gelukt_c)
+                            cout<<"Structured Light setup failed to calibrate."<<endl;
+                    }
+                }
+                else if(antwoord == 'r')
+                {
+                    string path = "./robot_sl";
+                    //bool gelukt = get_sl_images(300, path, 0, p_w, p_h);
+                    bool gelukt_cr  = calibrate_sl_r(path, b, m, thresh, p_w, p_h);
+                }
+                else if(antwoord == 'q')
+                {
+                    vlag = true;
+                }
             }
         }
         else if(keuze=='t')
