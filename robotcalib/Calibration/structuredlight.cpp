@@ -792,9 +792,9 @@ bool calibrate_sl(vector<Decoder> dec, vector<vector<Point2f> > corners, int aan
     return true;
 }
 
-vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b, float m, float thresh, int projector_width, int projector_height)
+vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b, float m, float thresh, int projector_width, int projector_height, vector<Point2f> &c)
 {
-    bool draw = true;
+    bool draw = false;
     vector<Decoder> dec;
     vector<Visualizer> viz;
 
@@ -984,12 +984,12 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
         //clock_t time2 = clock();
         //cout<<"tijd trianguleren "<<(float)(time2-time1)/CLOCKS_PER_SEC<<endl;
         cout<<"We hebben "<<cam_points.size()<<" punten getrianguleerd"<<endl;
-        v.pointcloud.push_back(driedpunten);
+        v.pointcloud= driedpunten;
         v.cam_points = cam_points;
         viz.push_back(v);
 
             double X,Y,Z;
-    pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZ>);//(new pcl::pointcloud<pcl::pointXYZ>);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGB>);//(new pcl::pointcloud<pcl::pointXYZ>);
 
     for(int i=0;i<driedpunten.cols;i++)
     {
@@ -998,12 +998,14 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
         Y = driedpunten.at<double>(1,i) / driedpunten.at<double>(3,i);
         Z = driedpunten.at<double>(2,i) / driedpunten.at<double>(3,i);
 
-        pcl::PointXYZ point;
+        pcl::PointXYZRGB point;
         point.x = X;
         point.y = Y;
         point.z = Z;
-        cout<<"x: "<<point.x<<" y: "<<point.y<<" z: "<<point.z<<endl;
-
+        //cout<<"x: "<<point.x<<" y: "<<point.y<<" z: "<<point.z<<endl;
+        uint8_t r = 255, g = 0, b = 0;    // Example: Red color
+        uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
+        point.rgb = *reinterpret_cast<float*>(&rgb);
         point_cloud_ptr -> points.push_back(point);
     }
 
@@ -1012,17 +1014,17 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
     point_cloud_ptr->height =1;
     pcl::PLYWriter plywriter;
     plywriter.write("./test.ply", *point_cloud_ptr, false);
-    pcl::io::savePCDFileBinary("./test.pcd", *point_cloud_ptr);
+    pcl::io::savePCDFileBinary("./test2.pcd", *point_cloud_ptr);
     }
 
     return viz;
 }
 
-void calculate3DPoints(vector<Point2f> &c, Decoder d)
+Mat calculate3DPoints(vector<Point2f> &c, Decoder d)
 {
-    vector<Point2f> cam_points;
-    vector<Point2f> proj_points;
-
+    vector<Point2d> cam_points;
+    vector<Point2d> proj_points;
+    int window = 0;
     for(int l = 0; l< c.size(); l++) //for each chessboard corner
     {
         if (d.pattern_image[0].at<float>(c[l].y,c[l].x) >= (pow(2, NOP_v+2)) || d.pattern_image[1].at<float>(c[l].y,c[l].x) >= (pow(2, NOP_v+2)))
@@ -1031,8 +1033,8 @@ void calculate3DPoints(vector<Point2f> &c, Decoder d)
         }
         else
         {
-            cam_points.push_back(Point2f(c[l].y,c[l].x));
-            proj_points.push_back(Point2f(d.pattern_image[1].at<float>(c[l].y,c[l].x), d.pattern_image[0].at<float>(c[l].y,c[l].x))); ///pattern point is (vertical pattern, horizontal pattern)
+            cam_points.push_back(Point2d(c[l].x,c[l].y));
+            proj_points.push_back(Point2d(d.pattern_image[1].at<float>(c[l].y,c[l].x), d.pattern_image[0].at<float>(c[l].y,c[l].x))); ///pattern point is (vertical pattern, horizontal pattern)
         }
     }
 
@@ -1102,53 +1104,155 @@ void calculate3DPoints(vector<Point2f> &c, Decoder d)
     P0 = cameraMatrix * projmat1;
     P1 = projMatrix * projmat2;
 
-    //clock_t time1 = clock();
+    //clock_t time3 = clock();
     triangulatePoints(P0, P1, cam, proj, driedpunten);
-    //clock_t time2 = clock();
-    //cout<<"tijd trianguleren "<<(float)(time2-time1)/CLOCKS_PER_SEC<<endl;
+    //clock_t time4 = clock();
+    //cout<<"tijd trianguleren "<<(float)(time4-time3)/CLOCKS_PER_SEC<<endl;
     cout<<"We hebben "<<cam_points.size()<<" punten getrianguleerd"<<endl;
 
 
     double X,Y,Z;
-    pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZ>);//(new pcl::pointcloud<pcl::pointXYZ>);
-
-    for(int i=0;i<driedpunten.cols;i++)
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGB>);//(new pcl::pointcloud<pcl::pointXYZ>);
+    //vector<Point3d> punten;
+    Mat result = Mat(3,c.size(),CV_32FC1);
+    for(int i=0;i<c.size();i++)
     {
         //std::cout<<i<<endl;
         X = driedpunten.at<double>(0,i) / driedpunten.at<double>(3,i);
         Y = driedpunten.at<double>(1,i) / driedpunten.at<double>(3,i);
         Z = driedpunten.at<double>(2,i) / driedpunten.at<double>(3,i);
+        result.at<float>(0,i) = X;
+        result.at<float>(1,i) = Y;
+        result.at<float>(2,i) = Z;
 
-        pcl::PointXYZ point;
+
+        /*Point3d punt;
+        punt.x = X;
+        punt.y = Y;
+        punt.z = Z;
+        punten.push_back(punt);*/
+        pcl::PointXYZRGB point;
         point.x = X;
         point.y = Y;
         point.z = Z;
-        cout<<"x: "<<point.x<<" y: "<<point.y<<" z: "<<point.z<<endl;
+        //cout<<"x: "<<point.x<<" y: "<<point.y<<" z: "<<point.z<<endl;
+        uint8_t r = 255, g = 0, b = 0;    // Example: Red color
+        uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
+        point.rgb = *reinterpret_cast<float*>(&rgb);
+        point_cloud_ptr -> points.push_back(point);
 
         point_cloud_ptr -> points.push_back(point);
     }
+    return result;
+    //return punten;
+    /*std::vector<int> indices;
+    pcl::removeNaNFromPointCloud(*point_cloud_ptr,*point_cloud_ptr, indices);
+    point_cloud_ptr->width = (int)point_cloud_ptr->points.size();
+    point_cloud_ptr->height =1;
+    pcl::PLYWriter plywriter;
+    plywriter.write("./test.ply", *point_cloud_ptr, false);
+    pcl::io::savePCDFileBinary("./test.pcd", *point_cloud_ptr);*/
+}
 
+bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_width, int projector_height)
+{
+    ///First, we'll use chessboardcorners as unique points to find
+    vector <vector<Point2f> > chessboardcorners(1);
+    bool gelukt_f = findcorners(chessboardcorners, path, 1, projector_width, projector_height);
+    /*///Get the pointcloud
+    vector<Visualizer> viz =  calculate3DPoints_all(path, 1,  b, m, thresh, projector_width, projector_height, chessboardcorners[0]);*/
+    ///Calculate the 3D position of the chessboardcorners
+    Mat points_sensor;
+    bool draw = false;
+    Decoder d;
+    bool gelukt = decode(0, d, draw, path, b, m, thresh, projector_width, projector_height);
+    points_sensor = calculate3DPoints(chessboardcorners[0], d);
+    cout<<"sensor points acquired"<<endl;
+    cout<<points_sensor.cols<<" "<<points_sensor.rows<<endl;
+    ///Move the robot arm to every corner and record its 3D position
+    ///We use a self constructed point vector, but in time we will read it from the robot
+    Mat points_robot = Mat(points_sensor.rows, points_sensor.cols, CV_32FC1);
+    float row = 0;
+    float col = 0;
+    for(int i =0; i< points_sensor.cols; i++)
+    {
+        points_robot.at<float>(0,i) = row;
+        points_robot.at<float>(1,i) = col;
+        points_robot.at<float>(2,i) = (row+col)/2;
+        if(col == 7)
+        {
+            col = 0;
+            row++;
+            continue;
+        }
+        col++;
+    }
+    cout<<"Robot points acquired"<<endl;
+    cout<<points_robot.cols<<" "<<points_robot.rows<<endl;
+    for(int x=0; x<points_robot.cols; x++)
+    {
+        for(int y=0; y<3; y++)
+        {
+            cout<<points_robot.at<float>(y,x)<<" ,";
+        }
+        cout<<endl;
+    }
+
+
+    /*for(double x =0; x<8; x++)
+    {
+        for(double y=0; y<6; y++)
+        {
+            Point3d punt;
+            punt.x = x;
+            punt.y = y;
+            punt.z = x+y/2;
+            points_robot.push_back(punt);
+        }
+    }*/
+
+    ///Calculate the transformation matrix (rotation matrix and translation vector) between the two coordinate systems
+    Mat transMat;
+    Mat inliers;
+    int result = estimateAffine3D(points_robot,points_robot, transMat, inliers);
+    cout<<result<<endl;
+    cout<<transMat<<endl;
+
+    Mat sensor = Mat(points_sensor);
+    cout<<sensor.cols<<" "<<sensor.rows<<endl;
+    Mat driedpunten = transMat*sensor;
+
+
+    double X,Y,Z;
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGB>);//(new pcl::pointcloud<pcl::pointXYZ>);
+
+    for(int i=0;i<driedpunten.cols;i++)
+    {
+        //std::cout<<i<<endl;
+
+
+        X = driedpunten.at<double>(0,i) / driedpunten.at<double>(3,i);
+        Y = driedpunten.at<double>(1,i) / driedpunten.at<double>(3,i);
+        Z = driedpunten.at<double>(2,i) / driedpunten.at<double>(3,i);
+
+        pcl::PointXYZRGB point;
+        point.x = X;
+        point.y = Y;
+        point.z = Z;
+        //cout<<"x: "<<point.x<<" y: "<<point.y<<" z: "<<point.z<<endl;
+        uint8_t r = 255, g = 0, b = 0;    // Example: Red color
+        uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
+        point.rgb = *reinterpret_cast<float*>(&rgb);
+        point_cloud_ptr -> points.push_back(point);
+
+        point_cloud_ptr -> points.push_back(point);
+    }
 
     point_cloud_ptr->width = (int)point_cloud_ptr->points.size();
     point_cloud_ptr->height =1;
     pcl::PLYWriter plywriter;
     plywriter.write("./test.ply", *point_cloud_ptr, false);
     pcl::io::savePCDFileBinary("./test.pcd", *point_cloud_ptr);
-}
-
-bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_width, int projector_height)
-{
-    ///First, we'll use a chessboard as unique points to find
-    vector <vector<Point2f> > chessboardcorners(1);
-    bool gelukt_f = findcorners(chessboardcorners, path, 1, projector_width, projector_height);
-    /*///Get the pointcloud
-    vector<Visualizer> viz =  calculate3DPoints_all(path, 1,  b, m, thresh, projector_width, projector_height);
-*/
-    bool draw = false;
-    Decoder d;
-    bool gelukt = decode(0, d, draw, path, b, m, thresh, projector_width, projector_height);
-    calculate3DPoints(chessboardcorners[0], d);
-
 
 }
 

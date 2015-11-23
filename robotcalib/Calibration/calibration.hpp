@@ -63,7 +63,7 @@ bool decode(int serienummer, Decoder &d, bool draw, string path, float b, float 
 bool decode_all(int aantalseries, vector<Decoder> &dec, bool draw, string path, float b, float m, float thresh, int projector_width, int projector_height);
 bool calibrate_sl(vector<Decoder> dec, vector<vector<Point2f> > corners, int aantalseries, int projector_width, int projector_height);
 vector<Visualizer> calculate3DPoints_all(string mode, int aantalseries);
-void calculate3DPoints(vector<Point2f> &chessboardcorners, Decoder d);
+Mat calculate3DPoints(vector<Point2f> &chessboardcorners, Decoder d);
 bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_width, int projector_height);
 
 

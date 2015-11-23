@@ -79,7 +79,8 @@ int main()
                 cin >> p_h;*/
 
                 cout<<"To calibrate the sensor, press s\n"
-                        "To calibrate the robot with reference to the sensor, press r"<<endl;
+                        "To calibrate the robot with reference to the sensor, press r\n"
+                        "To quit, press q"<<endl;
                 char antwoord;
                 cin >> antwoord;
 
@@ -130,7 +131,10 @@ int main()
                 {
                     string path = "./robot_sl";
                     //bool gelukt = get_sl_images(300, path, 0, p_w, p_h);
+                    clock_t time1 = clock();
                     bool gelukt_cr  = calibrate_sl_r(path, b, m, thresh, p_w, p_h);
+                    clock_t time2 = clock();
+                    cout<<"tijd calibreren robot "<<(float)(time2-time1)/CLOCKS_PER_SEC<<endl;
                 }
                 else if(antwoord == 'q')
                 {
