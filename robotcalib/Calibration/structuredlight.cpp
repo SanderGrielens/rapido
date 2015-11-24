@@ -1114,16 +1114,17 @@ Mat calculate3DPoints(vector<Point2f> &c, Decoder d)
     double X,Y,Z;
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGB>);//(new pcl::pointcloud<pcl::pointXYZ>);
     //vector<Point3d> punten;
-    Mat result = Mat(3,c.size(),CV_32FC1);
+    Mat result = Mat(c.size(),4,CV_32FC1);
     for(int i=0;i<c.size();i++)
     {
         //std::cout<<i<<endl;
         X = driedpunten.at<double>(0,i) / driedpunten.at<double>(3,i);
         Y = driedpunten.at<double>(1,i) / driedpunten.at<double>(3,i);
         Z = driedpunten.at<double>(2,i) / driedpunten.at<double>(3,i);
-        result.at<float>(0,i) = X;
-        result.at<float>(1,i) = Y;
-        result.at<float>(2,i) = Z;
+        result.at<float>(i,0) = X;
+        result.at<float>(i,1) = Y;
+        result.at<float>(i,2) = Z;
+        result.at<float>(i,3) = 1;
 
 
         /*Point3d punt;
@@ -1168,7 +1169,6 @@ bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_w
     bool gelukt = decode(0, d, draw, path, b, m, thresh, projector_width, projector_height);
     points_sensor = calculate3DPoints(chessboardcorners[0], d);
     cout<<"sensor points acquired"<<endl;
-    cout<<points_sensor.cols<<" "<<points_sensor.rows<<endl;
     ///Move the robot arm to every corner and record its 3D position
     ///We use a self constructed point vector, but in time we will read it from the robot
     Mat points_robot = Mat(points_sensor.rows, points_sensor.cols, CV_32FC1);
@@ -1176,9 +1176,10 @@ bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_w
     float col = 0;
     for(int i =0; i< points_sensor.cols; i++)
     {
-        points_robot.at<float>(0,i) = row;
-        points_robot.at<float>(1,i) = col;
-        points_robot.at<float>(2,i) = (row+col)/2;
+        points_robot.at<float>(i,0) = row;
+        points_robot.at<float>(i,1) = col;
+        points_robot.at<float>(i,2) = (row+col)/2;
+        //points_robot.at<float>(i,3) = 1;
         if(col == 7)
         {
             col = 0;
@@ -1188,40 +1189,14 @@ bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_w
         col++;
     }
     cout<<"Robot points acquired"<<endl;
-    cout<<points_robot.cols<<" "<<points_robot.rows<<endl;
-    for(int x=0; x<points_robot.cols; x++)
-    {
-        for(int y=0; y<3; y++)
-        {
-            cout<<points_robot.at<float>(y,x)<<" ,";
-        }
-        cout<<endl;
-    }
-
-
-    /*for(double x =0; x<8; x++)
-    {
-        for(double y=0; y<6; y++)
-        {
-            Point3d punt;
-            punt.x = x;
-            punt.y = y;
-            punt.z = x+y/2;
-            points_robot.push_back(punt);
-        }
-    }*/
 
     ///Calculate the transformation matrix (rotation matrix and translation vector) between the two coordinate systems
     Mat transMat;
     Mat inliers;
-    int result = estimateAffine3D(points_robot,points_robot, transMat, inliers);
-    cout<<result<<endl;
+    int result = estimateAffine3D(points_sensor,points_robot, transMat, inliers);
     cout<<transMat<<endl;
 
-    Mat sensor = Mat(points_sensor);
-    cout<<sensor.cols<<" "<<sensor.rows<<endl;
-    Mat driedpunten = transMat*sensor;
-
+    Mat driedpunten = transMat*(points_sensor.t());
 
     double X,Y,Z;
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGB>);//(new pcl::pointcloud<pcl::pointXYZ>);
