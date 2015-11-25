@@ -64,6 +64,11 @@ bool decode_all(int aantalseries, vector<Decoder> &dec, bool draw, string path, 
 bool calibrate_sl(vector<Decoder> dec, vector<vector<Point2f> > corners, int aantalseries, int projector_width, int projector_height);
 vector<Visualizer> calculate3DPoints_all(string mode, int aantalseries);
 Mat calculate3DPoints(vector<Point2f> &chessboardcorners, Decoder d);
+Mat getRobotPoints(int height, int width);
+Mat calculateTransMat(Mat origin, Mat dest);
+Mat convert(Mat origin, Mat transMat);
+void getRmsError(Mat transformed, Mat dest);
+void save(Mat origin, Mat transformed, Mat dest);
 bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_width, int projector_height);
 
 
