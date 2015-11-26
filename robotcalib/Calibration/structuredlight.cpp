@@ -815,7 +815,6 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
         {
             came.at<Vec2f>(j,i)[1] = j; // y-channel
             came.at<Vec2f>(j,i)[0] = i; // x -channel
-            //cout<<i<<" "<<j<<" "<<came.at<Vec2f>(j,i)[0]<<" "<<came.at<Vec2f>(j,i)[1]<<endl;
         }
     }
 
@@ -894,8 +893,8 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
         vector<Point2d> un;
         Mat rechts = Mat::zeros(camera_height, camera_width, CV_8UC1);
         Mat beneden = rechts.clone();
-        Mat hor = d.pattern_image[0]; //gives y coordinate(variates in Y direction)
-        Mat ver = d.pattern_image[1]; //gives x coordinate(variates in x direction)
+        Mat hor = d.pattern_image[0];
+        Mat ver = d.pattern_image[1];
         //GaussianBlur(hor, hor, Size(1,5), 1.5, 0);
         //GaussianBlur(ver, ver, Size(5,1), 1.5, 0);
         int teller =0;
@@ -922,7 +921,7 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
                 y+=tel;
             }
         }
-        //#pragma omp parallel for
+
         for(int y = 0; y<camera_height; y++)
         {
             for(int x = 0; x<camera_width; x++)
@@ -945,7 +944,7 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
                 x+=tel;
             }
         }
-        //#pragma omp parallel for
+
         for(int x = 0; x<camera_width; x++)
         {
             for(int y =0; y< camera_height; y++)
@@ -964,14 +963,6 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
         }
 
         cout<<"gefilterde punten: "<<teller<<endl;
-
-        ///Building 3D point cloud
-
-        /*Mat cam, proj;
-        cam = Mat(cam_points);
-        proj = Mat(proj_points);*/
-        //Mat driedpunten = Mat(1, cam_points.size(), CV_64FC4);
-        //GaussianBlur(proj, proj, Size(5, 5), 1.5, 0);
 
         ///Home made projection matrices:
         Mat P0, P1;
@@ -1031,7 +1022,7 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
                 "type: "<<driepunt[i].type()<<endl;
         }
 
-        Mat driedpunten;// = Mat(1, cam_points.size(), CV_64FC4);
+        Mat driedpunten;
         hconcat(driepunt, driedpunten);
         cout<<"concat gelukt"<<driepunt[0].dims<<endl;
         v.pointcloud= driedpunten;
@@ -1039,7 +1030,7 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
         viz.push_back(v);
 
         double X,Y,Z;
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGB>);//(new pcl::pointcloud<pcl::pointXYZ>);
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGB>);
 
         for(int i=0;i<driedpunten.cols;i++)
         {
@@ -1052,7 +1043,6 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
             point.x = X;
             point.y = Y;
             point.z = Z;
-            //cout<<"x: "<<point.x<<" y: "<<point.y<<" z: "<<point.z<<endl;
             uint8_t r = 255, g = 0, b = 0;    // Example: Red color
             uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
             point.rgb = *reinterpret_cast<float*>(&rgb);
@@ -1370,8 +1360,8 @@ bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_w
     vector <vector<Point2f> > chessboardcorners(1);
     bool gelukt_f = findcorners(chessboardcorners, path, 1, projector_width, projector_height);
     ///Get the pointcloud
-    vector<Visualizer> viz =  calculate3DPoints_all(path, 1,  b, m, thresh, projector_width, projector_height, chessboardcorners[0]);
-    /*///Calculate the 3D position of the chessboardcorners
+    //vector<Visualizer> viz =  calculate3DPoints_all(path, 1,  b, m, thresh, projector_width, projector_height, chessboardcorners[0]);
+    ///Calculate the 3D position of the chessboardcorners
     Mat points_sensor;
     bool draw = false;
     Decoder d;
@@ -1394,6 +1384,6 @@ bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_w
     getRmsError(transformed, points_robot);
 
     ///Save the data as a .pcd and .ply file
-    save(points_sensor, transformed, points_robot);*/
+    save(points_sensor, transformed, points_robot);
     return true;
 }
