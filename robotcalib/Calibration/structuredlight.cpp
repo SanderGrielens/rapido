@@ -967,10 +967,10 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
 
         ///Building 3D point cloud
 
-        Mat cam, proj;
+        /*Mat cam, proj;
         cam = Mat(cam_points);
-        proj = Mat(proj_points);
-        Mat driedpunten = Mat(1, cam_points.size(), CV_64FC4);
+        proj = Mat(proj_points);*/
+        //Mat driedpunten = Mat(1, cam_points.size(), CV_64FC4);
         //GaussianBlur(proj, proj, Size(5, 5), 1.5, 0);
 
         ///Home made projection matrices:
@@ -979,77 +979,92 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
         P0 = cameraMatrix * projmat1;
         P1 = projMatrix * projmat2;
 
-        int number_of_cores= 2;
-        vector<Mat> cams(number_of_cores);
-        vector<Mat> projs(number_of_cores);
-        vector<Mat> driepunt(number_of_cores);
+        int number_of_cores= 16;
+        omp_set_num_threads(number_of_cores);
+        vector<vector<Point2d> > cams;
+        vector<vector<Point2d> > projs;
+        vector<Mat> driepunt;
+        int deler = cam_points.size()/number_of_cores;
+
         teller = 0;
-        cout<<"tot hier"<<endl;
-        for(int i = 0; i< cam_points.size(); i++)
+        int elementteller = 0;
+        while(elementteller<cam_points.size())
         {
-                if(i%(cam_points.size()/number_of_cores && i>0))
-                    teller++;
+            vector<Point2d> cam;
+            vector<Point2d> proj;
+            for(int i= teller*deler; i<(teller + 1)*deler; i++)
+            {
+                if(i>= cam_points.size())
+                    break;
 
-
-                cams[teller] = Mat(cam_points.size()/number_of_cores, 2, CV_64FC1);
-                projs[teller] = Mat(cam_points.size()/number_of_cores, 2, CV_64FC1);
-                cams[teller].at<double>(i, 0) = cam_points[i].x;
-                cams[teller].at<double>(i, 1) = cam_points[i].y;
-                projs[teller].at<double>(i, 0) = proj_points[i].x;
-                projs[teller].at<double>(i, 1) = proj_points[i].y;
+                cam.push_back(cam_points[i]);
+                proj.push_back(proj_points[i]);
+                elementteller++;
+            }
+            cams.push_back(cam);
+            projs.push_back(proj);
+            teller++;
         }
-                cout<<"tot hier"<<endl;
 
-        for(int i = 0; i< cams.size(); i++)
+        #pragma omp parallel for
+        for(int i = 0; i< number_of_cores; i++)
         {
-            driedpunten = Mat(1, cam_points.size(), CV_64FC4);
+            Mat deel = Mat(1, cams[i].size(), CV_64FC4);
+            Mat camsMat = Mat(cams[i]);
+            Mat projsMat = Mat(projs[i]);
+
             clock_t time1 = clock();
-            triangulatePoints(P0, P1, cams[i], projs[i], driedpunten);
+            triangulatePoints(P0, P1, camsMat, projsMat, deel);
             clock_t time2 = clock();
             cout<<"tijd trianguleren "<<(float)(time2-time1)/CLOCKS_PER_SEC<<endl;
-            cout<<"We hebben "<<cam_points.size()<<" punten getrianguleerd"<<endl;
+            cout<<"We hebben "<<cams[i].size()<<" punten getrianguleerd"<<endl;
 
-            driepunt.push_back(driedpunten);
+            cout<<deel.rows<<" "<<deel.cols<<endl;
+            driepunt.push_back(deel);
         }
 
-
-        for(int i = 0; i< driepunt.size(); i++)
+        for(int i =0; i<driepunt.size(); i++)
         {
-            driedpunten = Mat(1, cam_points.size(), CV_64FC4);
-            vconcat(driepunt, driedpunten);
+            cout<<"i: "<<i<<"\n"
+                "Dims: "<<driepunt[i].dims<<"\n"
+                "rows: "<<driepunt[i].rows<<"\n"
+                "type: "<<driepunt[i].type()<<endl;
         }
 
+        Mat driedpunten;// = Mat(1, cam_points.size(), CV_64FC4);
+        hconcat(driepunt, driedpunten);
+        cout<<"concat gelukt"<<driepunt[0].dims<<endl;
         v.pointcloud= driedpunten;
         v.cam_points = cam_points;
         viz.push_back(v);
 
-            double X,Y,Z;
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGB>);//(new pcl::pointcloud<pcl::pointXYZ>);
+        double X,Y,Z;
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGB>);//(new pcl::pointcloud<pcl::pointXYZ>);
 
-    for(int i=0;i<driedpunten.cols;i++)
-    {
-        //std::cout<<i<<endl;
-        X = driedpunten.at<double>(0,i) / driedpunten.at<double>(3,i);
-        Y = driedpunten.at<double>(1,i) / driedpunten.at<double>(3,i);
-        Z = driedpunten.at<double>(2,i) / driedpunten.at<double>(3,i);
+        for(int i=0;i<driedpunten.cols;i++)
+        {
+            //std::cout<<i<<endl;
+            X = driedpunten.at<double>(0,i) / driedpunten.at<double>(3,i);
+            Y = driedpunten.at<double>(1,i) / driedpunten.at<double>(3,i);
+            Z = driedpunten.at<double>(2,i) / driedpunten.at<double>(3,i);
 
-        pcl::PointXYZRGB point;
-        point.x = X;
-        point.y = Y;
-        point.z = Z;
-        //cout<<"x: "<<point.x<<" y: "<<point.y<<" z: "<<point.z<<endl;
-        uint8_t r = 255, g = 0, b = 0;    // Example: Red color
-        uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
-        point.rgb = *reinterpret_cast<float*>(&rgb);
-        point_cloud_ptr -> points.push_back(point);
-    }
+            pcl::PointXYZRGB point;
+            point.x = X;
+            point.y = Y;
+            point.z = Z;
+            //cout<<"x: "<<point.x<<" y: "<<point.y<<" z: "<<point.z<<endl;
+            uint8_t r = 255, g = 0, b = 0;    // Example: Red color
+            uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
+            point.rgb = *reinterpret_cast<float*>(&rgb);
+            point_cloud_ptr -> points.push_back(point);
+        }
 
 
-    point_cloud_ptr->width = (int)point_cloud_ptr->points.size();
-    point_cloud_ptr->height =1;
-    pcl::PLYWriter plywriter;
-    plywriter.write("./test.ply", *point_cloud_ptr, false);
-    pcl::io::savePCDFileBinary("./test2.pcd", *point_cloud_ptr);
+        point_cloud_ptr->width = (int)point_cloud_ptr->points.size();
+        point_cloud_ptr->height =1;
+        pcl::PLYWriter plywriter;
+        plywriter.write("./test.ply", *point_cloud_ptr, false);
+        pcl::io::savePCDFileBinary("./test2.pcd", *point_cloud_ptr);
     }
 
     return viz;

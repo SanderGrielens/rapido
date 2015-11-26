@@ -12,6 +12,7 @@
 #include <iostream>
 #include <sys/stat.h>
 #include <limits>
+#include <omp.h>
 
 #include <ueye.h>
 
