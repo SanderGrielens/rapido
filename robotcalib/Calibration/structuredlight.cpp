@@ -370,7 +370,7 @@ void calculate_light_components(Decoder &d, vector<Mat> beelden, int dir, float 
     }
     string LD = "ld"+ richting;
     string LG = "lg"+richting;
-
+    #pragma omp parallel for
     for(int i =0; i< y; i++)
     {
         for(int j =0; j<x; j++)
@@ -429,7 +429,7 @@ void get_pattern_image(Decoder &d, vector<Mat> beelden, int dir, float m, float 
 
     bit = holder;
     //cout<<"bit: "<<bit<<endl;
-
+    #pragma omp parallel for
     for(int j =0; j< beelden[NOP].rows; j++)
     {
         for(int k =0; k<beelden[NOP].cols; k++)
@@ -449,17 +449,19 @@ void get_pattern_image(Decoder &d, vector<Mat> beelden, int dir, float m, float 
     ///Go over each image pair (img and his inverse) and check for each pixel it's value. Add it to pattern[dir]
     /// If a pixel is in a lighted area, we add 2 raised to the power of (k - the frame number). This way we get a gray code pattern for each pixel in pattern[dir].
     /// Pattern[dir] is of type 32 bit float. If you have more than 32 patterns, change the type of pattern[dir].
-    //#pragma omp parallel for
+
     for(int i = start; i<=NOP ; i+=2)
     {
         bit--;
-
+        Mat beeld1 = beelden[i+1];
+        Mat beeld2 = beelden[i];
+        #pragma omp parallel for
         for(int j =0; j< beelden[i+1].rows; j++)
         {
             for(int k =0; k<beelden[i+1].cols; k++)
             {
-                float val1 = beelden[i+1].at<float>(j,k);
-                float val2 = beelden[i].at<float>(j,k);
+                float val1 = beeld1.at<float>(j,k);
+                float val2 = beeld2.at<float>(j,k);
                 float ld = d.Ld[dir].at<float>(j,k);
                 float lg = d.Lg[dir].at<float>(j,k);
 
@@ -480,7 +482,7 @@ void get_pattern_image(Decoder &d, vector<Mat> beelden, int dir, float m, float 
         }
     }
 
-
+    #pragma omp parallel for
     ///Convert pattern from gray code to binary
     for(int i=0;i<d.pattern_image[dir].rows;i++)
     {
@@ -600,7 +602,6 @@ bool decode(int serienummer, Decoder &d, bool draw, string path, float b, float 
     string einde = ".bmp";
 
     pad = path + serienr.str() + "/frame";
-
     ///Reading every image in a serie
     for(int i=2; i<(NOP_v+NOP_h)*2; i++)
     {
@@ -792,31 +793,21 @@ bool calibrate_sl(vector<Decoder> dec, vector<vector<Point2f> > corners, int aan
     return true;
 }
 
-vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b, float m, float thresh, int projector_width, int projector_height, vector<Point2f> &c)
+vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b, float m, float thresh, int projector_width, int projector_height/*, vector<Point2f> &c*/)
 {
     bool draw = false;
     vector<Decoder> dec;
     vector<Visualizer> viz;
-
+    //struct timeval tv1, tv2; struct timezone tz;
+    //gettimeofday(&tv1, &tz);
     decode_all(aantalseries, dec, draw, path, b, m, thresh, projector_width, projector_height);
+    //gettimeofday(&tv2, &tz);
+    //printf( "decode duurt %12.4g sec\n", (tv2.tv_sec-tv1.tv_sec) + (tv2.tv_usec-tv1.tv_usec)*1e-6 );
 
         ///Get intrinsic and extrinsic camera parameters
     FileStorage fs("./calib_sl/camera_projector.xml", FileStorage::READ);
     Mat cameraMatrix;
     Mat projMatrix;
-    Mat camdist;
-    Mat projdist;
-    Mat came = Mat(1234,1626, CV_32FC2);
-    Mat cam_uc, cam_up;
-
-    for(int i = 0; i<1626; i++) //x
-    {
-        for(int j = 0; j< 1234; j++) //y
-        {
-            came.at<Vec2f>(j,i)[1] = j; // y-channel
-            came.at<Vec2f>(j,i)[0] = i; // x -channel
-        }
-    }
 
     Mat rotMat;
     Mat transMat;
@@ -865,32 +856,13 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
     fs["camera_matrix"] >> cameraMatrix;
     fs["projector_matrix"] >> projMatrix;
 
-    fs["distortion_camera"] >> camdist;
-    fs["distorion_projector"] >> projdist;
-
-    if(!came.empty())
-    {
-        undistort(came.clone(), cam_uc, cameraMatrix, camdist);
-        undistort(came.clone(), cam_up, projMatrix, projdist);
-    }
-    else
-    {
-        cout<<"No data to undistort"<<endl;
-        exit(-1);
-    }
-
     //#pragma omp parallel for
     for(int k = 0; k< aantalseries; k++)
     {
         Decoder d = dec[k];
         Visualizer v;
-        vector<Point2d> c_p;
-        vector<Point2d> p_p;
-        vector<Point2d> c_pp;
-        vector<Point2d> p_pp;
         vector<Point2d> cam_points;
         vector<Point2d> proj_points;
-        vector<Point2d> un;
         Mat rechts = Mat::zeros(camera_height, camera_width, CV_8UC1);
         Mat beneden = rechts.clone();
         Mat hor = d.pattern_image[0];
@@ -899,12 +871,15 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
         //GaussianBlur(ver, ver, Size(5,1), 1.5, 0);
         int teller =0;
         //#pragma omp parallel for
+        //struct timeval tv4, tv5, tv6, tv7; struct timezone tz;
+        //gettimeofday(&tv4, &tz);
+        int max_val = pow(2, NOP_v+2);
         for(int x = 0; x<camera_width; x++)
         {
             for(int y = 0; y<camera_height; y++)
             {
                 int tel = 1;
-                if (hor.at<float>(y,x) >= (pow(2, NOP_v+2)) || ver.at<float>(y,x) >= (pow(2, NOP_v+2)))
+                if (hor.at<float>(y,x) >= max_val || ver.at<float>(y,x) >= max_val)
                 {
                     continue;
                 }
@@ -921,13 +896,15 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
                 y+=tel;
             }
         }
-
+        //gettimeofday(&tv5, &tz);
+        //printf( "alles klaar zetten1 duurt %12.4g sec\n", (tv5.tv_sec-tv4.tv_sec) + (tv5.tv_usec-tv4.tv_usec)*1e-6 );
+        //#pragma omp parallel for
         for(int y = 0; y<camera_height; y++)
         {
             for(int x = 0; x<camera_width; x++)
             {
                 int tel = 1;
-                if (hor.at<float>(y,x) >= (pow(2, NOP_v+2)) || ver.at<float>(y,x) >= (pow(2, NOP_v+2)))
+                if (hor.at<float>(y,x) >= max_val || ver.at<float>(y,x) >= max_val)
                 {
                     continue;
                 }
@@ -944,7 +921,9 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
                 x+=tel;
             }
         }
-
+        //gettimeofday(&tv6, &tz);
+        //printf( "alles klaar zetten2 duurt %12.4g sec\n", (tv6.tv_sec-tv5.tv_sec) + (tv6.tv_usec-tv5.tv_usec)*1e-6 );
+        //#pragma omp parallel for
         for(int x = 0; x<camera_width; x++)
         {
             for(int y =0; y< camera_height; y++)
@@ -961,10 +940,33 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
                     teller++;
             }
         }
+        //gettimeofday(&tv7, &tz);
+        //printf( "alles klaar zetten3 duurt %12.4g sec\n", (tv7.tv_sec-tv6.tv_sec) + (tv7.tv_usec-tv6.tv_usec)*1e-6 );
+        //printf( "alles klaar zetten duurt %12.4g sec\n", (tv7.tv_sec-tv4.tv_sec) + (tv7.tv_usec-tv4.tv_usec)*1e-6 );
 
         cout<<"gefilterde punten: "<<teller<<endl;
+        //struct timeval tv1,tv2; //struct timezone tz;
+        //gettimeofday(&tv1, &tz);
 
-        ///Home made projection matrices:
+        ///Home made projection serial:
+
+ /*       Mat cam, proj;
+        cam = Mat(cam_points);
+        proj = Mat(proj_points);
+        Mat driedpunten = Mat(1, cam_points.size(), CV_64FC4);
+        //GaussianBlur(proj, proj, Size(5, 5), 1.5, 0);
+
+        Mat P0, P1;
+
+        P0 = cameraMatrix * projmat1;
+        P1 = projMatrix * projmat2;
+
+        //clock_t time1 = clock();
+        triangulatePoints(P0, P1, cam, proj, driedpunten);
+        //clock_t time2 = clock();
+        //cout<<"tijd trianguleren "<<(float)(time2-time1)/CLOCKS_PER_SEC<<endl;
+*/
+        ///Home made projection matrices parallel:
         Mat P0, P1;
 
         P0 = cameraMatrix * projmat1;
@@ -1004,31 +1006,23 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
             Mat camsMat = Mat(cams[i]);
             Mat projsMat = Mat(projs[i]);
 
-            clock_t time1 = clock();
             triangulatePoints(P0, P1, camsMat, projsMat, deel);
-            clock_t time2 = clock();
-            cout<<"tijd trianguleren "<<(float)(time2-time1)/CLOCKS_PER_SEC<<endl;
-            cout<<"We hebben "<<cams[i].size()<<" punten getrianguleerd"<<endl;
-
-            cout<<deel.rows<<" "<<deel.cols<<endl;
             driepunt.push_back(deel);
         }
 
-        for(int i =0; i<driepunt.size(); i++)
-        {
-            cout<<"i: "<<i<<"\n"
-                "Dims: "<<driepunt[i].dims<<"\n"
-                "rows: "<<driepunt[i].rows<<"\n"
-                "type: "<<driepunt[i].type()<<endl;
-        }
 
         Mat driedpunten;
         hconcat(driepunt, driedpunten);
-        cout<<"concat gelukt"<<driepunt[0].dims<<endl;
+
+        //gettimeofday(&tv2, &tz);
+        //printf( "triangulate duurt %12.4g sec\n", (tv2.tv_sec-tv1.tv_sec) + (tv2.tv_usec-tv1.tv_usec)*1e-6 );
+
+        ///Save 3D coordinates
         v.pointcloud= driedpunten;
         v.cam_points = cam_points;
         viz.push_back(v);
 
+/*        ///Convert to pointcloud and save as .PCD and .PLY
         double X,Y,Z;
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGB>);
 
@@ -1055,6 +1049,7 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
         pcl::PLYWriter plywriter;
         plywriter.write("./test.ply", *point_cloud_ptr, false);
         pcl::io::savePCDFileBinary("./test2.pcd", *point_cloud_ptr);
+*/
     }
 
     return viz;
@@ -1356,12 +1351,42 @@ void save(Mat origin, Mat transformed, Mat dest)
 
 bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_width, int projector_height)
 {
-    ///First, we'll use chessboardcorners as unique points to find
+
+    int vertical_patterns=0;
+    ///Get dimensions
+    while(pow(2, vertical_patterns) < projector_width)
+    {
+        vertical_patterns++;
+    }
+    NOP_v = vertical_patterns;
+
+    ///Do the same for the horizontal patterns
+    int horizontal_patterns=0;
+    while(pow(2, horizontal_patterns) < projector_height)
+    {
+        horizontal_patterns++;
+    }
+    NOP_h = horizontal_patterns;
+
+
+
+    struct timeval tv1,tv2, tv3, tv4, tv5, tv6; struct timezone tz;
+
+    ///First, we'll use chessboardcorners as unique points to find (also needed for calculation of NOP_v and NOP_h)
+    gettimeofday(&tv1, &tz);
     vector <vector<Point2f> > chessboardcorners(1);
     bool gelukt_f = findcorners(chessboardcorners, path, 1, projector_width, projector_height);
+    gettimeofday(&tv2, &tz);
+    printf( "find chessboardcorners duurt %12.4g sec\n", (tv2.tv_sec-tv1.tv_sec) + (tv2.tv_usec-tv1.tv_usec)*1e-6 );
+
     ///Get the pointcloud
-    //vector<Visualizer> viz =  calculate3DPoints_all(path, 1,  b, m, thresh, projector_width, projector_height, chessboardcorners[0]);
+/*    gettimeofday(&tv3, &tz);
+    vector<Visualizer> viz =  calculate3DPoints_all(path, 1,  b, m, thresh, projector_width, projector_height);
+    gettimeofday(&tv4, &tz);
+    printf( "getting the pointcloud duurt  = %12.4g sec\n", (tv4.tv_sec-tv3.tv_sec) + (tv4.tv_usec-tv3.tv_usec)*1e-6 );
+*/
     ///Calculate the 3D position of the chessboardcorners
+    gettimeofday(&tv5, &tz);
     Mat points_sensor;
     bool draw = false;
     Decoder d;
@@ -1379,11 +1404,12 @@ bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_w
 
     ///Convert the sensor points to the coordinate system of the robot
     Mat transformed = convert(points_sensor, transMat); ///transformed = 3 x 48
-
+    gettimeofday(&tv6, &tz);
+    printf( "calibrating robot - sensor duurt  = %12.4g sec\n", (tv6.tv_sec-tv5.tv_sec) + (tv6.tv_usec-tv5.tv_usec)*1e-6 );
     ///Print out the root mean square error
-    getRmsError(transformed, points_robot);
+    //getRmsError(transformed, points_robot);
 
     ///Save the data as a .pcd and .ply file
-    save(points_sensor, transformed, points_robot);
+    //save(points_sensor, transformed, points_robot);*/
     return true;
 }

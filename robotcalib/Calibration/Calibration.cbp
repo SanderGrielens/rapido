@@ -13,6 +13,7 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-g" />
+					<Add option="-fopenmp" />
 					<Add directory="../../Camera_sdk/Vimba_1_3" />
 					<Add directory="/usr/local/include/pcl-1.8" />
 					<Add directory="/usr/include/eigen3" />
@@ -24,6 +25,8 @@
 					<Add option="-lueye_api" />
 					<Add option="-lboost_system" />
 					<Add option="-lboost_thread" />
+					<Add option="-fopenmp" />
+					<Add option="-lboost_timer" />
 					<Add library="../../Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit/libVimbaCPP.so" />
 					<Add library="../../Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit/libVimbaC.so" />
 					<Add library="/lib/x86_64-linux-gnu/libpthread-2.19.so" />
@@ -84,6 +87,8 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-O2" />
+					<Add option="-pg" />
+					<Add option="-fopenmp" />
 					<Add directory="../../Camera_sdk/Vimba_1_3/VimbaCPP" />
 					<Add directory="../../Camera_sdk/Vimba_1_3" />
 					<Add directory="/usr/local/include/pcl-1.8" />
@@ -92,12 +97,13 @@
 					<Add directory="calib_en" />
 				</Compiler>
 				<Linker>
-					<Add option="-s" />
+					<Add option="-pg" />
 					<Add option="-lNxLib64" />
 					<Add option="-lueye_api" />
 					<Add option="-lboost_system" />
 					<Add option="-lboost_thread" />
 					<Add option="-fopenmp" />
+					<Add option="-lboost_timer" />
 					<Add library="../../Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit/libVimbaC.so" />
 					<Add library="../../Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit/libVimbaCPP.so" />
 					<Add library="/lib/x86_64-linux-gnu/libpthread-2.19.so" />

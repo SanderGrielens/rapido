@@ -73,7 +73,7 @@ int main()
                 int p_h = 800;
                 float b = 0.5;
                 float m = 5;
-                float thresh = 1;
+                float thresh = 6;
                 /*cout<<"Please give the projector resolution. First the width, then the height:"<<endl;
                 cin >> p_w;
                 cin >> p_h;*/
@@ -131,10 +131,15 @@ int main()
                 {
                     string path = "./robot_sl";
                     //bool gelukt = get_sl_images(300, path, 0, p_w, p_h);
-                    clock_t time1 = clock();
+                    //clock_t time1 = clock();
+                    //boost::timer::auto_cpu_timer t;
+                    struct timeval tv1,tv2; struct timezone tz;
+                    gettimeofday(&tv1, &tz);
                     bool gelukt_cr  = calibrate_sl_r(path, b, m, thresh, p_w, p_h);
-                    clock_t time2 = clock();
-                    cout<<"tijd calibreren robot "<<(float)(time2-time1)/CLOCKS_PER_SEC<<endl;
+                    gettimeofday(&tv2, &tz);
+                    printf( "wall clock time (gettimeofday)  = %12.4g sec\n", (tv2.tv_sec-tv1.tv_sec) + (tv2.tv_usec-tv1.tv_usec)*1e-6 );
+                    //clock_t time2 = clock();
+                    //cout<<"tijd calibreren robot "<<(float)(time2-time1)/CLOCKS_PER_SEC<<endl;
                 }
                 else if(antwoord == 'q')
                 {
