@@ -1,0 +1,212 @@
+rem LASERSCAN.BAS: perform 2.5D laser triangulation
+
+setimg(0) rem re-set previous image
+clearovly rem remove any previous plotting
+
+outp(0)	rem clear all outputs
+delay(2)	rem give external systems, if any, time to respond
+
+let title$ = "LASERSCAN.BAS"
+
+rem magic color codes
+let red   = 240
+let green = 245
+let blue  = 248
+let white = 255
+let black = 0
+
+rem TCP/IP commands
+let term$    = "!"
+let gohome$  = "HOME"+term$
+let gostart$ = "GOTOBEGIN"+term$
+let goscan$  = "SCANTOEND"+term$
+let golive$  = "LIVE"+term$
+let gomeas$  = "MEAS"+term$
+
+rem scanner bar definitions
+let areainputnr = 1	rem input number definition represents a bit
+let busyinputnr = 4  rem input number definition represents a bit 
+
+let homeoutputval  = 4 rem output number definition represents a set of bits
+let startoutputval = 8 rem output number definition represents a set of bits
+let scanoutputval  = 9 rem output number definition represents a set of bits
+let stopoutputval  = 0 rem output number definition represents a set of bits
+
+rem laser detection ROI
+dim ptlsr(2) = 67,155	rem upper left corner
+let lsrwd = 600
+let lsrht = 32
+createroi(ptlsr,lsrwd,lsrht,0), lr  rem size and orientation
+
+rem 
+rem calibration settings
+rem 
+let Z0        = 585       rem distance lens to laser line
+let Vz0       = 193            rem laser value in pixel units at Z1
+let objheight = 54             rem object height in mm's
+let Z1        = Z0 - objheight rem object is closer to camera
+let Vz1       = 180            rem laser value in pixel units at object height
+
+let rZ0 = 1/Z0 rem we need reciprocal values
+let rZ1 = 1/Z1 rem we need reciprocal values
+
+rem compute pixel units to Z value mm's conversion
+let Za = (rZ1 - rZ0)/(Vz1-Vz0)
+let Zb = rZ0 - Za*Vz0
+
+rem compute pixel units to X value mm's conversion
+let Psz = 0.006  rem size of a pixel in mm's
+let F   = 10.27  rem lens focal length in mm's
+let Xa  = Psz/F
+
+rem laser shutter settings
+shutter(1,500,2)		rem set shutter of laser context (2)
+
+rem
+rem main scan loop
+rem
+let teller = 0
+[main]
+print "Iteratie ", teller
+let msg$ = inputa$(term$)
+if msg$ = "" then [main]
+rem if msg$ = gohome$  then [dohome]
+rem if msg$ = gostart$ then [dostart]
+if msg$ = goscan$  then [doscan]
+rem if msg$ = golive$  then [dolive]
+let teller = teller + i
+goto [main]
+
+rem
+rem perform live image aquisition
+rem
+[dolive]
+print "Busy live"
+printa "Busy live"+term$
+[looplive]
+clearovly
+takepic(1)
+plotroi lr, blue
+dim pttxt(2) = ptlsr(1)+lsrwd+8,ptlsr(2)
+plotstr(pttxt,white,blue,str$(round(1/(Za*pttxt(2)+Zb),1)))
+dim pttxt(2) = ptlsr(1)+lsrwd+8,ptlsr(2)+lsrht
+plotstr(pttxt,white,blue,str$(round(1/(Za*pttxt(2)+Zb),1)))
+display("Live")
+let msg$ = inputa$(term$)
+if msg$ = "" then [looplive]
+print msg$
+if msg$ = gomeas$ then [endlooplive]
+goto [looplive]
+[endlooplive]
+clearovly
+print "Live done"
+printa "Live done"+term$
+goto [main]
+
+rem
+rem move to home position, needed for stepper controller
+rem
+[dohome]
+print "Busy homing"
+printa "Busy homing"+term$
+outp(homeoutputval)
+[waithome1]
+if readinp(busyinputnr) = 0 then [waithome1]
+[waithome2]
+if readinp(busyinputnr) = 1 then [waithome2]
+outp(stopoutputval)
+delay(0.1)
+print "Move done"
+printa "Move done"+term$
+goto [main]
+
+rem
+rem move to scan start position
+rem
+[dostart]
+print "Busy move to start"
+printa "Busy move to start"+term$
+outp(startoutputval)
+[waitstart1]
+if readinp(busyinputnr) = 0 then [waitstart1]
+[waitstart2]
+if readinp(busyinputnr) = 1 then [waitstart2]
+outp(stopoutputval)
+delay(0.1)
+print "Move done"
+printa "Move done"+term$
+goto [main]
+
+rem 
+rem perform actual scanning
+[doscan]
+print "Busy scanning"
+printa "Busy scanning"+term$
+
+let voxelsize = 0.5 rem voxel setting 0.5 -> 1 pixel = 0.5mm
+let beltspeed = 200 rem mm/sec
+let scanspeed = beltspeed/voxelsize  rem lines/sec; 400 = maximum
+
+rem compute pixel units to Y value mm's conversion
+let Ya = beltspeed/scanspeed
+
+rem capture laser lines
+let nrscanlines = 580 rem max. lines to scan
+let thr = 128         rem capture theshold
+let Zmax = Z0    rem max. Z distance to record
+
+rem sync capture to scanner bar movement
+rem outp(scanoutputval)
+rem [waitarea] if readinp(areainputnr) = 0 then [waitarea]
+rem delay(0.03) rem move starts later / acceleration?!
+
+rem actual capture
+let t = time()
+caplaservox(ptlsr,nrscanlines,scanspeed,0,thr,Xa,10.6,Ya,Za,Zb,voxelsize,Zmax), rv
+print "scan time:",time(t)," [sec]",scanspeed
+outp(stopoutputval)
+
+clearovly
+
+rem output results
+plotroi rv, blue
+dim origin(2) = rv(1,1),rv(2,1)
+medimg()
+
+gosub [plotaxis]
+
+
+display()
+print "Za:",Za,"Zb:",Zb
+
+display3d(rv,voxelsize,Zmax)
+
+setimg(0) rem re-set previous image
+
+print "Move done"
+printa "Move done"+term$
+
+delay(10)
+
+goto [main]
+
+rem
+rem plot X/Y definitions on screen
+rem
+[plotaxis]
+dim xaxis(2)  = origin(1)+40,origin(2)
+dim yaxis(2)  = origin(1),origin(2)+40
+
+plotptpt origin,xaxis, red
+plotptpt origin,yaxis, green
+
+dim pt(2) = xaxis(1)+3,xaxis(2)-7
+plotstr(pt,red,black,"X+")
+dim pt(2) = yaxis(1)-6,yaxis(2)
+plotstr(pt,green,black,"Y+")
+
+return
+
+rem
+rem end of file
+rem
