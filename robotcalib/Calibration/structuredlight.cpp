@@ -601,6 +601,8 @@ bool decode(int serienummer, Decoder &d, bool draw, string path, float b, float 
     serienr << serienummer;
     string pad;
     string einde = ".bmp";
+    struct timeval tv1, tv2; struct timezone tz;
+    gettimeofday(&tv1, &tz);
 
     pad = path + serienr.str() + "/frame";
     ///Reading every image in a serie
@@ -617,6 +619,8 @@ bool decode(int serienummer, Decoder &d, bool draw, string path, float b, float 
         beelden.push_back(newmat_float);
     }
 
+    gettimeofday(&tv2, &tz);
+    printf( "inlezen duurt %12.4g sec\n", (tv2.tv_sec-tv1.tv_sec) + (tv2.tv_usec-tv1.tv_usec)*1e-6 );
 
     camera_width = beelden[0].cols;
     camera_height = beelden[0].rows;
@@ -869,7 +873,6 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
         int max_val = pow(2, NOP_v);
         Mat hory = d.pattern_image[0];
         Mat verx = d.pattern_image[1];
-        int teller =0;
         struct timeval tv4, tv5, tv6; struct timezone tz;
         gettimeofday(&tv4, &tz);
         cout<<"start"<<endl;
@@ -918,10 +921,10 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
                     //cout<<"gemiddelde: "<<gemx<<" "<<punten[x][y].size()<<endl;
                     if(x%2==0)
                     {
-                        punt = Point2d((gemx/punten[x][y].size()), gemy/punten[x][y].size());
+                        punt = Point2d((gemx/punten[x][y].size())/*+0.55*/, gemy/punten[x][y].size());
                     }
                     else
-                        punt = Point2d((gemx/punten[x][y].size()), gemy/punten[x][y].size());
+                        punt = Point2d((gemx/punten[x][y].size())/*-0.55*/, gemy/punten[x][y].size());
                     //cout<<"punt: "<<punt<<endl;
                     cam_points.push_back(punt);
                     punt2 = Point2d(x,y);
@@ -934,9 +937,6 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
 
         gettimeofday(&tv5, &tz);
         printf( "nieuwe ontcijfering duurt %12.4g sec\n", (tv5.tv_sec-tv4.tv_sec) + (tv5.tv_usec-tv4.tv_usec)*1e-6 );
-
-
-        cout<<"gefilterde punten: "<<teller<<endl;
 
         ///Home made projection:
         Mat P0, P1;
@@ -951,7 +951,7 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
         vector<Mat> driepunt;
         int deler = cam_points.size()/number_of_cores;
 
-        teller = 0;
+        int teller = 0;
         int elementteller = 0;
         while(elementteller<cam_points.size())
         {
@@ -1009,7 +1009,12 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
             point.x = X/1000;
             point.y = Y/1000;
             point.z = Z/1000;
-            uint8_t r = 255, g = 0, b = 0;    // Example: Red color
+
+            uint8_t r,g,b;
+            r = 255;
+            g = 0;
+            b = 0;    // Example: Red color
+
             uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
             point.rgb = *reinterpret_cast<float*>(&rgb);
             point_cloud_ptr -> points.push_back(point);
@@ -1023,7 +1028,6 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
         pcl::io::savePCDFileBinary("./test2.pcd", *point_cloud_ptr);
 */
     }
-
     return viz;
 }
 
@@ -1345,12 +1349,12 @@ bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_w
     struct timeval tv1,tv2, tv3, tv4, tv5, tv6; struct timezone tz;
 
     ///First, we'll use chessboardcorners as unique points to find (also needed for calculation of NOP_v and NOP_h)
-    gettimeofday(&tv1, &tz);
+/*    gettimeofday(&tv1, &tz);
     vector <vector<Point2f> > chessboardcorners(1);
     bool gelukt_f = findcorners(chessboardcorners, path, 1, projector_width, projector_height);
     gettimeofday(&tv2, &tz);
     printf( "find chessboardcorners duurt %12.4g sec\n", (tv2.tv_sec-tv1.tv_sec) + (tv2.tv_usec-tv1.tv_usec)*1e-6 );
-
+*/
     ///Get the pointcloud
     gettimeofday(&tv3, &tz);
     vector<Visualizer> viz =  calculate3DPoints_all(path, 1,  b, m, thresh, projector_width, projector_height);
@@ -1358,7 +1362,7 @@ bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_w
     printf( "getting the pointcloud duurt  = %12.4g sec\n", (tv4.tv_sec-tv3.tv_sec) + (tv4.tv_usec-tv3.tv_usec)*1e-6 );
 
     ///Calculate the 3D position of the chessboardcorners
-    gettimeofday(&tv5, &tz);
+/*    gettimeofday(&tv5, &tz);
     Mat points_sensor;
     bool draw = false;
     Decoder d;
