@@ -48,6 +48,12 @@ struct Decoder
     vector<Mat> pattern_image;
 } ;
 
+struct Paar
+{
+    vector<Point2d> camera;
+    Point2d projector;
+} ;
+
 struct Visualizer
 {
     Mat pointcloud;

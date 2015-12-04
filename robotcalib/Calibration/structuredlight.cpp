@@ -318,6 +318,7 @@ bool findcorners(vector<vector<Point2f> > &chessboardcorners, string path, int a
             std::cerr << "Checkboard 1_"<<i<<" corners not found!" << std::endl;
             return false;
         }
+
         cornerSubPix(board, chessboardcorners[i], Size(11,11), Size(-1,-1), TermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 300, 0.001));
         cvtColor(board, board, CV_GRAY2BGR);
         drawChessboardCorners( board, boardSize, chessboardcorners[i], found1_1 );
@@ -798,11 +799,11 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
     bool draw = false;
     vector<Decoder> dec;
     vector<Visualizer> viz;
-    //struct timeval tv1, tv2; struct timezone tz;
-    //gettimeofday(&tv1, &tz);
+    struct timeval tv1, tv2; struct timezone tz;
+    gettimeofday(&tv1, &tz);
     decode_all(aantalseries, dec, draw, path, b, m, thresh, projector_width, projector_height);
-    //gettimeofday(&tv2, &tz);
-    //printf( "decode duurt %12.4g sec\n", (tv2.tv_sec-tv1.tv_sec) + (tv2.tv_usec-tv1.tv_usec)*1e-6 );
+    gettimeofday(&tv2, &tz);
+    printf( "decode duurt %12.4g sec\n", (tv2.tv_sec-tv1.tv_sec) + (tv2.tv_usec-tv1.tv_usec)*1e-6 );
 
         ///Get intrinsic and extrinsic camera parameters
     FileStorage fs("./calib_sl/camera_projector.xml", FileStorage::READ);
@@ -863,110 +864,81 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
         Visualizer v;
         vector<Point2d> cam_points;
         vector<Point2d> proj_points;
-        Mat rechts = Mat::zeros(camera_height, camera_width, CV_8UC1);
-        Mat beneden = rechts.clone();
-        Mat hor = d.pattern_image[0];
-        Mat ver = d.pattern_image[1];
-        //GaussianBlur(hor, hor, Size(1,5), 1.5, 0);
-        //GaussianBlur(ver, ver, Size(5,1), 1.5, 0);
+        vector<Paar> combinaties;
+
+        int max_val = pow(2, NOP_v);
+        Mat hory = d.pattern_image[0];
+        Mat verx = d.pattern_image[1];
         int teller =0;
+        struct timeval tv4, tv5, tv6; struct timezone tz;
+        gettimeofday(&tv4, &tz);
+        cout<<"start"<<endl;
+        vector<vector<vector<Point2d> > > punten;///punten[x][y][z]
+        punten.resize(1280);
         //#pragma omp parallel for
-        //struct timeval tv4, tv5, tv6, tv7; struct timezone tz;
-        //gettimeofday(&tv4, &tz);
-        int max_val = pow(2, NOP_v+2);
+        for(int i=0; i<punten.size(); i++)
+        {
+            punten[i].resize(1000);
+            for(int j=0; j< punten[i].size(); j++)
+            {
+                punten[i][j].reserve(10);
+            }
+        }
+        cout<<"geresized: "<<punten.size()<< " "<<punten[5].size()<<endl;
+        #pragma omp parallel for
         for(int x = 0; x<camera_width; x++)
         {
             for(int y = 0; y<camera_height; y++)
             {
-                int tel = 1;
-                if (hor.at<float>(y,x) >= max_val || ver.at<float>(y,x) >= max_val)
+                if (hory.at<float>(y,x) >= max_val || verx.at<float>(y,x) >= max_val)
                 {
                     continue;
                 }
-                if(hor.at<float>(y,x) == hor.at<float>(y+1, x))
-                {
-                    tel = 2;
-                    while(hor.at<float>(y,x) == hor.at<float>(y+tel, x))
-                    {
-                        tel++;
-                    }
-                }
 
-                beneden.at<uchar>(y,x) = tel;
-                y+=tel;
+                Point2d punt_cam = Point2d(x,y);
+                punten[verx.at<float>(y,x)][hory.at<float>(y,x)].push_back(punt_cam);
             }
         }
-        //gettimeofday(&tv5, &tz);
-        //printf( "alles klaar zetten1 duurt %12.4g sec\n", (tv5.tv_sec-tv4.tv_sec) + (tv5.tv_usec-tv4.tv_usec)*1e-6 );
+        cout<<"gesorteerd"<<endl;
         //#pragma omp parallel for
-        for(int y = 0; y<camera_height; y++)
+        for(int x = 0; x<punten.size(); x++)
         {
-            for(int x = 0; x<camera_width; x++)
+            for(int y = 0; y<punten[x].size(); y++)
             {
-                int tel = 1;
-                if (hor.at<float>(y,x) >= max_val || ver.at<float>(y,x) >= max_val)
+                Point2d punt, punt2;
+                double gemx = 0;
+                double gemy = 0;
+                if(punten[x][y].size() > 0)
                 {
-                    continue;
-                }
-                if(ver.at<float>(y,x) == ver.at<float>(y, x+1))
-                {
-                    tel = 2;
-                    while(ver.at<float>(y,x) == ver.at<float>(y, x+tel))
+                    for(int z = 0; z < punten[x][y].size(); z++)
                     {
-                        tel++;
+                        gemx += punten[x][y][z].x;
+                        gemy += punten[x][y][z].y;
                     }
+                    //cout<<"gemiddelde: "<<gemx<<" "<<punten[x][y].size()<<endl;
+                    if(x%2==0)
+                    {
+                        punt = Point2d((gemx/punten[x][y].size()), gemy/punten[x][y].size());
+                    }
+                    else
+                        punt = Point2d((gemx/punten[x][y].size()), gemy/punten[x][y].size());
+                    //cout<<"punt: "<<punt<<endl;
+                    cam_points.push_back(punt);
+                    punt2 = Point2d(x,y);
+                    proj_points.push_back(punt2);
                 }
+            }
+        }
+        cout<<cam_points.size()<<endl;
+        cout<<"geordend"<<endl;
 
-                rechts.at<uchar>(y,x) = tel;
-                x+=tel;
-            }
-        }
-        //gettimeofday(&tv6, &tz);
-        //printf( "alles klaar zetten2 duurt %12.4g sec\n", (tv6.tv_sec-tv5.tv_sec) + (tv6.tv_usec-tv5.tv_usec)*1e-6 );
-        //#pragma omp parallel for
-        for(int x = 0; x<camera_width; x++)
-        {
-            for(int y =0; y< camera_height; y++)
-            {
-                int onder = beneden.at<uchar>(y,x);
-                int opzij = rechts.at<uchar>(y,x);
-                if(onder >0 && opzij >0 && x+opzij/2 < camera_width && y + onder/2 <  camera_height)
-                {
-                    cam_points.push_back(Point2d(x + (opzij/2),y+(onder/2)));
-                    Point2d punt = Point2d(ver.at<float>(y + (onder/2),x+(opzij/2)), hor.at<float>(y+(onder/2),x+(opzij/2)));
-                    proj_points.push_back(punt);///pattern point (x,y) coordinates is (vertical pattern, horizontal pattern)
-                }
-                else
-                    teller++;
-            }
-        }
-        //gettimeofday(&tv7, &tz);
-        //printf( "alles klaar zetten3 duurt %12.4g sec\n", (tv7.tv_sec-tv6.tv_sec) + (tv7.tv_usec-tv6.tv_usec)*1e-6 );
-        //printf( "alles klaar zetten duurt %12.4g sec\n", (tv7.tv_sec-tv4.tv_sec) + (tv7.tv_usec-tv4.tv_usec)*1e-6 );
+        gettimeofday(&tv5, &tz);
+        printf( "nieuwe ontcijfering duurt %12.4g sec\n", (tv5.tv_sec-tv4.tv_sec) + (tv5.tv_usec-tv4.tv_usec)*1e-6 );
+
 
         cout<<"gefilterde punten: "<<teller<<endl;
-        //struct timeval tv1,tv2; //struct timezone tz;
-        //gettimeofday(&tv1, &tz);
 
-        ///Home made projection serial:
-
- /*       Mat cam, proj;
-        cam = Mat(cam_points);
-        proj = Mat(proj_points);
-        Mat driedpunten = Mat(1, cam_points.size(), CV_64FC4);
-        //GaussianBlur(proj, proj, Size(5, 5), 1.5, 0);
-
-        Mat P0, P1;
-
-        P0 = cameraMatrix * projmat1;
-        P1 = projMatrix * projmat2;
-
-        //clock_t time1 = clock();
-        triangulatePoints(P0, P1, cam, proj, driedpunten);
-        //clock_t time2 = clock();
-        //cout<<"tijd trianguleren "<<(float)(time2-time1)/CLOCKS_PER_SEC<<endl;
-*/
-        ///Home made projection matrices parallel:
+        ///Home made projection:
         Mat P0, P1;
 
         P0 = cameraMatrix * projmat1;
@@ -1014,16 +986,16 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
         Mat driedpunten;
         hconcat(driepunt, driedpunten);
 
-        //gettimeofday(&tv2, &tz);
-        //printf( "triangulate duurt %12.4g sec\n", (tv2.tv_sec-tv1.tv_sec) + (tv2.tv_usec-tv1.tv_usec)*1e-6 );
+        gettimeofday(&tv6, &tz);
+        printf( "triangulate duurt %12.4g sec\n", (tv6.tv_sec-tv5.tv_sec) + (tv6.tv_usec-tv5.tv_usec)*1e-6 );
 
         ///Save 3D coordinates
         v.pointcloud= driedpunten;
         v.cam_points = cam_points;
         viz.push_back(v);
 
-/*        ///Convert to pointcloud and save as .PCD and .PLY
-        double X,Y,Z;
+        ///Convert to pointcloud and save as .PCD and .PLY
+/*        double X,Y,Z;
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGB>);
 
         for(int i=0;i<driedpunten.cols;i++)
@@ -1034,9 +1006,9 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
             Z = driedpunten.at<double>(2,i) / driedpunten.at<double>(3,i);
 
             pcl::PointXYZRGB point;
-            point.x = X;
-            point.y = Y;
-            point.z = Z;
+            point.x = X/1000;
+            point.y = Y/1000;
+            point.z = Z/1000;
             uint8_t r = 255, g = 0, b = 0;    // Example: Red color
             uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
             point.rgb = *reinterpret_cast<float*>(&rgb);
@@ -1380,11 +1352,11 @@ bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_w
     printf( "find chessboardcorners duurt %12.4g sec\n", (tv2.tv_sec-tv1.tv_sec) + (tv2.tv_usec-tv1.tv_usec)*1e-6 );
 
     ///Get the pointcloud
-/*    gettimeofday(&tv3, &tz);
+    gettimeofday(&tv3, &tz);
     vector<Visualizer> viz =  calculate3DPoints_all(path, 1,  b, m, thresh, projector_width, projector_height);
     gettimeofday(&tv4, &tz);
     printf( "getting the pointcloud duurt  = %12.4g sec\n", (tv4.tv_sec-tv3.tv_sec) + (tv4.tv_usec-tv3.tv_usec)*1e-6 );
-*/
+
     ///Calculate the 3D position of the chessboardcorners
     gettimeofday(&tv5, &tz);
     Mat points_sensor;

@@ -1,20 +1,16 @@
 #include <iostream>
 #include <math.h>
+#include <boost/thread/thread.hpp>
+#include <pcl/common/transforms.h>
+#include <pcl/common/common_headers.h>
 #include <pcl/ModelCoefficients.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/io/ply_io.h>
 #include <pcl/point_types.h>
 #include <pcl/segmentation/sac_segmentation.h>
-#include <pcl/common/transforms.h>
-
-#include <boost/thread/thread.hpp>
-#include <pcl/common/common_headers.h>
 #include <pcl/features/normal_3d.h>
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/console/parse.h>
-/*#include <pcl/sample_consensus/method_types.h>
-#include <pcl/sample_consensus/model_types.h>
-*/
 
 using namespace std;
 
@@ -55,8 +51,8 @@ int rms_error_ground_plane()
 
     vector<string> files;
 
-    files.push_back("sl.ply");
-    files.push_back("en.ply");
+    files.push_back("sl_rap.ply");
+    files.push_back("sl_test.ply");
 
     pcl::PLYReader plyreader;
     boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
@@ -66,6 +62,7 @@ int rms_error_ground_plane()
         conv << k;
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
         plyreader.read(files[k], *cloud);
+        cout<<files[k]<<endl;
         cloud->width  = cloud->points.size();
         cloud->height = 1;
         cloud->points.resize (cloud->width * cloud->height);
@@ -151,7 +148,7 @@ int rms_error_ground_plane()
             point.y = cloud->points[inliers->indices[i]].y;
             point.z = cloud->points[inliers->indices[i]].z;
             // pack r/g/b into rgb
-            uint8_t r = 255, g = 0, b = 0;    // Example: Red color
+            uint8_t r = 255, g = k*255, b = 0;    // Example: Red color
             uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
             point.rgb = *reinterpret_cast<float*>(&rgb);
             //rgbcloud->points.push_back(point);
@@ -195,8 +192,8 @@ int rms_error_top_plane()
 
     vector<string> files;
 
-    files.push_back("sl.ply");
-    files.push_back("en.ply");
+    files.push_back("sl_rap.ply");
+    files.push_back("sl_test.ply");
 
     pcl::PLYReader plyreader;
     boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
@@ -207,6 +204,7 @@ int rms_error_top_plane()
         conv << k;
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
         plyreader.read(files[k], *cloud);
+        cout<<files[k]<<endl;
         cloud->width  = cloud->points.size();
         cloud->height = 1;
         cloud->points.resize (cloud->width * cloud->height);
@@ -284,7 +282,7 @@ int rms_error_top_plane()
         // Mandatory
         seg2.setModelType(pcl::SACMODEL_PLANE);
         seg2.setMethodType(pcl::SAC_RANSAC);
-        seg2.setDistanceThreshold (0.002);
+        seg2.setDistanceThreshold (0.02);
 
         seg2.setInputCloud (cloud2);
         seg2.segment (*inliers2, *coefficients2);
@@ -323,7 +321,7 @@ int rms_error_top_plane()
             point.y = cloud2->points[inliers2->indices[i]].y;
             point.z = cloud2->points[inliers2->indices[i]].z;
             // pack r/g/b into rgb
-            uint8_t r = 255, g = 0, b = 0;    // Example: Red color
+            uint8_t r = 255, g = k*255, b = 0;    // Example: Red color
             uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
             point.rgb = *reinterpret_cast<float*>(&rgb);
             //rgbcloud->points.push_back(point);
