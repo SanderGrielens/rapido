@@ -1,5 +1,5 @@
 #include "calibration.hpp"
-
+#include <bitset>
 using namespace AVT;
 using namespace VmbAPI;
 
@@ -482,8 +482,29 @@ void get_pattern_image(Decoder &d, vector<Mat> beelden, int dir, float m, float 
             }
         }
     }
-
-    #pragma omp parallel for
+    for(int x = 0; x<d.pattern_image[dir].cols; x++)
+    {
+        for(int y = 0; y<d.pattern_image[dir].rows; y++)
+        {
+            if (d.pattern_image[dir].at<float>(y,x) >= pow(2,NOP_v+2))
+            {
+                continue;
+            }
+            bitset<12> bitje(d.pattern_image[dir].at<float>(y,x));
+            if(bitje[0] > 0)
+            {
+                cout<<"x: "<<x<<" y: "<<y<<endl;
+                cout<<bitje<<endl;
+                for(int j = 11; j>=0;j--)
+                {
+                    cout<<bitje[j];
+                }
+                cout<<endl;
+            }
+        }
+    }
+    //#pragma omp parallel for
+    int teller =0;
     ///Convert pattern from gray code to binary
     for(int i=0;i<d.pattern_image[dir].rows;i++)
     {
@@ -509,6 +530,9 @@ void get_pattern_image(Decoder &d, vector<Mat> beelden, int dir, float m, float 
             }
         }
     }
+
+
+    cout<<"Aantal punten: "<<teller<<endl;
     //tonen(d.minimum[dir], "minimum");
     //tonen(d.maximum[dir], "maximum");
     cout<<"pattern decoded"<<endl;
@@ -881,14 +905,15 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
         //#pragma omp parallel for
         for(int i=0; i<punten.size(); i++)
         {
-            punten[i].resize(1000);
+            punten[i].resize(800);
             for(int j=0; j< punten[i].size(); j++)
             {
                 punten[i][j].reserve(10);
             }
         }
         cout<<"geresized: "<<punten.size()<< " "<<punten[5].size()<<endl;
-        #pragma omp parallel for
+        //#pragma omp parallel for
+        int tel = 0;
         for(int x = 0; x<camera_width; x++)
         {
             for(int y = 0; y<camera_height; y++)
@@ -897,8 +922,11 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
                 {
                     continue;
                 }
-
+                tel++;
                 Point2d punt_cam = Point2d(x,y);
+                //cout<<"punt: "<<x<<" "<<y<<endl;
+                //cout<<"Projpunt: "<<verx.at<float>(y,x)<<" "<<hory.at<float>(y,x)<<endl;
+                //cout<<"size: "<<punten[verx.at<float>(y,x)][hory.at<float>(y,x)].size()<<endl;
                 punten[verx.at<float>(y,x)][hory.at<float>(y,x)].push_back(punt_cam);
             }
         }
@@ -906,6 +934,7 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
         //#pragma omp parallel for
         for(int x = 0; x<punten.size(); x++)
         {
+            //cout<<x<<" ";
             for(int y = 0; y<punten[x].size(); y++)
             {
                 Point2d punt, punt2;
@@ -921,17 +950,22 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
                     //cout<<"gemiddelde: "<<gemx<<" "<<punten[x][y].size()<<endl;
                     if(x%2==0)
                     {
-                        punt = Point2d((gemx/punten[x][y].size())/*+0.55*/, gemy/punten[x][y].size());
+                        punt = Point2d((gemx/punten[x][y].size())+0.55, gemy/punten[x][y].size());
                     }
                     else
-                        punt = Point2d((gemx/punten[x][y].size())/*-0.55*/, gemy/punten[x][y].size());
+                        punt = Point2d((gemx/punten[x][y].size())-0.55, gemy/punten[x][y].size());
                     //cout<<"punt: "<<punt<<endl;
                     cam_points.push_back(punt);
                     punt2 = Point2d(x,y);
                     proj_points.push_back(punt2);
+                    //cout<<1;
                 }
+                //else
+                   // cout<<0;
             }
+            //cout<<endl;
         }
+        cout<<"Zoveel punten smijten we weg: "<<tel<<endl;
         cout<<cam_points.size()<<endl;
         cout<<"geordend"<<endl;
 
@@ -995,7 +1029,7 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
         viz.push_back(v);
 
         ///Convert to pointcloud and save as .PCD and .PLY
-/*        double X,Y,Z;
+        double X,Y,Z;
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGB>);
 
         for(int i=0;i<driedpunten.cols;i++)
@@ -1026,7 +1060,7 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
         pcl::PLYWriter plywriter;
         plywriter.write("./test.ply", *point_cloud_ptr, false);
         pcl::io::savePCDFileBinary("./test2.pcd", *point_cloud_ptr);
-*/
+
     }
     return viz;
 }

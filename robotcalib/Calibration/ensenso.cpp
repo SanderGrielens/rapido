@@ -93,10 +93,10 @@ void get_en_image(pcl::PointCloud<pcl::PointXYZ> &cloud)
             printf("An NxLib API error with code %d (%s) occurred while accessing item %s.\n", e.getErrorCode(), e.getErrorText().c_str(), e.getItemPath().c_str());
             if (e.getErrorCode() == NxLibExecutionFailed) printf("/Execute:\n%s\n", NxLibItem(itmExecute).asJson(true).c_str());
         }
-        catch (NxLibException &ex)
+        /*catch (NxLibException &ex)
         {
             ensensoExceptionHandling (ex, "grabSingleCloud");
-        }
+        }*/
         catch (...) { // Display other exceptions
             printf("Something, somewhere went terribly wrong!\n");
         }
