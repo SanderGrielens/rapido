@@ -713,7 +713,7 @@ bool calibrate_sl(vector<Decoder> dec, vector<vector<Point2f> > corners, int aan
     {
         for (int w=0; w<8; w++)
         {
-            world_corners.push_back(cv::Point3f(28.55555555f * w, 28.55555555f * h, 0.f));
+            world_corners.push_back(cv::Point3f(0.02855555555f * w, 0.02855555555f * h, 0.f));
         }
     }
 
@@ -1040,9 +1040,9 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
             Z = driedpunten.at<double>(2,i) / driedpunten.at<double>(3,i);
 
             pcl::PointXYZRGB point;
-            point.x = X/1000;
-            point.y = Y/1000;
-            point.z = Z/1000;
+            point.x = X;
+            point.y = Y;
+            point.z = Z;
 
             uint8_t r,g,b;
             r = 255;
