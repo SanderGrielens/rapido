@@ -944,7 +944,7 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
         P0 = cameraMatrix * projmat1;
         P1 = projMatrix * projmat2;
 
-        int number_of_cores= 16;
+        int number_of_cores= 4;
         omp_set_num_threads(number_of_cores);
         vector<vector<Point2d> > cams;
         vector<vector<Point2d> > projs;

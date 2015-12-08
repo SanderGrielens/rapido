@@ -26,7 +26,6 @@
 					<Add option="-lboost_system" />
 					<Add option="-lboost_thread" />
 					<Add option="-fopenmp" />
-					<Add option="-lboost_timer" />
 					<Add library="../../Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit/libVimbaCPP.so" />
 					<Add library="../../Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit/libVimbaC.so" />
 					<Add library="/lib/x86_64-linux-gnu/libpthread-2.19.so" />
