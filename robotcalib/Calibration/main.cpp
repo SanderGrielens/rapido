@@ -73,7 +73,7 @@ int main()
                 int p_h = 800;
                 float b = 0.5;
                 float m = 5;
-                float thresh = 25;
+                float thresh = 15;
                 /*cout<<"Please give the projector resolution. First the width, then the height:"<<endl;
                 cin >> p_w;
                 cin >> p_h;*/

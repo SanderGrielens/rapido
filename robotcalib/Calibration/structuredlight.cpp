@@ -713,7 +713,7 @@ bool calibrate_sl(vector<Decoder> dec, vector<vector<Point2f> > corners, int aan
     {
         for (int w=0; w<8; w++)
         {
-            world_corners.push_back(cv::Point3f(0.02855555555f * w, 0.02855555555f * h, 0.f));
+            world_corners.push_back(cv::Point3f(28.55555555f * w, 28.55555555f * h, 0.f));
         }
     }
 
@@ -824,7 +824,7 @@ bool calibrate_sl(vector<Decoder> dec, vector<vector<Point2f> > corners, int aan
 
 vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b, float m, float thresh, int projector_width, int projector_height/*, vector<Point2f> &c*/)
 {
-    bool draw = false;
+    bool draw = true;
     vector<Decoder> dec;
     vector<Visualizer> viz;
     struct timeval tv1, tv2; struct timezone tz;
@@ -918,7 +918,7 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
         {
             for(int y = 0; y<camera_height; y++)
             {
-                if (hory.at<float>(y,x) >= max_val || verx.at<float>(y,x) >= max_val)
+                if (hory.at<float>(y,x) >= max_val || hory.at<float>(y,x) < 0 ||  verx.at<float>(y,x) >= max_val || verx.at<float>(y,x) < 0)
                 {
                     continue;
                 }
@@ -1040,9 +1040,9 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
             Z = driedpunten.at<double>(2,i) / driedpunten.at<double>(3,i);
 
             pcl::PointXYZRGB point;
-            point.x = X;
-            point.y = Y;
-            point.z = Z;
+            point.x = X/1000;
+            point.y = Y/1000;
+            point.z = Z/1000;
 
             uint8_t r,g,b;
             r = 255;

@@ -25,3 +25,5 @@ errordet/obj/*
 robotcalib/Calibration/robot_sl0/*
 !robotcalib/Calibration/robot_sl0/dummy.txt
 robotcalib/calib_sl/*
+robotcalib/Calibration/*.pcd
+robotcalib/Calibration/*.ply
