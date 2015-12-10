@@ -51,8 +51,8 @@ int rms_error_ground_plane()
 
     vector<string> files;
 
-    files.push_back("sl_rap.ply");
-    files.push_back("sl_test.ply");
+    files.push_back("en.ply");
+    files.push_back("sl.ply");
 
     pcl::PLYReader plyreader;
     boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
@@ -76,7 +76,7 @@ int rms_error_ground_plane()
         // Mandatory
         seg.setModelType(pcl::SACMODEL_PLANE);
         seg.setMethodType(pcl::SAC_RANSAC);
-        seg.setDistanceThreshold (0.002);
+        seg.setDistanceThreshold (0.003);
 
         seg.setInputCloud (cloud);
         seg.segment (*inliers, *coefficients);
@@ -166,7 +166,7 @@ int rms_error_ground_plane()
         cout<<"Relative error: "<< distance/diagonaal * 100<<"%"<<endl;
         cloud_collection.push_back(rgbcloud);
 
-        viewer->addPlane(*coefficients, "plane" + conv.str());
+        //viewer->addPlane(*coefficients, "plane" + conv.str());
 
       //--------------------
       // -----Main loop-----
@@ -192,8 +192,8 @@ int rms_error_top_plane()
 
     vector<string> files;
 
-    files.push_back("sl_rap.ply");
-    files.push_back("sl_test.ply");
+    files.push_back("en.ply");
+    files.push_back("sl.ply");
 
     pcl::PLYReader plyreader;
     boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
@@ -218,7 +218,7 @@ int rms_error_top_plane()
         // Mandatory
         seg.setModelType(pcl::SACMODEL_PLANE);
         seg.setMethodType(pcl::SAC_RANSAC);
-        seg.setDistanceThreshold (0.002);
+        seg.setDistanceThreshold (0.01);
 
         seg.setInputCloud (cloud);
         seg.segment (*inliers, *coefficients);
@@ -282,7 +282,7 @@ int rms_error_top_plane()
         // Mandatory
         seg2.setModelType(pcl::SACMODEL_PLANE);
         seg2.setMethodType(pcl::SAC_RANSAC);
-        seg2.setDistanceThreshold (0.02);
+        seg2.setDistanceThreshold (0.01);
 
         seg2.setInputCloud (cloud2);
         seg2.segment (*inliers2, *coefficients2);
