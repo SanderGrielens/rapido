@@ -45,9 +45,12 @@ int main()
             cin >> antwoord;
             pcl::PointCloud<pcl::PointXYZ> a;
             get_en_image(a);
-            pcl::PLYWriter plywriter;
-            pcl::io::savePCDFileBinary("./calib_en/Ensenso.pcd", a);
-            plywriter.write("./calib_en/Ensenso.ply", a, false);
+            if(a.points.size()>0)
+            {
+                pcl::PLYWriter plywriter;
+                pcl::io::savePCDFileBinary("./calib_en/Ensenso.pcd", a);
+                plywriter.write("./calib_en/Ensenso.ply", a, false);
+            }
             /*if(antwoord == 'c')
             {
                 get_en_image();
@@ -73,7 +76,7 @@ int main()
                 int p_h = 800;
                 float b = 0.5;
                 float m = 5;
-                float thresh = 15;
+                float thresh = 25;
                 /*cout<<"Please give the projector resolution. First the width, then the height:"<<endl;
                 cin >> p_w;
                 cin >> p_h;*/
@@ -130,16 +133,23 @@ int main()
                 else if(antwoord == 'r')
                 {
                     string path = "./robot_sl";
-                    //bool gelukt = get_sl_images(300, path, 0, p_w, p_h);
-                    //clock_t time1 = clock();
-                    //boost::timer::auto_cpu_timer t;
+                    cout<<"Do you want to make a new scan? Press y"<<endl;
+                    char antwoord;
+                    cin >> antwoord;
+                    if(antwoord == 'y')
+                    {
+                        bool gelukt = get_sl_images(300, path, calib_sl_series, p_w, p_h);
+                        if(gelukt)
+                            calib_sl_series++;
+                        else
+                            cout<<"failed to get serie: "<<calib_sl_series<<endl;
+                    }
+
                     struct timeval tv1,tv2; struct timezone tz;
                     gettimeofday(&tv1, &tz);
                     bool gelukt_cr  = calibrate_sl_r(path, b, m, thresh, p_w, p_h);
                     gettimeofday(&tv2, &tz);
                     printf( "wall clock time (gettimeofday)  = %12.4g sec\n", (tv2.tv_sec-tv1.tv_sec) + (tv2.tv_usec-tv1.tv_usec)*1e-6 );
-                    //clock_t time2 = clock();
-                    //cout<<"tijd calibreren robot "<<(float)(time2-time1)/CLOCKS_PER_SEC<<endl;
                 }
                 else if(antwoord == 'q')
                 {

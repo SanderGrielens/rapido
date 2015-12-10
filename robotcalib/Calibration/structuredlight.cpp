@@ -794,9 +794,9 @@ bool calibrate_sl(vector<Decoder> dec, vector<vector<Point2f> > corners, int aan
     //stereo calibration
     Mat R, T, E, F;
     double stereo_error = cv::stereoCalibrate(objectpoints, corners, pcorners, cam_mat, cam_dist, proj_mat, proj_dist,
-                                                imageSize , R, T, E, F,
+                                                imageSize , R, T, E, F//,
                                                 //CV_CALIB_FIX_INTRINSIC+
-                                                CV_CALIB_USE_INTRINSIC_GUESS
+                                                //CV_CALIB_USE_INTRINSIC_GUESS
                                                 //CV_CALIB_FIX_ASPECT_RATIO +
                                                 //CV_CALIB_ZERO_TANGENT_DIST +
                                                 //CV_CALIB_SAME_FOCAL_LENGTH +
@@ -824,7 +824,7 @@ bool calibrate_sl(vector<Decoder> dec, vector<vector<Point2f> > corners, int aan
 
 vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b, float m, float thresh, int projector_width, int projector_height/*, vector<Point2f> &c*/)
 {
-    bool draw = true;
+    bool draw = false;
     vector<Decoder> dec;
     vector<Visualizer> viz;
     struct timeval tv1, tv2; struct timezone tz;
@@ -918,7 +918,7 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
         {
             for(int y = 0; y<camera_height; y++)
             {
-                if (hory.at<float>(y,x) >= max_val || hory.at<float>(y,x) < 0 ||  verx.at<float>(y,x) >= max_val || verx.at<float>(y,x) < 0)
+                if (hory.at<float>(y,x) >= 800 || hory.at<float>(y,x) < 0 ||  verx.at<float>(y,x) >= 1280 || verx.at<float>(y,x) < 0)
                 {
                     continue;
                 }
@@ -934,7 +934,6 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
         //#pragma omp parallel for
         for(int x = 0; x<punten.size(); x++)
         {
-            //cout<<x<<" ";
             for(int y = 0; y<punten[x].size(); y++)
             {
                 Point2d punt, punt2;
@@ -960,8 +959,8 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
                     proj_points.push_back(punt2);
                     //cout<<1;
                 }
-                //else
-                   // cout<<0;
+                /*else
+                   cout<<0;*/
             }
             //cout<<endl;
         }
