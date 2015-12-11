@@ -1184,10 +1184,11 @@ Mat calculate3DPoints(vector<Point2f> &c, Decoder d)
         X = driedpunten.at<double>(0,i) / driedpunten.at<double>(3,i);
         Y = driedpunten.at<double>(1,i) / driedpunten.at<double>(3,i);
         Z = driedpunten.at<double>(2,i) / driedpunten.at<double>(3,i);
-        result.at<double>(i,0) = X;
-        result.at<double>(i,1) = Y;
-        result.at<double>(i,2) = Z;
+        result.at<double>(i,0) = X/1000;
+        result.at<double>(i,1) = Y/1000;
+        result.at<double>(i,2) = Z/1000;
         result.at<double>(i,3) = 1;
+        cout<<X/1000<<" "<<Y/1000<<" "<<Z/1000<<endl;
 
         pcl::PointXYZRGB point;
         point.x = X;
@@ -1436,6 +1437,8 @@ bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_w
     gettimeofday(&tv2, &tz);
     printf( "find chessboardcorners duurt %12.4g sec\n", (tv2.tv_sec-tv1.tv_sec) + (tv2.tv_usec-tv1.tv_usec)*1e-6 );
 
+    for(int i = 0; i<chessboardcorners[0].size(); i++)
+        cout<<"i "<<i<<" "<<chessboardcorners[0][i]<<endl;
     ///Select only 4 points
     vector<Point2f> punten;
     punten.push_back(chessboardcorners[0][0]);
@@ -1444,6 +1447,7 @@ bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_w
     punten.push_back(chessboardcorners[0][47]);
     for(int i=0; i< punten.size(); i++)
         cout<<"i: "<<i<<" "<<punten[i]<<endl;
+
     ///Calculate the 3D position of the chessboardcorners
     gettimeofday(&tv5, &tz);
     Mat points_sensor;
