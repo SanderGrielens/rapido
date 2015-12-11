@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<opencv_storage>
+<fundamental type_id="opencv-matrix">
+  <rows>3</rows>
+  <cols>3</cols>
+  <dt>d</dt>
+  <data>
+    -1.9786741112294174e-07 -4.9852702794753843e-06
+    -2.9065787334463383e-02 -1.4392944983945141e-06
+    -3.0364559327276711e-07 -1.4137756852725412e-04
+    2.0541657611315125e-02 4.1604251792504944e-03 1.</data></fundamental>
+<rotation type_id="opencv-matrix">
+  <rows>3</rows>
+  <cols>3</cols>
+  <dt>d</dt>
+  <data>
+    9.9968426167720725e-01 -2.2936462877723149e-02
+    -1.0261365676946573e-02 1.0466492073967007e-02
+    7.5136558659056785e-01 -6.5980315839731896e-01
+    2.2843587690263869e-02 6.5948743275218735e-01 7.5136841598736803e-01</data></rotation>
+<translation type_id="opencv-matrix">
+  <rows>3</rows>
+  <cols>1</cols>
+  <dt>d</dt>
+  <data>
+    -2.7824614866321710e+01 4.6081200059949572e+02
+    7.7666704908115491e+01</data></translation>
+<essential type_id="opencv-matrix">
+  <rows>3</rows>
+  <cols>3</cols>
+  <dt>d</dt>
+  <data>
+    9.7137013930885825e+00 2.4554363396491814e+02 3.9748432015910032e+02
+    7.8277796582617611e+01 1.6568584331548781e+01 2.0109570337581040e+01
+    -4.6095773070226318e+02 -1.0337060725330774e+01
+    2.3087329216464809e+01</data></essential>
+<camera_matrix type_id="opencv-matrix">
+  <rows>3</rows>
+  <cols>3</cols>
+  <dt>d</dt>
+  <data>
+    3.9634744238111898e+03 0. 7.9864795408761779e+02 0.
+    3.9765418090476251e+03 5.7516614834531345e+02 0. 0. 1.</data></camera_matrix>
+<projector_matrix type_id="opencv-matrix">
+  <rows>3</rows>
+  <cols>3</cols>
+  <dt>d</dt>
+  <data>
+    2.0417610640846476e+03 0. 6.9643585449293244e+02 0.
+    2.2619519100572102e+03 8.5623891264269491e+02 0. 0. 1.</data></projector_matrix>
+<distortion_camera type_id="opencv-matrix">
+  <rows>1</rows>
+  <cols>5</cols>
+  <dt>d</dt>
+  <data>
+    -1.8042029310036078e-01 8.2366789300960008e-01
+    -4.5533146262985965e-03 1.0656756698368939e-03 0.</data></distortion_camera>
+<distorion_projector type_id="opencv-matrix">
+  <rows>1</rows>
+  <cols>5</cols>
+  <dt>d</dt>
+  <data>
+    1.4736977396616516e-01 -4.1863670350687049e-01
+    -3.1601759407062220e-03 -2.4463083071015503e-03 0.</data></distorion_projector>
+</opencv_storage>
