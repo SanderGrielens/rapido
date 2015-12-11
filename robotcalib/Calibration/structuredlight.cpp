@@ -1214,7 +1214,34 @@ Mat calculate3DPoints(vector<Point2f> &c, Decoder d)
 
 Mat getRobotPoints(int height, int width)
 {
-    Mat result = Mat(height, width, CV_64FC1);
+    Mat result=Mat(4,4, CV_64FC1);
+    int teller = 0;
+    while(teller < 4)
+    {
+        double x = 0;
+        double y = 0;
+        double z = 0;
+
+        cout<<"Coordinate number "<<teller+1<<endl;
+        cout<<"Enter the x-coordinate"<<endl;
+        cin>>x;
+
+        cout<<"Enter the y-coordinate"<<endl;
+        cin>>y;
+
+        cout<<"Enter the z-coordinate"<<endl;
+        cin>>z;
+
+        result.at<double>(teller, 0) = x;
+        result.at<double>(teller, 1) = y;
+        result.at<double>(teller, 2) = z;
+        result.at<double>(teller, 3) = 1;
+        teller++;
+    }
+
+    return result;
+
+    /*Mat result = Mat(height, width, CV_64FC1);
 
     ///We use a self constructed point vector, but in time we will read it from the robot
     double row = 5;
@@ -1233,7 +1260,7 @@ Mat getRobotPoints(int height, int width)
         }
         col++;
     }
-    return result;
+    return result;*/
 }
 
 Mat calculateTransMat(Mat origin, Mat dest)
@@ -1261,8 +1288,12 @@ Mat calculateTransMat(Mat origin, Mat dest)
     return transMat;
 }
 
-Mat convert(Mat origin, Mat transMat)
+Mat convert(Mat origin)
 {
+    FileStorage fs("./robot_sl0/transmat.xml", FileStorage::READ);
+    Mat transMat;
+    fs["transmat"] >> transMat;
+
     transpose(origin.clone(), origin);
     Mat driedpunten = transMat*origin;
     return driedpunten;
@@ -1371,10 +1402,10 @@ void save(Mat origin, Mat transformed, Mat dest)
     boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
     viewer = rgbVis(point_cloud_ptr);
     while (!viewer->wasStopped ())
-      {
+    {
         viewer->spinOnce (100);
         boost::this_thread::sleep (boost::posix_time::microseconds (100000));
-      }
+    }
 }
 
 bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_width, int projector_height)
@@ -1411,30 +1442,31 @@ bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_w
     punten.push_back(chessboardcorners[0][7]);
     punten.push_back(chessboardcorners[0][40]);
     punten.push_back(chessboardcorners[0][47]);
-
     for(int i=0; i< punten.size(); i++)
-    {
-        cout<<"i"<<i<<" "<<punten[i]<<endl;
-    }
+        cout<<"i: "<<i<<" "<<punten[i]<<endl;
     ///Calculate the 3D position of the chessboardcorners
     gettimeofday(&tv5, &tz);
     Mat points_sensor;
     bool draw = false;
     Decoder d;
     bool gelukt = decode(0, d, draw, path, b, m, thresh, projector_width, projector_height);
-    points_sensor = calculate3DPoints(chessboardcorners[0], d); ///points_sensor = 48 x 4
-    cout<<"sensor points acquired"<<endl;
+    points_sensor = calculate3DPoints(punten, d); ///points_sensor = 48 x 4
+    cout<<"sensor points acquired"<<points_sensor.size()<<endl;
 
     ///Move the robot arm to every corner and record its 3D position
     Mat points_robot = getRobotPoints(points_sensor.rows, points_sensor.cols); ///Points_robot = 48 x 4
-    cout<<"Robot points acquired"<<endl;
+    cout<<"Robot points acquired"<<points_robot.size()<<endl;
 
     ///Calculate the transformation matrix (rotation matrix and translation vector) between the two coordinate systems
 
     Mat transMat = calculateTransMat(points_sensor, points_robot); ///transMat = 3 x 4
+    cout<<"transMat calculated"<<transMat<<endl;
+    FileStorage fs("./robot_sl0/transmat.xml", FileStorage::WRITE);
+    fs << "transmat" << transMat;
+    fs.release();
 
     ///Convert the sensor points to the coordinate system of the robot
-    Mat transformed = convert(points_sensor, transMat); ///transformed = 3 x 48
+    Mat transformed = convert(points_sensor); ///transformed = 3 x 48
     gettimeofday(&tv6, &tz);
     printf( "calibrating robot - sensor duurt  = %12.4g sec\n", (tv6.tv_sec-tv5.tv_sec) + (tv6.tv_usec-tv5.tv_usec)*1e-6 );
     ///Print out the root mean square error

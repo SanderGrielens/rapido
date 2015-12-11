@@ -76,7 +76,7 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
 Mat calculate3DPoints(vector<Point2f> &chessboardcorners, Decoder d);
 Mat getRobotPoints(int height, int width);
 Mat calculateTransMat(Mat origin, Mat dest);
-Mat convert(Mat origin, Mat transMat);
+Mat convert(Mat origin);
 void getRmsError(Mat transformed, Mat dest);
 void save(Mat origin, Mat transformed, Mat dest);
 bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_width, int projector_height);
