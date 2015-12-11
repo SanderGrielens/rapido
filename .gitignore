@@ -12,6 +12,7 @@ structured_light/callgrind.out.29523
 structured_light/mesh.vtk
 robotcalib/Calibration/bin/*
 robotcalib/Calibration/calib_sl/*
+!robotcalib/Calibration/calib_sl/camera_projector.xml
 robotcalib/Calibration/obj/*
 robotcalib/Calibration/Calibration.*
 robotcalib/Calibration/calib_en/*.png
