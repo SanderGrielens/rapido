@@ -27,3 +27,5 @@ robotcalib/Calibration/robot_sl0/*
 robotcalib/calib_sl/*
 robotcalib/Calibration/*.pcd
 robotcalib/Calibration/*.ply
+robotcalib/Calibration/scan0/*
+!robotcalib/Calibration/scan0/dummy.txt

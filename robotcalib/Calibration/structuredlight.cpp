@@ -634,6 +634,7 @@ bool decode(int serienummer, Decoder &d, bool draw, string path, float b, float 
     {
         ostringstream beeldnr;
         beeldnr << i;
+        //cout<<pad << beeldnr.str() << einde<<endl;
         Mat newmat_i = imread(pad + beeldnr.str() + einde,0);
         if(newmat_i.empty())
             cout<<"no image"<<endl;
@@ -824,6 +825,22 @@ bool calibrate_sl(vector<Decoder> dec, vector<vector<Point2f> > corners, int aan
 
 vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b, float m, float thresh, int projector_width, int projector_height/*, vector<Point2f> &c*/)
 {
+    int vertical_patterns=0;
+    ///Get dimensions
+    while(pow(2, vertical_patterns) < projector_width)
+    {
+        vertical_patterns++;
+    }
+    NOP_v = vertical_patterns;
+
+    ///Do the same for the horizontal patterns
+    int horizontal_patterns=0;
+    while(pow(2, horizontal_patterns) < projector_height)
+    {
+        horizontal_patterns++;
+    }
+    NOP_h = horizontal_patterns;
+
     bool draw = false;
     vector<Decoder> dec;
     vector<Visualizer> viz;
@@ -1053,12 +1070,14 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
             point_cloud_ptr -> points.push_back(point);
         }
 
-
+        ///Write pointcloud to disk as .PCD and .PLY
         point_cloud_ptr->width = (int)point_cloud_ptr->points.size();
         point_cloud_ptr->height =1;
         pcl::PLYWriter plywriter;
         plywriter.write("./test.ply", *point_cloud_ptr, false);
         pcl::io::savePCDFileBinary("./test2.pcd", *point_cloud_ptr);
+
+        ///Code Wim:
 
     }
     return viz;
@@ -1377,25 +1396,28 @@ bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_w
     }
     NOP_h = horizontal_patterns;
 
-
-
     struct timeval tv1,tv2, tv3, tv4, tv5, tv6; struct timezone tz;
 
     ///First, we'll use chessboardcorners as unique points to find (also needed for calculation of NOP_v and NOP_h)
-/*    gettimeofday(&tv1, &tz);
+    gettimeofday(&tv1, &tz);
     vector <vector<Point2f> > chessboardcorners(1);
     bool gelukt_f = findcorners(chessboardcorners, path, 1, projector_width, projector_height);
     gettimeofday(&tv2, &tz);
     printf( "find chessboardcorners duurt %12.4g sec\n", (tv2.tv_sec-tv1.tv_sec) + (tv2.tv_usec-tv1.tv_usec)*1e-6 );
-*/
-    ///Get the pointcloud
-    gettimeofday(&tv3, &tz);
-    vector<Visualizer> viz =  calculate3DPoints_all(path, 1,  b, m, thresh, projector_width, projector_height);
-    gettimeofday(&tv4, &tz);
-    printf( "getting the pointcloud duurt  = %12.4g sec\n", (tv4.tv_sec-tv3.tv_sec) + (tv4.tv_usec-tv3.tv_usec)*1e-6 );
 
+    ///Select only 4 points
+    vector<Point2f> punten;
+    punten.push_back(chessboardcorners[0][0]);
+    punten.push_back(chessboardcorners[0][7]);
+    punten.push_back(chessboardcorners[0][40]);
+    punten.push_back(chessboardcorners[0][47]);
+
+    for(int i=0; i< punten.size(); i++)
+    {
+        cout<<"i"<<i<<" "<<punten[i]<<endl;
+    }
     ///Calculate the 3D position of the chessboardcorners
-/*    gettimeofday(&tv5, &tz);
+    gettimeofday(&tv5, &tz);
     Mat points_sensor;
     bool draw = false;
     Decoder d;
@@ -1416,9 +1438,9 @@ bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_w
     gettimeofday(&tv6, &tz);
     printf( "calibrating robot - sensor duurt  = %12.4g sec\n", (tv6.tv_sec-tv5.tv_sec) + (tv6.tv_usec-tv5.tv_usec)*1e-6 );
     ///Print out the root mean square error
-    //getRmsError(transformed, points_robot);
+    getRmsError(transformed, points_robot);
 
     ///Save the data as a .pcd and .ply file
-    //save(points_sensor, transformed, points_robot);*/
+    save(points_sensor, transformed, points_robot);
     return true;
 }

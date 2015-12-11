@@ -83,6 +83,7 @@ int main()
 
                 cout<<"To calibrate the sensor, press s\n"
                         "To calibrate the robot with reference to the sensor, press r\n"
+                        "To get a new scan, press n\n"
                         "To quit, press q"<<endl;
                 char antwoord;
                 cin >> antwoord;
@@ -130,26 +131,45 @@ int main()
                             cout<<"Structured Light setup failed to calibrate."<<endl;
                     }
                 }
+
                 else if(antwoord == 'r')
                 {
-                    string path = "./robot_sl";
+                    string path = "./robot_sl0";
                     cout<<"Do you want to make a new scan? Press y"<<endl;
                     char antwoord;
                     cin >> antwoord;
                     if(antwoord == 'y')
                     {
-                        bool gelukt = get_sl_images(300, path, calib_sl_series, p_w, p_h);
-                        if(gelukt)
+                        bool gelukt = get_sl_images(300, path, 0, p_w, p_h);
+                        /*if(gelukt)
                             calib_sl_series++;
                         else
-                            cout<<"failed to get serie: "<<calib_sl_series<<endl;
+                            cout<<"failed to get serie: "<<calib_sl_series<<endl;*/
                     }
-
+                    path="./robot_sl";
                     struct timeval tv1,tv2; struct timezone tz;
                     gettimeofday(&tv1, &tz);
                     bool gelukt_cr  = calibrate_sl_r(path, b, m, thresh, p_w, p_h);
                     gettimeofday(&tv2, &tz);
                     printf( "wall clock time (gettimeofday)  = %12.4g sec\n", (tv2.tv_sec-tv1.tv_sec) + (tv2.tv_usec-tv1.tv_usec)*1e-6 );
+                }
+
+                else if(antwoord == 'n')
+                {
+                    string path = "./scan0";
+                    cout<<"Do you want to make a new scan? Press y"<<endl;
+                    char antwoord;
+                    cin >> antwoord;
+                    if(antwoord == 'y')
+                    {
+                        bool gelukt = get_sl_images(300, path, 0, p_w, p_h);
+                        /*if(gelukt)
+                            calib_sl_series++;
+                        else
+                            cout<<"failed to get serie: "<<calib_sl_series<<endl;*/
+                    }
+                    path="./scan";
+                    vector<Visualizer> viz =  calculate3DPoints_all(path, 1,  b, m, thresh, p_w, p_h);
                 }
                 else if(antwoord == 'q')
                 {
