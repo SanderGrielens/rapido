@@ -73,7 +73,7 @@ Decoder init_decoder()
 vector<Mat> generate_pattern()
 {
     vector<Mat> result;
-
+    cout<<"vertical: "<<NOP_v<<" horizontal: "<<NOP_h<<endl;
     for(int i =0 ; i< NOP_h*2 + NOP_v*2 + 4; i++)
     {
         Mat newmat = Mat(projector_height, projector_width, CV_8UC1);
@@ -169,6 +169,31 @@ bool get_images(int delay, int serie, string mode)
     FramePtr frame;
     char * pCameraID = NULL;
 
+    pattern = generate_pattern();
+    cout<<"Pattern generated"<<endl;
+
+    int number_of_patterns = (NOP_h + NOP_v)*2;
+
+    ///Save patterns
+    vector<int> compression_params;
+    compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION );
+    //Kies 0 om geen compressie door te voeren
+    compression_params.push_back(0);
+
+    for(int i=0; i<number_of_patterns; i++)
+    {
+        ostringstream stm ;
+        stm << i ;
+        try {
+            imwrite("patroon" + stm.str()+ ".bmp", pattern[i], compression_params);
+        }
+        catch (int runtime_error){
+            fprintf(stderr, "Exception converting image to JPPEG format: %s\n");
+            return 1;
+        }
+    }
+
+
     VimbaSystem & system = VimbaSystem :: GetInstance ();
     if ( !VmbErrorSuccess == system.Startup () )
     {
@@ -200,30 +225,6 @@ bool get_images(int delay, int serie, string mode)
     VmbErrorType res = system.OpenCameraByID(strCameraID.c_str(), VmbAccessModeFull, camera);
     if(VmbErrorSuccess == res)
         cout<<"Camera geopend"<<endl;
-
-    pattern = generate_pattern();
-    cout<<"Pattern generated"<<endl;
-
-    int number_of_patterns = (NOP_h + NOP_v)*2;
-
-    ///Save patterns
-    /*vector<int> compression_params;
-    compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION );
-    //Kies 0 om geen compressie door te voeren
-    compression_params.push_back(0);
-
-    for(int i=0; i<number_of_patterns; i++)
-    {
-        ostringstream stm ;
-        stm << i ;
-        try {
-            imwrite("patroon" + stm.str()+ ".png", pattern[i], compression_params);
-        }
-        catch (int runtime_error){
-            fprintf(stderr, "Exception converting image to JPPEG format: %s\n");
-            return 1;
-        }
-    }*/
 
     for(int i = 0; i<number_of_patterns;i++)
     {

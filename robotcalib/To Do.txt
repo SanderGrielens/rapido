@@ -1,0 +1,7 @@
+Structured light:
+-----------------
+	1. Windowsprogramma aan de praat krijgen.
+	2. Eventueel de hardware laten werken op Linux.
+
+
+

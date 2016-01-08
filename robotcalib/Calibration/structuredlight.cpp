@@ -916,7 +916,6 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
         Mat verx = d.pattern_image[1];
         struct timeval tv4, tv5, tv6; struct timezone tz;
         gettimeofday(&tv4, &tz);
-        cout<<"start"<<endl;
         vector<vector<vector<Point2d> > > punten;///punten[x][y][z]
         punten.resize(1280);
         //#pragma omp parallel for
@@ -928,7 +927,7 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
                 punten[i][j].reserve(10);
             }
         }
-        cout<<"geresized: "<<punten.size()<< " "<<punten[5].size()<<endl;
+
         //#pragma omp parallel for
         int tel = 0;
         for(int x = 0; x<camera_width; x++)
@@ -947,7 +946,6 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
                 punten[verx.at<float>(y,x)][hory.at<float>(y,x)].push_back(punt_cam);
             }
         }
-        cout<<"gesorteerd"<<endl;
         //#pragma omp parallel for
         for(int x = 0; x<punten.size(); x++)
         {
@@ -981,9 +979,6 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
             }
             //cout<<endl;
         }
-        cout<<"Zoveel punten smijten we weg: "<<tel<<endl;
-        cout<<cam_points.size()<<endl;
-        cout<<"geordend"<<endl;
 
         gettimeofday(&tv5, &tz);
         printf( "nieuwe ontcijfering duurt %12.4g sec\n", (tv5.tv_sec-tv4.tv_sec) + (tv5.tv_usec-tv4.tv_usec)*1e-6 );
@@ -1058,7 +1053,7 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
             pcl::PointXYZRGB point;
             point.x = X/1000;
             point.y = Y/1000;
-            point.z = Z/1000;
+            point.z = -Z/1000;
 
             uint8_t r,g,b;
             r = 255;
@@ -1184,11 +1179,11 @@ Mat calculate3DPoints(vector<Point2f> &c, Decoder d)
         X = driedpunten.at<double>(0,i) / driedpunten.at<double>(3,i);
         Y = driedpunten.at<double>(1,i) / driedpunten.at<double>(3,i);
         Z = driedpunten.at<double>(2,i) / driedpunten.at<double>(3,i);
-        result.at<double>(i,0) = X/1000;
-        result.at<double>(i,1) = Y/1000;
-        result.at<double>(i,2) = Z/1000;
-        result.at<double>(i,3) = 1;
-        cout<<X/1000<<" "<<Y/1000<<" "<<Z/1000<<endl;
+        result.at<double>(0,i) = X/1000;
+        result.at<double>(1,i) = Y/1000;
+        result.at<double>(2,i) = Z/1000;
+        result.at<double>(3,i) = 1;
+        //cout<<X/1000<<" "<<Y/1000<<" "<<Z/1000<<endl;
 
         pcl::PointXYZRGB point;
         point.x = X;
@@ -1215,7 +1210,7 @@ Mat calculate3DPoints(vector<Point2f> &c, Decoder d)
 
 Mat getRobotPoints(int height, int width)
 {
-    Mat result=Mat(4,4, CV_64FC1);
+    Mat result=Mat(3,4, CV_64FC1);
     int teller = 0;
     while(teller < 4)
     {
@@ -1233,59 +1228,29 @@ Mat getRobotPoints(int height, int width)
         cout<<"Enter the z-coordinate"<<endl;
         cin>>z;
 
-        result.at<double>(teller, 0) = x;
-        result.at<double>(teller, 1) = y;
-        result.at<double>(teller, 2) = z;
-        result.at<double>(teller, 3) = 1;
+        result.at<double>(0,teller) = x;
+        result.at<double>(1,teller) = y;
+        result.at<double>(2,teller) = z;
+        //result.at<double>(3,teller) = 1;
         teller++;
     }
 
     return result;
-
-    /*Mat result = Mat(height, width, CV_64FC1);
-
-    ///We use a self constructed point vector, but in time we will read it from the robot
-    double row = 5;
-    double col = 0;
-    for(int i =0; i< height; i++)
-    {
-        result.at<double>(i,0) = col*28.55555555;
-        result.at<double>(i,1) = row*28.55555555;
-        result.at<double>(i,2) = 0.5;//(row+col)/2*28.55555555;
-        result.at<double>(i,3) = 1;
-        if(col == 7)
-        {
-            col = 0;
-            row--;
-            continue;
-        }
-        col++;
-    }
-    return result;*/
 }
 
 Mat calculateTransMat(Mat origin, Mat dest)
 {
     Mat transMat;
-    Mat inliers;
+    cout<<"origin"<<endl;
+    printmat(origin);
+    cout<<"dest"<<endl;
+    printmat(dest);
 
-    //Extract X, Y, Z coordinate from coordinates (discard W coordinate)
-    Mat origin3d = Mat(origin.rows, 3, CV_64FC1);
-    Mat dest3d= Mat(dest.rows, 3, CV_64FC1);
-    for(int i = 0; i<origin.rows; i++)
-    {
-        for(int j=0; j<3; j++)
-        {
-            origin3d.at<double>(i,j) = origin.at<double>(i,j);
-            dest3d.at<double>(i,j) = dest.at<double>(i,j);
-        }
-    }
+    transMat = dest * origin.inv(DECOMP_SVD);
 
-    int result = estimateAffine3D(origin3d,dest3d, transMat, inliers);
-    if(result>0)
-        cout<<"Transformation matrix calculated."<<endl;
-    else
-        cout<<"Failed to calculate transformation matrix."<<endl;
+    Mat res = transMat * origin;
+    cout<<"res"<<endl;
+    printmat(res);
     return transMat;
 }
 
@@ -1294,21 +1259,21 @@ Mat convert(Mat origin)
     FileStorage fs("./robot_sl0/transmat.xml", FileStorage::READ);
     Mat transMat;
     fs["transmat"] >> transMat;
-
-    transpose(origin.clone(), origin);
+    //transpose(origin.clone(), origin);
     Mat driedpunten = transMat*origin;
     return driedpunten;
 }
 
 void getRmsError(Mat transformed, Mat dest)
 {
-    transpose(transformed.clone(), transformed);
+    Mat tussen;
+    transpose(transformed.clone(), tussen);
     double teller=0;
     for(int i=0;i<transformed.rows;i++)
     {
-        double verschilx = abs(transformed.at<double>(i,0)) - abs(dest.at<double>(i,0));
-        double verschily = abs(transformed.at<double>(i,1)) - abs(dest.at<double>(i,1));
-        double verschilz = abs(transformed.at<double>(i,2)) - abs(dest.at<double>(i,2));
+        double verschilx = abs(tussen.at<double>(i,0)) - abs(dest.at<double>(i,0));
+        double verschily = abs(tussen.at<double>(i,1)) - abs(dest.at<double>(i,1));
+        double verschilz = abs(tussen.at<double>(i,2)) - abs(dest.at<double>(i,2));
         double verschil = sqrt(pow(verschilx,2) + pow(verschily,2) + pow(verschilz,2));
         teller += pow(verschil,2);
     }
@@ -1332,38 +1297,18 @@ boost::shared_ptr<pcl::visualization::PCLVisualizer> rgbVis (pcl::PointCloud<pcl
   return (viewer);
 }
 
-void save(Mat origin, Mat transformed, Mat dest)
+void save(Mat origin)
 {
-
-    transpose(transformed.clone(), transformed);
-
+    ///Saves a Mat as a pointcloud. Mat has to be ordened as 3xN with N the number of coordinates
     double X,Y,Z;
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGB>);//(new pcl::pointcloud<pcl::pointXYZ>);
 
-    for(int i=0;i<transformed.rows;i++)
+    for(int i=0;i<origin.cols;i++)
     {
         //std::cout<<i<<endl;
-        X = transformed.at<double>(i,0);
-        Y = transformed.at<double>(i,1);
-        Z = transformed.at<double>(i,2);
-
-        pcl::PointXYZRGB point;
-        point.x = X;
-        point.y = Y;
-        point.z = Z;
-        //cout<<"x: "<<point.x<<" y: "<<point.y<<" z: "<<point.z<<endl;
-        uint8_t r = 255, g = 0, b = 0;    // Example: Red color
-        uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
-        point.rgb = *reinterpret_cast<float*>(&rgb);
-        point_cloud_ptr -> points.push_back(point);
-    }
-
-    for(int i=0;i<origin.rows;i++)
-    {
-        //std::cout<<i<<endl;
-        X = origin.at<double>(i,0);
-        Y = origin.at<double>(i,1);
-        Z = origin.at<double>(i,2)-700;
+        X = origin.at<double>(0,i);
+        Y = origin.at<double>(1,i);
+        Z = origin.at<double>(2,i);
 
         pcl::PointXYZRGB point;
         point.x = X;
@@ -1376,37 +1321,19 @@ void save(Mat origin, Mat transformed, Mat dest)
         point_cloud_ptr -> points.push_back(point);
     }
 
-    for(int i=0;i<dest.rows;i++)
-    {
-        //std::cout<<i<<endl;
-        X = dest.at<double>(i,0);
-        Y = dest.at<double>(i,1);
-        Z = dest.at<double>(i,2);
-
-        pcl::PointXYZRGB point;
-        point.x = X;
-        point.y = Y;
-        point.z = Z;
-        //cout<<"x: "<<point.x<<" y: "<<point.y<<" z: "<<point.z<<endl;
-        uint8_t r = 0, g = 0, b = 255;    // Example: Red color
-        uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
-        point.rgb = *reinterpret_cast<float*>(&rgb);
-        point_cloud_ptr -> points.push_back(point);
-    }
-
     point_cloud_ptr->width = (int)point_cloud_ptr->points.size();
     point_cloud_ptr->height =1;
     pcl::PLYWriter plywriter;
     plywriter.write("./test.ply", *point_cloud_ptr, false);
     pcl::io::savePCDFileBinary("./test.pcd", *point_cloud_ptr);
 
-    boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
+    /*boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
     viewer = rgbVis(point_cloud_ptr);
     while (!viewer->wasStopped ())
     {
         viewer->spinOnce (100);
         boost::this_thread::sleep (boost::posix_time::microseconds (100000));
-    }
+    }*/
 }
 
 bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_width, int projector_height)
@@ -1454,17 +1381,18 @@ bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_w
     bool draw = false;
     Decoder d;
     bool gelukt = decode(0, d, draw, path, b, m, thresh, projector_width, projector_height);
-    points_sensor = calculate3DPoints(punten, d); ///points_sensor = 48 x 4
+    points_sensor = calculate3DPoints(punten, d);
     cout<<"sensor points acquired"<<points_sensor.size()<<endl;
 
     ///Move the robot arm to every corner and record its 3D position
-    Mat points_robot = getRobotPoints(points_sensor.rows, points_sensor.cols); ///Points_robot = 48 x 4
+    Mat points_robot = getRobotPoints(points_sensor.rows, points_sensor.cols);
     cout<<"Robot points acquired"<<points_robot.size()<<endl;
 
     ///Calculate the transformation matrix (rotation matrix and translation vector) between the two coordinate systems
 
-    Mat transMat = calculateTransMat(points_sensor, points_robot); ///transMat = 3 x 4
-    cout<<"transMat calculated"<<transMat<<endl;
+    Mat transMat = calculateTransMat(points_sensor, points_robot);
+    cout<<"transMat calculated"<<endl;
+    printmat(transMat);
     FileStorage fs("./robot_sl0/transmat.xml", FileStorage::WRITE);
     fs << "transmat" << transMat;
     fs.release();
@@ -1477,6 +1405,6 @@ bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_w
     getRmsError(transformed, points_robot);
 
     ///Save the data as a .pcd and .ply file
-    save(points_sensor, transformed, points_robot);
+    //save(points_sensor, transformed, points_robot);
     return true;
 }

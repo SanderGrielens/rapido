@@ -33,6 +33,7 @@ Hoe te installeren:
 
 	-Structured Light:
 		We gebruiken een Manta GigE camera. Deze maakt gebruik van de Vimba SDK. De nodige libraries en headers staan mee in de repository.
+		TI opstelling: Gebruik windows programma bij de hardware geleverd.
 
 	-TOF:
 

@@ -170,6 +170,8 @@ int main()
                     }
                     path="./scan";
                     vector<Visualizer> viz =  calculate3DPoints_all(path, 1,  b, m, thresh, p_w, p_h);
+                    Mat tussen = convert(viz[0].pointcloud);
+                    save(tussen);
                 }
                 else if(antwoord == 'q')
                 {

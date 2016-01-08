@@ -78,7 +78,7 @@ Mat getRobotPoints(int height, int width);
 Mat calculateTransMat(Mat origin, Mat dest);
 Mat convert(Mat origin);
 void getRmsError(Mat transformed, Mat dest);
-void save(Mat origin, Mat transformed, Mat dest);
+void save(Mat origin);
 bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_width, int projector_height);
 
 
@@ -109,3 +109,5 @@ bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_w
 
 ///General
 void tonen(Mat image, String naam);
+
+void printmat(Mat a);

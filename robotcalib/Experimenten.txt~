@@ -11,7 +11,7 @@ Camera calibratie:
 		OPMERKING: Kabel van stereovisie is gemerkt aan de ethernet connectie met papiertape.
 
 	-Structured Light:
-		Code om projector en camera te calibreren t.o.v. elkaar bestaat. Dit gebeurt a.d.h.v. een checkerboard. --> OK
+		Code om projector en camera te calibreren t.o.v. elkaar bestaat. Dit gebeurt a.d.h.v. een checkerboard.
 
 	-TOF:
 		Calibreren van grijswaarde beelden bij de TOF.

@@ -25,3 +25,18 @@ void tonen(Mat image, String naam)              // afbeelding tonen op scherm a.
     imshow( naam, image );
     waitKey(0);
 }
+
+void printmat(Mat a)
+{
+    cout<<a.rows<<"x"<<a.cols<<endl;
+
+    for(int x = 0; x<a.rows; x++)
+    {
+        for(int y=0; y< a.cols; y++)
+        {
+            cout<<a.at<double>(x,y)<<" ";
+        }
+        cout<<endl;
+    }
+
+}
