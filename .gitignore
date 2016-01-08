@@ -22,6 +22,8 @@ structured_light/*an*
 errordet/bin/*
 errordet/errordet.*
 !errordet/errordet.cbp
+errordet/*.ply
+errordet/*.pcd
 errordet/obj/*
 robotcalib/Calibration/robot_sl0/*
 !robotcalib/Calibration/robot_sl0/dummy.txt
