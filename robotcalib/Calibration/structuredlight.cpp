@@ -823,7 +823,7 @@ bool calibrate_sl(vector<Decoder> dec, vector<vector<Point2f> > corners, int aan
     return true;
 }
 
-vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b, float m, float thresh, int projector_width, int projector_height/*, vector<Point2f> &c*/)
+Mat calculate3DPoints_all(string path, int aantalseries, float b, float m, float thresh, int projector_width, int projector_height/*, vector<Point2f> &c*/)
 {
     int vertical_patterns=0;
     ///Get dimensions
@@ -843,7 +843,6 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
 
     bool draw = false;
     vector<Decoder> dec;
-    vector<Visualizer> viz;
     struct timeval tv1, tv2; struct timezone tz;
     gettimeofday(&tv1, &tz);
     decode_all(aantalseries, dec, draw, path, b, m, thresh, projector_width, projector_height);
@@ -902,11 +901,13 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
     fs["camera_matrix"] >> cameraMatrix;
     fs["projector_matrix"] >> projMatrix;
 
+    Mat result;
+
+
     //#pragma omp parallel for
     for(int k = 0; k< aantalseries; k++)
     {
         Decoder d = dec[k];
-        Visualizer v;
         vector<Point2d> cam_points;
         vector<Point2d> proj_points;
         vector<Paar> combinaties;
@@ -1034,14 +1035,10 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
         gettimeofday(&tv6, &tz);
         printf( "triangulate duurt %12.4g sec\n", (tv6.tv_sec-tv5.tv_sec) + (tv6.tv_usec-tv5.tv_usec)*1e-6 );
 
-        ///Save 3D coordinates
-        v.pointcloud= driedpunten;
-        v.cam_points = cam_points;
-        viz.push_back(v);
-
-        ///Convert to pointcloud and save as .PCD and .PLY
+        ///Convert to pointcloud and save as .PCD and .PLY and transform them into homogene points
         double X,Y,Z;
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGB>);
+        result = Mat(4, driedpunten.cols,CV_64FC1);
 
         for(int i=0;i<driedpunten.cols;i++)
         {
@@ -1051,9 +1048,14 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
             Z = driedpunten.at<double>(2,i) / driedpunten.at<double>(3,i);
 
             pcl::PointXYZRGB point;
-            point.x = X/1000;
+            point.x = X/1000; // /1000 so the coordinates are in metres
             point.y = Y/1000;
-            point.z = -Z/1000;
+            point.z = Z/1000;
+
+            result.at<double>(0, i) = X/1000;
+            result.at<double>(1, i) = Y/1000;
+            result.at<double>(2, i) = Z/1000;
+            result.at<double>(3, i) = 1;
 
             uint8_t r,g,b;
             r = 255;
@@ -1065,17 +1067,16 @@ vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b,
             point_cloud_ptr -> points.push_back(point);
         }
 
+
         ///Write pointcloud to disk as .PCD and .PLY
         point_cloud_ptr->width = (int)point_cloud_ptr->points.size();
         point_cloud_ptr->height =1;
         pcl::PLYWriter plywriter;
-        plywriter.write("./test.ply", *point_cloud_ptr, false);
+        plywriter.write("./test2.ply", *point_cloud_ptr, false);
         pcl::io::savePCDFileBinary("./test2.pcd", *point_cloud_ptr);
 
-        ///Code Wim:
-
     }
-    return viz;
+    return result;
 }
 
 Mat calculate3DPoints(vector<Point2f> &c, Decoder d)
@@ -1172,7 +1173,7 @@ Mat calculate3DPoints(vector<Point2f> &c, Decoder d)
     double X,Y,Z;
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGB>);//(new pcl::pointcloud<pcl::pointXYZ>);
     //vector<Point3d> punten;
-    Mat result = Mat(c.size(),4,CV_64FC1);
+    Mat result = Mat(c.size(), 4, CV_64FC1); ///DIT KAN FOUT ZIJN
     for(int i=0;i<c.size();i++)
     {
         //std::cout<<i<<endl;
@@ -1199,13 +1200,6 @@ Mat calculate3DPoints(vector<Point2f> &c, Decoder d)
     }
 
     return result;
-    /*std::vector<int> indices;
-    pcl::removeNaNFromPointCloud(*point_cloud_ptr,*point_cloud_ptr, indices);
-    point_cloud_ptr->width = (int)point_cloud_ptr->points.size();
-    point_cloud_ptr->height =1;
-    pcl::PLYWriter plywriter;
-    plywriter.write("./test.ply", *point_cloud_ptr, false);
-    pcl::io::savePCDFileBinary("./test.pcd", *point_cloud_ptr);*/
 }
 
 Mat getRobotPoints(int height, int width)
@@ -1241,17 +1235,24 @@ Mat getRobotPoints(int height, int width)
 Mat calculateTransMat(Mat origin, Mat dest)
 {
     Mat transmat =Mat(4,4, CV_64FC1);
+    Mat origin_inv;
+
     /*cout<<"origin"<<endl;
     printmat(origin);
     cout<<"dest"<<endl;
     printmat(dest);
 
-    transMat = dest * origin.inv(DECOMP_SVD);
+    cout<<"transmat:"<<endl;
+    printmat(transmat);
+    invert(origin, origin_inv, DECOMP_SVD);
+    transmat = dest * origin_inv;
 
-    Mat res = transMat * origin;
+    Mat res = transmat * origin;
     cout<<"res"<<endl;
     printmat(res);
-    return transMat;*/
+    return transmat;*/
+
+    ///Works, without scaling
 
     double X,Y,Z;
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_source(new pcl::PointCloud<pcl::PointXYZ>);//(new pcl::pointcloud<pcl::pointXYZ>);
@@ -1335,6 +1336,7 @@ Mat convert(Mat origin)
     Mat transMat;
     fs["transmat"] >> transMat;
     //transpose(origin.clone(), origin);
+
     Mat driedpunten = transMat*origin;
 
     return driedpunten;

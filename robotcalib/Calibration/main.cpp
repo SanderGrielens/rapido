@@ -169,8 +169,8 @@ int main()
                             cout<<"failed to get serie: "<<calib_sl_series<<endl;*/
                     }
                     path="./scan";
-                    vector<Visualizer> viz =  calculate3DPoints_all(path, 1,  b, m, thresh, p_w, p_h);
-                    Mat tussen = convert(viz[0].pointcloud);
+                    Mat result =  calculate3DPoints_all(path, 1,  b, m, thresh, p_w, p_h);
+                    Mat tussen = convert(result);
                     save(tussen);
                 }
                 else if(antwoord == 'q')

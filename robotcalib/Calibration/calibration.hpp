@@ -74,7 +74,7 @@ void colorize_pattern(Decoder &d, vector<Mat> &image, int dir, int projector_wid
 bool decode(int serienummer, Decoder &d, bool draw, string path, float b, float m, float thresh, int p_w, int p_h);
 bool decode_all(int aantalseries, vector<Decoder> &dec, bool draw, string path, float b, float m, float thresh, int projector_width, int projector_height);
 bool calibrate_sl(vector<Decoder> dec, vector<vector<Point2f> > corners, int aantalseries, int projector_width, int projector_height);
-vector<Visualizer> calculate3DPoints_all(string path, int aantalseries, float b, float m, float thresh, int projector_width, int projector_height);
+Mat calculate3DPoints_all(string path, int aantalseries, float b, float m, float thresh, int projector_width, int projector_height);
 Mat calculate3DPoints(vector<Point2f> &chessboardcorners, Decoder d);
 Mat getRobotPoints(int height, int width);
 Mat calculateTransMat(Mat origin, Mat dest);
