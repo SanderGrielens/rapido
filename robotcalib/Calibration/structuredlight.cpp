@@ -503,9 +503,10 @@ void get_pattern_image(Decoder &d, vector<Mat> beelden, int dir, float m, float 
             }
         }
     }
-    //#pragma omp parallel for
+
     int teller =0;
     ///Convert pattern from gray code to binary
+    //#pragma omp parallel for
     for(int i=0;i<d.pattern_image[dir].rows;i++)
     {
         for(int j=0; j<d.pattern_image[dir].cols;j++)
@@ -1034,13 +1035,30 @@ Mat calculate3DPoints_all(string path, int aantalseries, float b, float m, float
 
         gettimeofday(&tv6, &tz);
         printf( "triangulate duurt %12.4g sec\n", (tv6.tv_sec-tv5.tv_sec) + (tv6.tv_usec-tv5.tv_usec)*1e-6 );
-
-        ///Convert to pointcloud and save as .PCD and .PLY and transform them into homogene points
-        double X,Y,Z;
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGB>);
+        ///Transform into homogeneous points
         result = Mat(4, driedpunten.cols,CV_64FC1);
+        double X,Y,Z;
 
+        //#pragma omp parallel for
         for(int i=0;i<driedpunten.cols;i++)
+        {
+            //std::cout<<i<<endl;
+            X = driedpunten.at<double>(0,i) / driedpunten.at<double>(3,i);
+            Y = driedpunten.at<double>(1,i) / driedpunten.at<double>(3,i);
+            Z = driedpunten.at<double>(2,i) / driedpunten.at<double>(3,i);
+
+            result.at<double>(0, i) = X/1000;
+            result.at<double>(1, i) = Y/1000;
+            result.at<double>(2, i) = Z/1000;
+            result.at<double>(3, i) = 1;
+
+        }
+
+
+
+       /* ///Convert to pointcloud and save as .PCD and .PLY and transform them into homogene points
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGB>);
+
         {
             //std::cout<<i<<endl;
             X = driedpunten.at<double>(0,i) / driedpunten.at<double>(3,i);
@@ -1051,11 +1069,6 @@ Mat calculate3DPoints_all(string path, int aantalseries, float b, float m, float
             point.x = X/1000; // /1000 so the coordinates are in metres
             point.y = Y/1000;
             point.z = Z/1000;
-
-            result.at<double>(0, i) = X/1000;
-            result.at<double>(1, i) = Y/1000;
-            result.at<double>(2, i) = Z/1000;
-            result.at<double>(3, i) = 1;
 
             uint8_t r,g,b;
             r = 255;
@@ -1074,7 +1087,7 @@ Mat calculate3DPoints_all(string path, int aantalseries, float b, float m, float
         pcl::PLYWriter plywriter;
         plywriter.write("./test2.ply", *point_cloud_ptr, false);
         pcl::io::savePCDFileBinary("./test2.pcd", *point_cloud_ptr);
-
+    */
     }
     return result;
 }

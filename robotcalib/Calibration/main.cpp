@@ -169,9 +169,18 @@ int main()
                             cout<<"failed to get serie: "<<calib_sl_series<<endl;*/
                     }
                     path="./scan";
+                    struct timeval tv1,tv2, tv3 ; struct timezone tz;
+                    gettimeofday(&tv1, &tz);
                     Mat result =  calculate3DPoints_all(path, 1,  b, m, thresh, p_w, p_h);
+                    gettimeofday(&tv3, &tz);
+                    printf( "calculating the pointcloud takes  = %12.4g sec\n", (tv3.tv_sec-tv1.tv_sec) + (tv3.tv_usec-tv1.tv_usec)*1e-6 );
                     Mat tussen = convert(result);
+                    gettimeofday(&tv2, &tz);
+                    printf( "Converting the pointcloud takes  = %12.4g sec\n", (tv2.tv_sec-tv3.tv_sec) + (tv2.tv_usec-tv3.tv_usec)*1e-6 );
+
+                    printf( "everything about the pointcloud takes  = %12.4g sec\n", (tv2.tv_sec-tv1.tv_sec) + (tv2.tv_usec-tv1.tv_usec)*1e-6 );
                     save(tussen);
+
                 }
                 else if(antwoord == 'q')
                 {
