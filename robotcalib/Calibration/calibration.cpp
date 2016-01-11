@@ -34,7 +34,10 @@ void printmat(Mat a)
     {
         for(int y=0; y< a.cols; y++)
         {
-            cout<<a.at<double>(x,y)<<" ";
+            if(a.at<double>(x,y) < 0.000001 && a.at<double>(x,y) > -0.000001)
+                cout<<"0"<<" ";
+            else
+                cout<<a.at<double>(x,y)<<" ";
         }
         cout<<endl;
     }

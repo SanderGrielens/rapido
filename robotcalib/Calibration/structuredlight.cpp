@@ -1183,7 +1183,7 @@ Mat calculate3DPoints(vector<Point2f> &c, Decoder d)
         result.at<double>(1,i) = Y/1000;
         result.at<double>(2,i) = Z/1000;
         result.at<double>(3,i) = 1;
-        //cout<<X/1000<<" "<<Y/1000<<" "<<Z/1000<<endl;
+        cout<<X/1000<<" "<<Y/1000<<" "<<Z/1000<<endl;
 
         pcl::PointXYZRGB point;
         point.x = X;
@@ -1210,7 +1210,7 @@ Mat calculate3DPoints(vector<Point2f> &c, Decoder d)
 
 Mat getRobotPoints(int height, int width)
 {
-    Mat result=Mat(3,4, CV_64FC1);
+    Mat result=Mat(4,4, CV_64FC1);
     int teller = 0;
     while(teller < 4)
     {
@@ -1231,7 +1231,7 @@ Mat getRobotPoints(int height, int width)
         result.at<double>(0,teller) = x;
         result.at<double>(1,teller) = y;
         result.at<double>(2,teller) = z;
-        //result.at<double>(3,teller) = 1;
+        result.at<double>(3,teller) = 1;
         teller++;
     }
 
@@ -1240,8 +1240,8 @@ Mat getRobotPoints(int height, int width)
 
 Mat calculateTransMat(Mat origin, Mat dest)
 {
-    Mat transMat;
-    cout<<"origin"<<endl;
+    Mat transmat =Mat(4,4, CV_64FC1);
+    /*cout<<"origin"<<endl;
     printmat(origin);
     cout<<"dest"<<endl;
     printmat(dest);
@@ -1251,7 +1251,82 @@ Mat calculateTransMat(Mat origin, Mat dest)
     Mat res = transMat * origin;
     cout<<"res"<<endl;
     printmat(res);
-    return transMat;
+    return transMat;*/
+
+    double X,Y,Z;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_source(new pcl::PointCloud<pcl::PointXYZ>);//(new pcl::pointcloud<pcl::pointXYZ>);
+
+    for(int i=0;i<origin.cols;i++)
+    {
+        //std::cout<<i<<endl;
+        X = origin.at<double>(0,i);
+        Y = origin.at<double>(1,i);
+        Z = origin.at<double>(2,i);
+
+        pcl::PointXYZ point;
+        point.x = X;
+        point.y = Y;
+        point.z = Z;
+
+        cloud_source -> points.push_back(point);
+    }
+
+    cloud_source->width = (int)cloud_source->points.size();
+    cloud_source->height =1;
+
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_target(new pcl::PointCloud<pcl::PointXYZ>);//(new pcl::pointcloud<pcl::pointXYZ>);
+
+    for(int i=0;i<dest.cols;i++)
+    {
+        //std::cout<<i<<endl;
+        X = dest.at<double>(0,i);
+        Y = dest.at<double>(1,i);
+        Z = dest.at<double>(2,i);
+
+        pcl::PointXYZ point;
+        point.x = X;
+        point.y = Y;
+        point.z = Z;
+
+        cloud_target -> points.push_back(point);
+    }
+
+    cloud_target->width = (int)cloud_target->points.size();
+    cloud_target->height =1;
+
+    IterativeClosestPoint<PointXYZ, PointXYZ> icp;
+    // Set the input source and target
+    icp.setInputSource (cloud_source);
+    icp.setInputTarget (cloud_target);
+    // Set the max correspondence distance to 5cm (e.g., correspondences with higher distances will be ignored)
+    icp.setMaxCorrespondenceDistance (1);
+    // Set the maximum number of iterations (criterion 1)
+    icp.setMaximumIterations (500);
+    // Set the transformation epsilon (criterion 2)
+    icp.setTransformationEpsilon (1e-8);
+    // Set the euclidean distance difference epsilon (criterion 3)
+    icp.setEuclideanFitnessEpsilon (0.0005);
+    // Perform the alignment
+    pcl::PointCloud<pcl::PointXYZ> output;
+    icp.align (output);
+
+    std::cout << "has converged:" << icp.hasConverged() << " score: " <<
+    icp.getFitnessScore() << std::endl;
+    // Obtain the transformation that aligned cloud_source to cloud_source_registered
+    Eigen::Matrix4f transformation = icp.getFinalTransformation ();
+
+    for(int x=0; x<4; x++)
+    {
+        for(int y = 0; y<4; y++)
+        {
+            transmat.at<double>(y,x) = transformation(y,x);
+        }
+    }
+
+    cout<<"resultaat"<<endl;
+    printmat(transmat*origin);
+
+    return transmat;
 }
 
 Mat convert(Mat origin)
@@ -1261,6 +1336,7 @@ Mat convert(Mat origin)
     fs["transmat"] >> transMat;
     //transpose(origin.clone(), origin);
     Mat driedpunten = transMat*origin;
+
     return driedpunten;
 }
 
@@ -1382,7 +1458,8 @@ bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_w
     Decoder d;
     bool gelukt = decode(0, d, draw, path, b, m, thresh, projector_width, projector_height);
     points_sensor = calculate3DPoints(punten, d);
-    cout<<"sensor points acquired"<<points_sensor.size()<<endl;
+    cout<<"sensor points acquired"<<endl;
+    printmat(points_sensor);
 
     ///Move the robot arm to every corner and record its 3D position
     Mat points_robot = getRobotPoints(points_sensor.rows, points_sensor.cols);

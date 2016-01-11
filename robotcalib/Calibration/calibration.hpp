@@ -20,6 +20,7 @@
 #include <pcl/io/ply_io.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/visualization/cloud_viewer.h>
+#include <pcl/registration/icp.h>
 #include <pcl/filters/filter.h>
 
 #include "VimbaCPP/Include/VimbaCPP.h"
@@ -32,6 +33,7 @@
 
 using namespace std;
 using namespace cv;
+using namespace pcl;
 
 ///Ensenso:
 void get_en_image(pcl::PointCloud<pcl::PointXYZ>&);
