@@ -1051,14 +1051,11 @@ Mat calculate3DPoints_all(string path, int aantalseries, float b, float m, float
             result.at<double>(1, i) = Y/1000;
             result.at<double>(2, i) = Z/1000;
             result.at<double>(3, i) = 1;
-
         }
 
-
-
-       /* ///Convert to pointcloud and save as .PCD and .PLY and transform them into homogene points
+        ///Convert to pointcloud and save as .PCD and .PLY and transform them into homogene points
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGB>);
-
+        for(int i=0;i<driedpunten.cols;i++)
         {
             //std::cout<<i<<endl;
             X = driedpunten.at<double>(0,i) / driedpunten.at<double>(3,i);
@@ -1087,7 +1084,7 @@ Mat calculate3DPoints_all(string path, int aantalseries, float b, float m, float
         pcl::PLYWriter plywriter;
         plywriter.write("./test2.ply", *point_cloud_ptr, false);
         pcl::io::savePCDFileBinary("./test2.pcd", *point_cloud_ptr);
-    */
+
     }
     return result;
 }
@@ -1197,7 +1194,7 @@ Mat calculate3DPoints(vector<Point2f> &c, Decoder d)
         result.at<double>(1,i) = Y/1000;
         result.at<double>(2,i) = Z/1000;
         result.at<double>(3,i) = 1;
-        cout<<X/1000<<" "<<Y/1000<<" "<<Z/1000<<endl;
+        //cout<<X/1000<<" "<<Y/1000<<" "<<Z/1000<<endl;
 
         pcl::PointXYZRGB point;
         point.x = X;
@@ -1250,96 +1247,100 @@ Mat calculateTransMat(Mat origin, Mat dest)
     Mat transmat =Mat(4,4, CV_64FC1);
     Mat origin_inv;
 
-    /*cout<<"origin"<<endl;
+    cout<<"origin"<<endl;
     printmat(origin);
     cout<<"dest"<<endl;
     printmat(dest);
 
-    cout<<"transmat:"<<endl;
-    printmat(transmat);
-    invert(origin, origin_inv, DECOMP_SVD);
-    transmat = dest * origin_inv;
+    ///Find the centroid
+    Mat center_origin, center_dest; ///center origin and center dest
 
-    Mat res = transmat * origin;
-    cout<<"res"<<endl;
-    printmat(res);
-    return transmat;*/
+    center_origin = Mat::zeros(3,1, CV_64FC1);
+    center_dest=Mat::zeros(3,1, CV_64FC1);
 
-    ///Works, without scaling
+    if(origin.cols != dest.cols)
+        cerr<<"dest and origin have different sizes"<<endl;
 
-    double X,Y,Z;
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_source(new pcl::PointCloud<pcl::PointXYZ>);//(new pcl::pointcloud<pcl::pointXYZ>);
-
-    for(int i=0;i<origin.cols;i++)
+    for(int i = 0; i< origin.cols; i++)
     {
-        //std::cout<<i<<endl;
-        X = origin.at<double>(0,i);
-        Y = origin.at<double>(1,i);
-        Z = origin.at<double>(2,i);
+            center_origin.at<double>(0,0) +=origin.at<double>(0,i);
+            center_origin.at<double>(1,0) +=origin.at<double>(1,i);
+            center_origin.at<double>(2,0) +=origin.at<double>(2,i);
 
-        pcl::PointXYZ point;
-        point.x = X;
-        point.y = Y;
-        point.z = Z;
-
-        cloud_source -> points.push_back(point);
+            center_dest.at<double>(0,0) +=dest.at<double>(0,i);
+            center_dest.at<double>(1,0) +=dest.at<double>(1,i);
+            center_dest.at<double>(2,0) +=dest.at<double>(2,i);
+            cout<<"iteratie "<<i<<endl;
+            printmat(center_origin);
+            printmat(center_dest);
     }
 
-    cloud_source->width = (int)cloud_source->points.size();
-    cloud_source->height =1;
+    center_origin.at<double>(0,0)/=origin.cols;
+    center_origin.at<double>(1,0)/=origin.cols;
+    center_origin.at<double>(2,0)/=origin.cols;
 
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_target(new pcl::PointCloud<pcl::PointXYZ>);//(new pcl::pointcloud<pcl::pointXYZ>);
+    center_dest.at<double>(0,0) /= dest.cols;
+    center_dest.at<double>(1,0) /= dest.cols;
+    center_dest.at<double>(2,0) /= dest.cols;
 
-    for(int i=0;i<dest.cols;i++)
+    ///Recenter Origin and Dest so only the rotation remains and build H.
+    Mat H = Mat::zeros(3,3, CV_64FC1);
+    Mat a = Mat::zeros(4,1, CV_64FC1);
+    Mat b = Mat::zeros(4,1, CV_64FC1);
+
+    for(int i=0; i<origin.cols; i++)
     {
-        //std::cout<<i<<endl;
-        X = dest.at<double>(0,i);
-        Y = dest.at<double>(1,i);
-        Z = dest.at<double>(2,i);
+        origin.col(i).copyTo(a);
+        dest.col(i).copyTo(b);
+        a.resize(3);
+        b.resize(3);
+        transpose(b.clone(), b);
 
-        pcl::PointXYZ point;
-        point.x = X;
-        point.y = Y;
-        point.z = Z;
+        a.at<double>(0,0) -= center_origin.at<double>(0,0);
+        a.at<double>(1,0) -= center_origin.at<double>(1,0);
+        a.at<double>(2,0) -= center_origin.at<double>(2,0);
 
-        cloud_target -> points.push_back(point);
+        b.at<double>(0,0) -= center_dest.at<double>(0,0);
+        b.at<double>(1,0) -= center_dest.at<double>(1,0);
+        b.at<double>(2,0) -= center_dest.at<double>(2,0);
+
+        H += (a*b);
     }
+    Mat w, u, vt;
+    SVD::compute(H, w, u, vt);
+    //transpose(vt.clone(), vt);
+    Mat rot = u*vt;
+    Mat trans = -rot*center_origin + center_dest;
 
-    cloud_target->width = (int)cloud_target->points.size();
-    cloud_target->height =1;
-
-    IterativeClosestPoint<PointXYZ, PointXYZ> icp;
-    // Set the input source and target
-    icp.setInputSource (cloud_source);
-    icp.setInputTarget (cloud_target);
-    // Set the max correspondence distance to 5cm (e.g., correspondences with higher distances will be ignored)
-    icp.setMaxCorrespondenceDistance (1);
-    // Set the maximum number of iterations (criterion 1)
-    icp.setMaximumIterations (500);
-    // Set the transformation epsilon (criterion 2)
-    icp.setTransformationEpsilon (1e-8);
-    // Set the euclidean distance difference epsilon (criterion 3)
-    icp.setEuclideanFitnessEpsilon (0.0005);
-    // Perform the alignment
-    pcl::PointCloud<pcl::PointXYZ> output;
-    icp.align (output);
-
-    std::cout << "has converged:" << icp.hasConverged() << " score: " <<
-    icp.getFitnessScore() << std::endl;
-    // Obtain the transformation that aligned cloud_source to cloud_source_registered
-    Eigen::Matrix4f transformation = icp.getFinalTransformation ();
-
-    for(int x=0; x<4; x++)
+    for(int i=0; i<transmat.rows; i++)
     {
-        for(int y = 0; y<4; y++)
+        for(int j=0; j<transmat.cols; j++)
         {
-            transmat.at<double>(y,x) = transformation(y,x);
+            if(j<3)
+            {
+                if(i<3)
+                    transmat.at<double>(i,j)=rot.at<double>(i,j);
+                else
+                    transmat.at<double>(i,j)= 0;
+            }
+            else
+            {
+                if(i<3)
+                    transmat.at<double>(i,j)=trans.at<double>(i,0);
+                else
+                    transmat.at<double>(i,j)=1;
+            }
         }
     }
 
-    cout<<"resultaat"<<endl;
-    printmat(transmat*origin);
 
+    cout<<"origin"<<endl;
+    printmat(origin);
+    cout<<"dest"<<endl;
+    printmat(dest);
+    Mat res = transmat * origin;
+    cout<<"res"<<endl;
+    printmat(res);
     return transmat;
 }
 
@@ -1455,16 +1456,16 @@ bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_w
     gettimeofday(&tv2, &tz);
     printf( "find chessboardcorners duurt %12.4g sec\n", (tv2.tv_sec-tv1.tv_sec) + (tv2.tv_usec-tv1.tv_usec)*1e-6 );
 
-    for(int i = 0; i<chessboardcorners[0].size(); i++)
-        cout<<"i "<<i<<" "<<chessboardcorners[0][i]<<endl;
+    //for(int i = 0; i<chessboardcorners[0].size(); i++)
+      //  cout<<"i "<<i<<" "<<chessboardcorners[0][i]<<endl;
     ///Select only 4 points
     vector<Point2f> punten;
     punten.push_back(chessboardcorners[0][0]);
     punten.push_back(chessboardcorners[0][7]);
     punten.push_back(chessboardcorners[0][40]);
     punten.push_back(chessboardcorners[0][47]);
-    for(int i=0; i< punten.size(); i++)
-        cout<<"i: "<<i<<" "<<punten[i]<<endl;
+    //for(int i=0; i< punten.size(); i++)
+      //  cout<<"i: "<<i<<" "<<punten[i]<<endl;
 
     ///Calculate the 3D position of the chessboardcorners
     gettimeofday(&tv5, &tz);

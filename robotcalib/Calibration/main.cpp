@@ -51,17 +51,6 @@ int main()
                 pcl::io::savePCDFileBinary("./calib_en/Ensenso.pcd", a);
                 plywriter.write("./calib_en/Ensenso.ply", a, false);
             }
-            /*if(antwoord == 'c')
-            {
-                get_en_image();
-            }
-            else if(antwoord == 'p')
-            {
-                pcl::PointCloud<pcl::PointXYZ> a = get_en_cloud();
-                pcl::PLYWriter plywriter;
-                pcl::io::savePCDFileBinary("./calib_en/Ensenso.pcd", a);
-                plywriter.write("./calib_en/Ensenso.ply", a, false);
-            }*/
         }
         else if(keuze=='n')
         {
