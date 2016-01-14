@@ -72,7 +72,7 @@ void calibrate_camera()
                 //+ cv::CALIB_FIX_K1
                 //+ cv::CALIB_FIX_K2
                 //+ cv::CALIB_ZERO_TANGENT_DIST
-                + cv::CALIB_FIX_K3
+                //+ cv::CALIB_FIX_K3
                 ;
 
     vector<Mat> cam_rvecs, cam_tvecs;
