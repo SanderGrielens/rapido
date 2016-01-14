@@ -164,6 +164,7 @@
 		<Unit filename="Bitmap.cpp" />
 		<Unit filename="calibration.cpp" />
 		<Unit filename="calibration.hpp" />
+		<Unit filename="cameracalib.cpp" />
 		<Unit filename="ensenso.cpp" />
 		<Unit filename="main.cpp" />
 		<Unit filename="structuredlight.cpp" />
