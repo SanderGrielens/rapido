@@ -54,7 +54,7 @@ int main()
         }
         else if(keuze=='n')
         {
-
+            calibrate_camera();
         }
         else if(keuze=='s')
         {
