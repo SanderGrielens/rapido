@@ -54,7 +54,30 @@ int main()
         }
         else if(keuze=='n')
         {
-            calibrate_camera();
+            bool vlag = true;
+            while(vlag)
+            {
+                cout<<"Place Images in ./calib_cam \n"
+                    "To calibrate the camera, press c\n"
+                    "Calculate 3D, press d\n"
+                    "To quit, press q"<<endl;
+                char antwoord;
+                cin >> antwoord;
+
+                if(antwoord == 'c')
+                {
+                    calibrate_camera();
+                }
+                else if(antwoord =='d')
+                {
+                    calculate3D_single_camera();
+                }
+                else if(antwoord=='q')
+                {
+                    vlag=false;
+                }
+            }
+
         }
         else if(keuze=='s')
         {
@@ -183,6 +206,33 @@ int main()
         }
         else if(keuze=='m')
         {
+            bool vlag = true;
+            while(vlag)
+            {
+                cout<<"To grab images, press g\n"
+                    "To calibrate the camera, press c\n"
+                    "To calculate depth map, press d\n"
+                    "To quit, press q"<<endl;
+                char antwoord;
+                cin >> antwoord;
+
+                if(antwoord == 'g')
+                {
+                    grabMultiflashImages();
+                }
+                else if(antwoord =='c')
+                {
+                    calibrateMultiflashCamera();
+                }
+                else if(antwoord == 'd')
+                {
+                    calculateDepthMap();
+                }
+                else if(antwoord=='q')
+                {
+                    vlag=false;
+                }
+            }
 
         }
         else if(keuze=='l')

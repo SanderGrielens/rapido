@@ -805,7 +805,7 @@ bool calibrate_sl(vector<Decoder> dec, vector<vector<Point2f> > corners, int aan
                                                 //CV_CALIB_RATIONAL_MODEL +
                                                 /*CV_CALIB_FIX_K3 + CV_CALIB_FIX_K4 + CV_CALIB_FIX_K5,
                                                 TermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 100, 1e-5)*/);
-    cout<<"Stereo RMS error: "<<stereo_error<<endl;
+    //cout<<"Stereo RMS error: "<<stereo_error<<endl;
     clock_t time2 = clock();
     cout<<"tijd calib: "<< (float)(time2-time1)/CLOCKS_PER_SEC<<endl;
     ///Save calibration:
@@ -820,6 +820,8 @@ bool calibrate_sl(vector<Decoder> dec, vector<vector<Point2f> > corners, int aan
     fs << "distortion_camera" << cam_dist;
     fs << "distorion_projector" << proj_dist;
     fs.release();
+
+    cout<<"Stereo RMS error: "<<stereo_error<<endl;
 
     return true;
 }

@@ -43,3 +43,42 @@ void printmat(Mat a)
     }
 
 }
+
+void printmat(Mat a, String b)
+{
+    cout<<b<<endl;
+    cout<<a.rows<<"x"<<a.cols<<endl;
+
+    for(int x = 0; x<a.rows; x++)
+    {
+        for(int y=0; y< a.cols; y++)
+        {
+            if(a.at<double>(x,y) < 0.000001 && a.at<double>(x,y) > -0.000001)
+                cout<<"0"<<" ";
+            else
+                cout<<a.at<double>(x,y)<<" ";
+        }
+        cout<<endl;
+    }
+
+}
+
+void printmat(vector<Mat> a, String b)
+{
+    cout<<b<<endl;
+    cout<<a[0].rows<<"x"<<a.size()<<endl;
+    //for(int i=0; i<a.size(); i++)
+    //{
+        for(int x = 0; x<a[0].rows; x++)
+        {
+            for(int y=0; y< a.size(); y++)
+            {
+                if(a[y].at<double>(x,0) < 0.000001 && a[y].at<double>(x,0) > -0.000001)
+                    cout<<"0"<<" ";
+                else
+                    cout<<a[y].at<double>(x,0)<<" ";
+            }
+            cout<<endl;
+        }
+}
+

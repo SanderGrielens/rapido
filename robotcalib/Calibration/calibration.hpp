@@ -37,6 +37,8 @@ using namespace pcl;
 
 ///Normal camera
 void calibrate_camera();
+Mat calculate3D_single_camera();
+
 
 ///Ensenso:
 void get_en_image(pcl::PointCloud<pcl::PointXYZ>&);
@@ -83,8 +85,14 @@ Mat getRobotPoints(int height, int width);
 Mat calculateTransMat(Mat origin, Mat dest);
 Mat convert(Mat origin);
 void getRmsError(Mat transformed, Mat dest);
-void save(Mat origin);
 bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_width, int projector_height);
+
+
+///MultiFlash:
+void grabMultiflashImages();
+void calibrateMultiflashCamera();
+void calculateDepthMap();
+void grabMultiflashCalibImages(int number);
 
 
 
@@ -116,3 +124,10 @@ bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_w
 void tonen(Mat image, String naam);
 
 void printmat(Mat a);
+void printmat(Mat a, String b);
+void printmat(vector<Mat> a, String b);
+
+void save(Mat origin);
+
+
+
