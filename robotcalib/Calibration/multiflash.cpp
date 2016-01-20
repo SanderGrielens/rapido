@@ -19,7 +19,7 @@ void grabMultiflashCalibImages(int number)
 void calibrateMultiflashCamera()
 {
     ///Grab calibration images
-    cout<<"how many Calibration images?\n"
+    cout<<"how many Calibration images?\n";
     int number_calib = 0;
     cin >> number_calib;
 
@@ -38,7 +38,7 @@ void calibrateMultiflashCamera()
 
     Mat board;
     Size boardSize(8,6);
-    vector<vector<Point2f> > chessboardcorners(calib_cam_series);
+    vector<vector<Point2f> > chessboardcorners(number_calib);
     vector<vector<Point3f> > objectpoints;
 
     ///Find corners
@@ -100,11 +100,118 @@ void calibrateMultiflashCamera()
 
 void calculateDepthMap()
 {
-    FileStorage fs("./camera.xml", FileStorage::READ);
-    Mat rvecs, tvecs;
+    ///Read the images acquired by grabMultiflashImages()
+    Mat left, right, down, up;
+    left = imread("./calib_mf/left.JPG", 1);
+    right = imread("./calib_mf/right.JPG", 1);
+    down = imread("./calib_mf/down.JPG", 1);
+    up = imread("./calib_mf/up.JPG", 1);
 
-    fs["rvec"] >> rvecs;
-    fs["tvec"] >> tvecs;
+    if(left.empty())
+    {
+        cout<<"Left nok"<<endl;
+    }
+
+    if(right.empty())
+    {
+        cout<<"right nok"<<endl;
+    }
+
+    if(down.empty())
+    {
+        cout<<"down nok"<<endl;
+    }
+
+    if(up.empty())
+    {
+        cout<<"up nok"<<endl;
+    }
+
+    ///undistort images using cameramatrix calculated in calibrateMultiflashCamera()
+    /*FileStorage fs("./camera.xml", FileStorage::READ);
+    Mat cameramatrix;
+
+    fs["cameramatrix"] >> cameramatrix;
+    */
+    ///Calculate shadow free image
+    Mat noshadow = Mat(left.rows, left.cols, CV_8UC3);
+    Mat ratio_left = Mat(left.rows, left.cols, CV_32FC3);
+    Mat ratio_right = Mat(left.rows, left.cols, CV_32FC3);
+    Mat ratio_down = Mat(left.rows, left.cols, CV_32FC3);
+    Mat ratio_up = Mat(left.rows, left.cols, CV_32FC3);
+
+
+    for(int y=0; y<left.rows; y++)
+    {
+        for(int x=0; x<left.cols; x++)
+        {
+                Scalar color;
+                Scalar color2;
+                Scalar color_left = left.at<Vec3b>(y,x);
+                Scalar color_right = right.at<Vec3b>(y,x);
+                Scalar color_up = up.at<Vec3b>(y,x);
+                Scalar color_down = down.at<Vec3b>(y,x);
+
+                color.val[0] = ((color.val[0] < color_left.val[0]) ? color_left.val[0] : color.val[0]);
+                color.val[0] = ((color.val[0] < color_right.val[0]) ? color_right.val[0] : color.val[0]);
+                color.val[0] = ((color.val[0] < color_up.val[0]) ? color_up.val[0] : color.val[0]);
+                color.val[0] = ((color.val[0] < color_down.val[0]) ? color_down.val[0] : color.val[0]);
+
+                color.val[1] = ((color.val[1] < color_left.val[1]) ? color_left.val[1] : color.val[1]);
+                color.val[1] = ((color.val[1] < color_right.val[1]) ? color_right.val[1] : color.val[1]);
+                color.val[1] = ((color.val[1] < color_up.val[1]) ? color_up.val[1] : color.val[1]);
+                color.val[1] = ((color.val[1] < color_down.val[1]) ? color_down.val[1] : color.val[1]);
+
+                color.val[2] = ((color.val[2] < color_left.val[2]) ? color_left.val[2] : color.val[2]);
+                color.val[2] = ((color.val[2] < color_right.val[2]) ? color_right.val[2] : color.val[2]);
+                color.val[2] = ((color.val[2] < color_up.val[2]) ? color_up.val[2] : color.val[2]);
+                color.val[2] = ((color.val[2] < color_down.val[2]) ? color_down.val[2] : color.val[2]);
+
+                if(x == 715 && y == 320)
+                {
+                    cout<<"blue:  up: "<<color_up.val[0]<<" down: "<<color_down.val[0]<<" right: "<<color_right.val[0]<<endl;
+                    cout<<"green: up: "<<color_up.val[1]<<" down: "<<color_down.val[1]<<" right: "<<color_right.val[1]<<endl;
+                    cout<<"red:   up: "<<color_up.val[2]<<" down: "<<color_down.val[2]<<" right: "<<color_right.val[2]<<endl;
+
+                    cout<<"opgeslagen: "<<color<<endl;
+
+                }
+
+                //cout<<"New BGR value: "<<blue<<" "<<green<<" "<<red<<endl;
+
+                noshadow.at<Vec3b>(y,x)[0] = color.val[0];
+                noshadow.at<Vec3b>(y,x)[1] = color.val[1];
+                noshadow.at<Vec3b>(y,x)[2] = color.val[2];
+
+                ratio_left.at<Vec3f>(y,x)[0] = color_left.val[0]/color.val[0]*255;
+                ratio_left.at<Vec3f>(y,x)[1] = color_left.val[1]/color.val[1]*255;
+                ratio_left.at<Vec3f>(y,x)[2] = color_left.val[2]/color.val[2]*255;
+
+                ratio_right.at<Vec3f>(y,x)[0] = color_right.val[0]/color.val[0]*255;
+                ratio_right.at<Vec3f>(y,x)[2] = color_right.val[2]/color.val[2]*255;
+                ratio_right.at<Vec3f>(y,x)[1] = color_right.val[1]/color.val[1]*255;
+
+                ratio_up.at<Vec3f>(y,x)[0] = color_up.val[0]/color.val[0]*255;
+                ratio_up.at<Vec3f>(y,x)[1] = color_up.val[1]/color.val[1]*255;
+                ratio_up.at<Vec3f>(y,x)[2] = color_up.val[2]/color.val[2]*255;
+
+                ratio_down.at<Vec3f>(y,x)[0] = color_down.val[0]/color.val[0]*255;
+                ratio_down.at<Vec3f>(y,x)[1] = color_down.val[1]/color.val[1]*255;
+                ratio_down.at<Vec3f>(y,x)[2] = color_down.val[2]/color.val[2]*255;
+        }
+    }
+    imwrite("noshadow.JPG",noshadow);
+
+    cvtColor(ratio_left, ratio_left, CV_BGR2GRAY);
+
+    tonen(noshadow, "gene schaduw");
+    tonen(ratio_left, "left");
+    tonen(ratio_right, "right");
+    tonen(ratio_up, "up");
+    tonen(ratio_down, "down");
+
+    ///Calculate depth edges
+
 
 }
 
