@@ -25,7 +25,7 @@ Camera calibratie:
 Hoe te installeren:
 -------------------
 	-Gewone camera(RGB of grijs):
-
+		Camera uitlezen.
 
 	-Stereo vision camera(Ensenso):
 		Installeer de Ensenso SDK, te vinden op http://www.ensenso.com/support/sdk-download/
@@ -37,10 +37,8 @@ Hoe te installeren:
 
 	-TOF:
 
-
 	-Multi flash:
-
-
+	
 	-Laser line triangulation:
 
 	

@@ -1,2 +1,4 @@
 calib_cam/*
 !calib_cam/dummy.txt
+calib_mf/*
+!calib_mf/dummy.txt
