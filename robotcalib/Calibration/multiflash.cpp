@@ -135,18 +135,12 @@ void calculateDepthMap()
     */
     ///Calculate shadow free image
     Mat noshadow = Mat(left.rows, left.cols, CV_8UC3);
-    Mat ratio_left = Mat(left.rows, left.cols, CV_32FC3);
-    Mat ratio_right = Mat(left.rows, left.cols, CV_32FC3);
-    Mat ratio_down = Mat(left.rows, left.cols, CV_32FC3);
-    Mat ratio_up = Mat(left.rows, left.cols, CV_32FC3);
-
 
     for(int y=0; y<left.rows; y++)
     {
         for(int x=0; x<left.cols; x++)
         {
                 Scalar color;
-                Scalar color2;
                 Scalar color_left = left.at<Vec3b>(y,x);
                 Scalar color_right = right.at<Vec3b>(y,x);
                 Scalar color_up = up.at<Vec3b>(y,x);
@@ -167,50 +161,129 @@ void calculateDepthMap()
                 color.val[2] = ((color.val[2] < color_up.val[2]) ? color_up.val[2] : color.val[2]);
                 color.val[2] = ((color.val[2] < color_down.val[2]) ? color_down.val[2] : color.val[2]);
 
-                if(x == 715 && y == 320)
-                {
-                    cout<<"blue:  up: "<<color_up.val[0]<<" down: "<<color_down.val[0]<<" right: "<<color_right.val[0]<<endl;
-                    cout<<"green: up: "<<color_up.val[1]<<" down: "<<color_down.val[1]<<" right: "<<color_right.val[1]<<endl;
-                    cout<<"red:   up: "<<color_up.val[2]<<" down: "<<color_down.val[2]<<" right: "<<color_right.val[2]<<endl;
-
-                    cout<<"opgeslagen: "<<color<<endl;
-
-                }
-
-                //cout<<"New BGR value: "<<blue<<" "<<green<<" "<<red<<endl;
-
                 noshadow.at<Vec3b>(y,x)[0] = color.val[0];
                 noshadow.at<Vec3b>(y,x)[1] = color.val[1];
                 noshadow.at<Vec3b>(y,x)[2] = color.val[2];
-
-                ratio_left.at<Vec3f>(y,x)[0] = color_left.val[0]/color.val[0]*255;
-                ratio_left.at<Vec3f>(y,x)[1] = color_left.val[1]/color.val[1]*255;
-                ratio_left.at<Vec3f>(y,x)[2] = color_left.val[2]/color.val[2]*255;
-
-                ratio_right.at<Vec3f>(y,x)[0] = color_right.val[0]/color.val[0]*255;
-                ratio_right.at<Vec3f>(y,x)[2] = color_right.val[2]/color.val[2]*255;
-                ratio_right.at<Vec3f>(y,x)[1] = color_right.val[1]/color.val[1]*255;
-
-                ratio_up.at<Vec3f>(y,x)[0] = color_up.val[0]/color.val[0]*255;
-                ratio_up.at<Vec3f>(y,x)[1] = color_up.val[1]/color.val[1]*255;
-                ratio_up.at<Vec3f>(y,x)[2] = color_up.val[2]/color.val[2]*255;
-
-                ratio_down.at<Vec3f>(y,x)[0] = color_down.val[0]/color.val[0]*255;
-                ratio_down.at<Vec3f>(y,x)[1] = color_down.val[1]/color.val[1]*255;
-                ratio_down.at<Vec3f>(y,x)[2] = color_down.val[2]/color.val[2]*255;
         }
     }
-    imwrite("noshadow.JPG",noshadow);
 
-    cvtColor(ratio_left, ratio_left, CV_BGR2GRAY);
+    ///Calculate difference image
+    Mat ratio_left = Mat(left.rows, left.cols, CV_8UC1);
+    Mat ratio_right = Mat(left.rows, left.cols, CV_8UC1);
+    Mat ratio_down = Mat(left.rows, left.cols, CV_8UC1);
+    Mat ratio_up = Mat(left.rows, left.cols, CV_8UC1);
+    Mat left_b, right_b, up_b, down_b, noshadow_b;
 
-    tonen(noshadow, "gene schaduw");
-    tonen(ratio_left, "left");
-    tonen(ratio_right, "right");
-    tonen(ratio_up, "up");
-    tonen(ratio_down, "down");
+    cvtColor(noshadow, noshadow_b, CV_BGR2GRAY);
+    cvtColor(left, left_b, CV_BGR2GRAY);
+    cvtColor(right, right_b, CV_BGR2GRAY);
+    cvtColor(up, up_b, CV_BGR2GRAY);
+    cvtColor(down, down_b, CV_BGR2GRAY);
+
+    ratio_left = left_b/noshadow_b;
+    ratio_right = right_b/noshadow_b;
+    ratio_up = up_b/noshadow_b;
+    ratio_down = down_b/noshadow_b;
+
+    //tonen(noshadow_b, "gene schaduw");
+    /*tonen(ratio_left*255, "left");
+    tonen(ratio_right*255, "right");
+    tonen(ratio_up*255, "up");
+    tonen(ratio_down*255, "down");
+    */
+
 
     ///Calculate depth edges
+
+    Mat edge = Mat::ones(ratio_left.rows, ratio_left.cols, CV_8UC1);
+    edge *=255;
+
+    tonen(ratio_right*255, "right");
+    ///Right:
+    for(int y=0; y<ratio_right.rows; y++)
+    {
+        for(int x=ratio_right.cols-1; x>=0; x--)
+        {
+            if(edge.at<uchar>(y,x) == 255 )
+            {
+                if(ratio_right.at<uchar>(y,x) < ratio_right.at<uchar>(y,x+1) && ratio_right.at<uchar>(y,x)*255 == 0)
+                {
+                    cout<<"kleiner: "<<ratio_right.at<uchar>(y,x)*255<<" groter: "<<ratio_right.at<uchar>(y,x+1)*255<<endl;
+                    edge.at<uchar>(y,x) = 0;
+                }
+                else
+                {
+                    edge.at<uchar>(y,x) = 255;
+                }
+            }
+        }
+    }
+    tonen(edge, "edges right");
+
+    ///Left:
+    for(int y=0; y<ratio_left.rows; y++)
+    {
+        for(int x=0; x<ratio_left.cols; x++)
+        {
+            if(edge.at<uchar>(y,x) == 255 )
+            {
+                if(ratio_left.at<uchar>(y,x) < ratio_left.at<uchar>(y,x-1) && ratio_left.at<uchar>(y,x)*255 == 0)
+                {
+                    cout<<"kleiner: "<<ratio_left.at<uchar>(y,x)*255<<" groter: "<<ratio_left.at<uchar>(y,x-1)*255<<endl;
+                    edge.at<uchar>(y,x) = 0;
+                }
+                else
+                {
+                    edge.at<uchar>(y,x) = 255;
+                }
+            }
+        }
+    }
+    tonen(edge, "edges left right");
+
+    ///Up:
+    for(int x=0; x<ratio_up.cols; x++)
+    {
+        for(int y=0; y<ratio_up.rows; y++)
+        {
+            if(edge.at<uchar>(y,x) !=0 )
+            {
+                if(ratio_up.at<uchar>(y,x) < ratio_up.at<uchar>(y-1,x) && ratio_up.at<uchar>(y,x)*255 == 0)
+                {
+                    cout<<"kleiner: "<<ratio_up.at<uchar>(y,x)*255<<" groter: "<<ratio_up.at<uchar>(y-1,x)*255<<endl;
+                    edge.at<uchar>(y,x) = 0;
+                }
+                else
+                {
+                    edge.at<uchar>(y,x) = 255;
+                }
+            }
+        }
+    }
+    tonen(edge, "edges left right up");
+
+    ///Down:
+    for(int x=0; x<ratio_down.cols; x++)
+    {
+        for(int y=ratio_down.rows-1; y>=0; y--)
+        {
+            if(edge.at<uchar>(y,x) !=0 )
+            {
+                if(ratio_down.at<uchar>(y,x) < ratio_down.at<uchar>(y+1,x) && ratio_down.at<uchar>(y,x)*255 == 0)
+                {
+                    cout<<"kleiner: "<<ratio_down.at<uchar>(y,x)*255<<" groter: "<<ratio_down.at<uchar>(y+1,x)*255<<endl;
+                    edge.at<uchar>(y,x) = 0;
+                }
+                else
+                {
+                    edge.at<uchar>(y,x) = 255;
+                }
+            }
+        }
+    }
+
+    tonen(edge, "edges");
+
 
 
 }
