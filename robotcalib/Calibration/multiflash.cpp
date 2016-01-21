@@ -11,6 +11,7 @@ void grabMultiflashCalibImages(int number)
     {
         ///grab image from camera
         ///show image and wait for input. this gives user time to reposition calibration board
+        //tonen(calib_image, "Image");
         ///save image
     }
     cout<<"Grab succesful"<<endl;
@@ -129,9 +130,16 @@ void calculateDepthMap()
 
     ///undistort images using cameramatrix calculated in calibrateMultiflashCamera()
     /*FileStorage fs("./camera.xml", FileStorage::READ);
-    Mat cameramatrix;
+    Mat cameramatrix, distcoef;
 
-    fs["cameramatrix"] >> cameramatrix;
+    fs["camera_matrix"] >> cameramatrix;
+    fs[distortion_camera"] >> distcoef;
+
+    undistort(left, left, cameramatrix, distcoef);
+    undistort(right, right, cameramatrix, distcoef);
+    undistort(up, up, cameramatrix, distcoef);
+    undistort(down, down, cameramatrix, distcoef);
+
     */
     ///Calculate shadow free image
     Mat noshadow = Mat(left.rows, left.cols, CV_8UC3);
@@ -185,20 +193,11 @@ void calculateDepthMap()
     ratio_up = up_b/noshadow_b;
     ratio_down = down_b/noshadow_b;
 
-    //tonen(noshadow_b, "gene schaduw");
-    /*tonen(ratio_left*255, "left");
-    tonen(ratio_right*255, "right");
-    tonen(ratio_up*255, "up");
-    tonen(ratio_down*255, "down");
-    */
-
-
     ///Calculate depth edges
 
     Mat edge = Mat::ones(ratio_left.rows, ratio_left.cols, CV_8UC1);
     edge *=255;
 
-    tonen(ratio_right*255, "right");
     ///Right:
     for(int y=0; y<ratio_right.rows; y++)
     {
@@ -208,7 +207,6 @@ void calculateDepthMap()
             {
                 if(ratio_right.at<uchar>(y,x) < ratio_right.at<uchar>(y,x+1) && ratio_right.at<uchar>(y,x)*255 == 0)
                 {
-                    cout<<"kleiner: "<<ratio_right.at<uchar>(y,x)*255<<" groter: "<<ratio_right.at<uchar>(y,x+1)*255<<endl;
                     edge.at<uchar>(y,x) = 0;
                 }
                 else
@@ -218,7 +216,6 @@ void calculateDepthMap()
             }
         }
     }
-    tonen(edge, "edges right");
 
     ///Left:
     for(int y=0; y<ratio_left.rows; y++)
@@ -229,7 +226,6 @@ void calculateDepthMap()
             {
                 if(ratio_left.at<uchar>(y,x) < ratio_left.at<uchar>(y,x-1) && ratio_left.at<uchar>(y,x)*255 == 0)
                 {
-                    cout<<"kleiner: "<<ratio_left.at<uchar>(y,x)*255<<" groter: "<<ratio_left.at<uchar>(y,x-1)*255<<endl;
                     edge.at<uchar>(y,x) = 0;
                 }
                 else
@@ -239,7 +235,6 @@ void calculateDepthMap()
             }
         }
     }
-    tonen(edge, "edges left right");
 
     ///Up:
     for(int x=0; x<ratio_up.cols; x++)
@@ -250,7 +245,6 @@ void calculateDepthMap()
             {
                 if(ratio_up.at<uchar>(y,x) < ratio_up.at<uchar>(y-1,x) && ratio_up.at<uchar>(y,x)*255 == 0)
                 {
-                    cout<<"kleiner: "<<ratio_up.at<uchar>(y,x)*255<<" groter: "<<ratio_up.at<uchar>(y-1,x)*255<<endl;
                     edge.at<uchar>(y,x) = 0;
                 }
                 else
@@ -260,7 +254,6 @@ void calculateDepthMap()
             }
         }
     }
-    tonen(edge, "edges left right up");
 
     ///Down:
     for(int x=0; x<ratio_down.cols; x++)
@@ -271,7 +264,6 @@ void calculateDepthMap()
             {
                 if(ratio_down.at<uchar>(y,x) < ratio_down.at<uchar>(y+1,x) && ratio_down.at<uchar>(y,x)*255 == 0)
                 {
-                    cout<<"kleiner: "<<ratio_down.at<uchar>(y,x)*255<<" groter: "<<ratio_down.at<uchar>(y+1,x)*255<<endl;
                     edge.at<uchar>(y,x) = 0;
                 }
                 else
@@ -282,10 +274,8 @@ void calculateDepthMap()
         }
     }
 
+    imwrite("edges.jpg", edge);
     tonen(edge, "edges");
-
-
-
 }
 
 
