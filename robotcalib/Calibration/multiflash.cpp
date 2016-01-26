@@ -205,7 +205,7 @@ void calculateDepthMap()
         {
             if(edge.at<uchar>(y,x) == 255 )
             {
-                if(ratio_right.at<uchar>(y,x) < ratio_right.at<uchar>(y,x+1) && ratio_right.at<uchar>(y,x)*255 == 0)
+                if(ratio_right.at<uchar>(y,x) < ratio_right.at<uchar>(y,x+1))
                 {
                     edge.at<uchar>(y,x) = 0;
                 }
@@ -224,7 +224,7 @@ void calculateDepthMap()
         {
             if(edge.at<uchar>(y,x) == 255 )
             {
-                if(ratio_left.at<uchar>(y,x) < ratio_left.at<uchar>(y,x-1) && ratio_left.at<uchar>(y,x)*255 == 0)
+                if(ratio_left.at<uchar>(y,x) < ratio_left.at<uchar>(y,x-1))
                 {
                     edge.at<uchar>(y,x) = 0;
                 }
@@ -243,7 +243,7 @@ void calculateDepthMap()
         {
             if(edge.at<uchar>(y,x) !=0 )
             {
-                if(ratio_up.at<uchar>(y,x) < ratio_up.at<uchar>(y-1,x) && ratio_up.at<uchar>(y,x)*255 == 0)
+                if(ratio_up.at<uchar>(y,x) < ratio_up.at<uchar>(y-1,x))
                 {
                     edge.at<uchar>(y,x) = 0;
                 }
@@ -262,7 +262,7 @@ void calculateDepthMap()
         {
             if(edge.at<uchar>(y,x) !=0 )
             {
-                if(ratio_down.at<uchar>(y,x) < ratio_down.at<uchar>(y+1,x) && ratio_down.at<uchar>(y,x)*255 == 0)
+                if(ratio_down.at<uchar>(y,x) < ratio_down.at<uchar>(y+1,x))
                 {
                     edge.at<uchar>(y,x) = 0;
                 }
@@ -277,5 +277,4 @@ void calculateDepthMap()
     imwrite("edges.jpg", edge);
     tonen(edge, "edges");
 }
-
 

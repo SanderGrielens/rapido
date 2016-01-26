@@ -915,7 +915,6 @@ Mat calculate3DPoints_all(string path, int aantalseries, float b, float m, float
         vector<Point2d> proj_points;
         vector<Paar> combinaties;
 
-        int max_val = pow(2, NOP_v);
         Mat hory = d.pattern_image[0];
         Mat verx = d.pattern_image[1];
         struct timeval tv4, tv5, tv6; struct timezone tz;
@@ -1095,7 +1094,7 @@ Mat calculate3DPoints(vector<Point2f> &c, Decoder d)
 {
     vector<Point2d> cam_points;
     vector<Point2d> proj_points;
-    int window = 0;
+
     for(int l = 0; l< c.size(); l++) //for each chessboard corner
     {
         if (d.pattern_image[0].at<float>(c[l].y,c[l].x) >= (pow(2, NOP_v+2)) || d.pattern_image[1].at<float>(c[l].y,c[l].x) >= (pow(2, NOP_v+2)))
@@ -1186,7 +1185,7 @@ Mat calculate3DPoints(vector<Point2f> &c, Decoder d)
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGB>);//(new pcl::pointcloud<pcl::pointXYZ>);
     //vector<Point3d> punten;
     Mat result = Mat(c.size(), 4, CV_64FC1); ///DIT KAN FOUT ZIJN
-    for(int i=0;i<c.size();i++)
+    for(uint i=0;i<c.size();i++)
     {
         //std::cout<<i<<endl;
         X = driedpunten.at<double>(0,i) / driedpunten.at<double>(3,i);
@@ -1449,7 +1448,7 @@ bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_w
     }
     NOP_h = horizontal_patterns;
 
-    struct timeval tv1,tv2, tv3, tv4, tv5, tv6; struct timezone tz;
+    struct timeval tv1,tv2,tv5, tv6; struct timezone tz;
 
     ///First, we'll use chessboardcorners as unique points to find (also needed for calculation of NOP_v and NOP_h)
     gettimeofday(&tv1, &tz);
