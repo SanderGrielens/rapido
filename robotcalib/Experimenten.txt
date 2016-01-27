@@ -38,6 +38,8 @@ Hoe te installeren:
 	-TOF:
 
 	-Multi flash:
+	Maakt gebruik van dezelfde Ueye header als de ensenso camera.
+	Om de seriele communicatie met de LEDs te verzorgen maken we gebruik van LibSerial: http://libserial.sourceforge.net/
 	
 	-Laser line triangulation:
 

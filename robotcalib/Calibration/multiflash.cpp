@@ -71,6 +71,7 @@ Mat grabSingleImage(String a)
     is_ExitCamera(hCam);
 
     Mat res = imread(a, 0);
+    return res;
 }
 
 void grabMultiflashImages()
@@ -377,4 +378,3 @@ void calculateDepthMap()
     imwrite("edges.jpg", edge);
     tonen(edge, "edges");
 }
-

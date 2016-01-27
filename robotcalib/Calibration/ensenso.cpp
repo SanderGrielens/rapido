@@ -179,17 +179,17 @@ void get_en_image(pcl::PointCloud<pcl::PointXYZ> &cloud)
 pcl::PointCloud<pcl::PointXYZ> get_en_cloud()
 {
     ///Doesn't want to create ensensograbber object, so function returns empty cloud
-    pcl::EnsensoGrabber::Ptr ensenso_ptr;
+    /*pcl::EnsensoGrabber::Ptr ensenso_ptr;
 
     ensenso_ptr.reset (new pcl::EnsensoGrabber);
     ensenso_ptr->openTcpPort ();
     ensenso_ptr->openDevice ();
-
+*/
     pcl::PointCloud<pcl::PointXYZ> cloud;
-    ensenso_ptr->grabSingleCloud(cloud);
+  /*  ensenso_ptr->grabSingleCloud(cloud);
     ensenso_ptr->closeDevice ();
 
     vector<int> lijst;
-    pcl::removeNaNFromPointCloud(cloud, cloud, lijst );
+    pcl::removeNaNFromPointCloud(cloud, cloud, lijst );*/
     return cloud;
 }
