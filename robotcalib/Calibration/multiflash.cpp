@@ -1,7 +1,105 @@
 #include "calibration.hpp"
+using namespace LibSerial;
+
+
+Mat grabSingleImage(String a)
+{
+    ///Automatically saves the images as .png
+    ///Read the IDS RGB Camera attached to the Ensenso stereo camera
+    HIDS hCam = 0;
+    printf("Success-Code: %d\n",IS_SUCCESS);
+    //Kamera öffnen
+    INT nRet = is_InitCamera (&hCam, NULL);
+    printf("Status Init %d\n",nRet);
+
+    //Pixel-Clock setzen
+    UINT nPixelClockDefault = 9;
+    nRet = is_PixelClock(hCam, IS_PIXELCLOCK_CMD_SET,
+                        (void*)&nPixelClockDefault,
+                        sizeof(nPixelClockDefault));
+
+    printf("Status is_PixelClock %d\n",nRet);
+
+    //Farbmodus der Kamera setzen
+    //INT colorMode = IS_CM_CBYCRY_PACKED;
+    INT colorMode = IS_CM_BGR8_PACKED;
+
+    nRet = is_SetColorMode(hCam,colorMode);
+    printf("Status SetColorMode %d\n",nRet);
+
+    UINT formatID = 4;
+    //Bildgröße einstellen -> 2592x1944
+    nRet = is_ImageFormat(hCam, IMGFRMT_CMD_SET_FORMAT, &formatID, 4);
+    printf("Status ImageFormat %d\n",nRet);
+
+    //Speicher für Bild alloziieren
+    char* pMem = NULL;
+    int memID = 0;
+    nRet = is_AllocImageMem(hCam, 1280, 1024, 24, &pMem, &memID);
+    printf("Status AllocImage %d\n",nRet);
+
+    //diesen Speicher aktiv setzen
+    nRet = is_SetImageMem(hCam, pMem, memID);
+    printf("Status SetImageMem %d\n",nRet);
+
+    //Bilder im Kameraspeicher belassen
+    INT displayMode = IS_SET_DM_DIB;
+    nRet = is_SetDisplayMode (hCam, displayMode);
+    printf("Status displayMode %d\n",nRet);
+
+    //Bild aufnehmen
+    nRet = is_FreezeVideo(hCam, IS_WAIT);
+    printf("Status is_FreezeVideo %d\n",nRet);
+
+    //Bild aus dem Speicher auslesen und als Datei speichern
+    String path = "./calib_mf/"+a+".png";
+    std::wstring widepath;
+    for(int i = 0; i < path.length(); ++i)
+        widepath += wchar_t (path[i] );
+
+    IMAGE_FILE_PARAMS ImageFileParams;
+    ImageFileParams.pwchFileName = &widepath[0];
+    ImageFileParams.pnImageID = NULL;
+    ImageFileParams.ppcImageMem = NULL;
+    ImageFileParams.nQuality = 0;
+    ImageFileParams.nFileType = IS_IMG_PNG;
+
+    nRet = is_ImageFile(hCam, IS_IMAGE_FILE_CMD_SAVE, (void*) &ImageFileParams, sizeof(ImageFileParams));
+    printf("Status is_ImageFile %d\n",nRet);
+
+    //Kamera wieder freigeben
+    is_ExitCamera(hCam);
+
+    Mat res = imread(a, 0);
+}
 
 void grabMultiflashImages()
 {
+    SerialStream my_serial_stream;
+    my_serial_stream.Open( "/dev/ttyS0" );
+    my_serial_stream.SetCharSize( SerialStreamBuf::CHAR_SIZE_8 ) ;
+
+    ///Light left
+    my_serial_stream << "a";
+    ///Grab image
+    Mat left = grabSingleImage("left");
+
+    ///Light right
+    my_serial_stream << "a";
+    ///Grab image
+    Mat right = grabSingleImage("right");
+
+    ///Light up
+    my_serial_stream << "a";
+    ///Grab image
+    Mat up = grabSingleImage("up");
+
+    ///Light down
+    my_serial_stream << "a";
+    ///Grab image
+    Mat down = grabSingleImage("down");
+
+    my_serial_stream.Close();
 
 }
 
@@ -9,10 +107,12 @@ void grabMultiflashCalibImages(int number)
 {
     for(int i=0; i<number; i++)
     {
-        ///grab image from camera
+        ostringstream conv;
+        conv << i;
+        ///grab image from camera + save it
+        Mat calib_image = grabSingleImage("calib" + conv.str());
         ///show image and wait for input. this gives user time to reposition calibration board
-        //tonen(calib_image, "Image");
-        ///save image
+        tonen(calib_image, "Image");
     }
     cout<<"Grab succesful"<<endl;
 }
@@ -50,7 +150,7 @@ void calibrateMultiflashCamera()
         ostringstream conv;
         conv << i;
 
-        string pad = "./calib_mf/calib" + conv.str()+".bmp";
+        string pad = "./calib_mf/calib" + conv.str()+".png";
         board = imread(pad, 0);
         if(board.empty())
         {

@@ -31,6 +31,8 @@
 #include <boost/timer/timer.hpp>
 #include <cmath>
 
+#include <SerialStream.h>
+
 using namespace std;
 using namespace cv;
 using namespace pcl;
@@ -93,6 +95,8 @@ void grabMultiflashImages();
 void calibrateMultiflashCamera();
 void calculateDepthMap();
 void grabMultiflashCalibImages(int number);
+Mat grabSingleImage(String a);
+
 
 
 

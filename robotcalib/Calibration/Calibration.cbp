@@ -167,6 +167,7 @@
 		<Unit filename="cameracalib.cpp" />
 		<Unit filename="ensenso.cpp" />
 		<Unit filename="main.cpp" />
+		<Unit filename="multiflash.cpp" />
 		<Unit filename="structuredlight.cpp" />
 		<Extensions>
 			<code_completion />
