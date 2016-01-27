@@ -155,8 +155,8 @@ void get_en_image(pcl::PointCloud<pcl::PointXYZ> &cloud)
         //Bild aus dem Speicher auslesen und als Datei speichern
         String path = "./calib_en/snap_BGR"+conv.str()+".png";
         std::wstring widepath;
-        for(int i = 0; i < path.length(); ++i)
-          widepath += wchar_t (path[i] );
+        for(int j = 0; j < path.length(); ++j)
+          widepath += wchar_t (path[j] );
 
         IMAGE_FILE_PARAMS ImageFileParams;
         ImageFileParams.pwchFileName = &widepath[0];
@@ -178,31 +178,17 @@ void get_en_image(pcl::PointCloud<pcl::PointXYZ> &cloud)
 
 pcl::PointCloud<pcl::PointXYZ> get_en_cloud()
 {
-    //boost::shared_ptr<pcl::visualization::CloudViewer> viewer_ptr;
-
-    /** @brief PCL Ensenso object pointer */
+    ///Doesn't want to create ensensograbber object, so function returns empty cloud
     pcl::EnsensoGrabber::Ptr ensenso_ptr;
 
-    //viewer_ptr.reset (new pcl::visualization::CloudViewer("Ensenso 3D cloud viewer"));
     ensenso_ptr.reset (new pcl::EnsensoGrabber);
     ensenso_ptr->openTcpPort ();
     ensenso_ptr->openDevice ();
 
     pcl::PointCloud<pcl::PointXYZ> cloud;
-
     ensenso_ptr->grabSingleCloud(cloud);
-
- /*   boost::function<void(const PointCloudXYZ::Ptr&)> f = boost::bind (&grabberCallback, _1);
-    ensenso_ptr->registerCallback (f);
-    ensenso_ptr->start ();
-
-    while (!viewer_ptr->wasStopped ())
-    {
-        boost::this_thread::sleep (boost::posix_time::milliseconds (1000));
-        std::cout << "FPS: " << ensenso_ptr->getFramesPerSecond () << std::endl;
-    }*/
-
     ensenso_ptr->closeDevice ();
+
     vector<int> lijst;
     pcl::removeNaNFromPointCloud(cloud, cloud, lijst );
     return cloud;
