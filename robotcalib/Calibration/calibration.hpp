@@ -31,11 +31,13 @@
 #include <boost/timer/timer.hpp>
 #include <cmath>
 
-#include <SerialStream.h>
+#include <boost/asio/serial_port.hpp>
+#include <boost/asio.hpp>
 
 using namespace std;
 using namespace cv;
 using namespace pcl;
+using namespace boost;
 
 ///Normal camera
 void calibrate_camera();
@@ -94,8 +96,9 @@ bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_w
 void grabMultiflashImages();
 void calibrateMultiflashCamera();
 void calculateDepthMap();
+void calculateDepthMapRGB();
 void grabMultiflashCalibImages(int number);
-Mat grabSingleImage(String a);
+Mat grabSingleImage(String a, HIDS hCam);
 
 
 

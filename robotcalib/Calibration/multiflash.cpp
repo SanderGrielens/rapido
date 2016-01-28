@@ -1,41 +1,37 @@
 #include "calibration.hpp"
-using namespace LibSerial;
 
-
-Mat grabSingleImage(String a)
+HIDS initCam()
 {
-    ///Automatically saves the images as .png
-    ///Read the IDS RGB Camera attached to the Ensenso stereo camera
     HIDS hCam = 0;
     printf("Success-Code: %d\n",IS_SUCCESS);
     //Kamera öffnen
     INT nRet = is_InitCamera (&hCam, NULL);
     printf("Status Init %d\n",nRet);
 
-    //Pixel-Clock setzen
+    /*//Pixel-Clock setzen
     UINT nPixelClockDefault = 9;
     nRet = is_PixelClock(hCam, IS_PIXELCLOCK_CMD_SET,
                         (void*)&nPixelClockDefault,
                         sizeof(nPixelClockDefault));
 
     printf("Status is_PixelClock %d\n",nRet);
-
+*/
     //Farbmodus der Kamera setzen
     //INT colorMode = IS_CM_CBYCRY_PACKED;
     INT colorMode = IS_CM_BGR8_PACKED;
 
-    nRet = is_SetColorMode(hCam,colorMode);
+    nRet = is_SetColorMode(hCam,IS_CM_SENSOR_RAW8);
     printf("Status SetColorMode %d\n",nRet);
 
-    UINT formatID = 4;
+    /*UINT formatID = 4;
     //Bildgröße einstellen -> 2592x1944
-    nRet = is_ImageFormat(hCam, IMGFRMT_CMD_SET_FORMAT, &formatID, 4);
+    nRet = is_ImageFormat(hCam, IMGFRMT_CMD_SET_FORMAT, &formatID, 5);
     printf("Status ImageFormat %d\n",nRet);
-
+    */
     //Speicher für Bild alloziieren
     char* pMem = NULL;
     int memID = 0;
-    nRet = is_AllocImageMem(hCam, 1280, 1024, 8, &pMem, &memID);
+    nRet = is_AllocImageMem(hCam, 768, 576, 8, &pMem, &memID);
     printf("Status AllocImage %d\n",nRet);
 
     //diesen Speicher aktiv setzen
@@ -47,78 +43,109 @@ Mat grabSingleImage(String a)
     nRet = is_SetDisplayMode (hCam, displayMode);
     printf("Status displayMode %d\n",nRet);
 
+    nRet = is_SetExternalTrigger(hCam, IS_SET_TRIGGER_SOFTWARE); ///Trigger camera from software
+
+    return hCam;
+}
+
+Mat grabSingleImage(String a, HIDS hCam, bool write)
+{
+    ///Automatically saves the images as .png
+
+    INT nRet;
     //Bild aufnehmen
-    nRet = is_FreezeVideo(hCam, IS_WAIT);
+    nRet = is_FreezeVideo(hCam, 100);
     printf("Status is_FreezeVideo %d\n",nRet);
 
-    //Bild aus dem Speicher auslesen und als Datei speichern
-    String path = "./calib_mf/"+a+".png";
-    std::wstring widepath;
-    for(int i = 0; i < path.length(); ++i)
-        widepath += wchar_t (path[i] );
 
-    IMAGE_FILE_PARAMS ImageFileParams;
-    ImageFileParams.pwchFileName = &widepath[0];
-    ImageFileParams.pnImageID = NULL;
-    ImageFileParams.ppcImageMem = NULL;
-    ImageFileParams.nQuality = 0;
-    ImageFileParams.nFileType = IS_IMG_PNG;
 
-    nRet = is_ImageFile(hCam, IS_IMAGE_FILE_CMD_SAVE, (void*) &ImageFileParams, sizeof(ImageFileParams));
-    printf("Status is_ImageFile %d\n",nRet);
+    Mat res (576,768, CV_8UC1);
+    VOID* pMem_b;
+    int retInt = is_GetImageMem(hCam, &pMem_b);
+    if (retInt != IS_SUCCESS)
+    {
+        cout << "Image data could not be read from memory!" << endl;
+    }
 
-    //Kamera wieder freigeben
-    is_ExitCamera(hCam);
+    memcpy(res.ptr(), pMem_b, res.cols * res.rows);
 
-    Mat res = imread(a, 0);
+    if(write)
+    {
+        String name = "calib_mf/"+a+".png";
+        imwrite(name, res);
+    }
+
+
+    if(res.empty())
+        cout<<"res is empty"<<endl;
+    sleep(1);
     return res;
 }
 
 void grabMultiflashImages()
 {
-    SerialStream my_serial_stream;
-    my_serial_stream.Open( "/media/sgr/MBED" );
-    my_serial_stream.SetCharSize( SerialStreamBuf::CHAR_SIZE_8 ) ;
+    asio::io_service io;
+	asio::serial_port port(io);
+
+	port.open("/dev/ttyACM0");
+	port.set_option(asio::serial_port_base::baud_rate(9600));
+
+	// Read 1 character into c, this will block
+	// forever if no character arrives.
+
+
+
+    HIDS hCam = initCam();
+    unsigned char command[1] = {0};
 
     ///Light left
-    my_serial_stream << "a";
+    command[0] = static_cast<unsigned char>( 'c' );
+    asio::write(port,boost::asio::buffer(command,1));
     ///Grab image
-    Mat left = grabSingleImage("left");
-    tonen(left,"left");
+    Mat left = grabSingleImage("left", hCam, true);
+    //tonen(left,"left");
 
     ///Light right
-    my_serial_stream << "b";
-    ///Grab image
-    Mat right = grabSingleImage("right");
-    tonen(right,"right");
+    command[0] = static_cast<unsigned char>( 'b' );
+    asio::write(port,boost::asio::buffer(command,1));    ///Grab image
+    Mat right = grabSingleImage("right", hCam, true);
+    //tonen(right,"right");
 
     ///Light up
-    my_serial_stream << "c";
+    command[0] = static_cast<unsigned char>( 'd' );
+    asio::write(port,boost::asio::buffer(command,1));
     ///Grab image
-    Mat up = grabSingleImage("up");
-    tonen(up, "up");
+    Mat up = grabSingleImage("up", hCam, true);
+    //tonen(up, "up");
 
     ///Light down
-    my_serial_stream << "d";
+    command[0] = static_cast<unsigned char>( 'a' );
+    asio::write(port,boost::asio::buffer(command,1));
     ///Grab image
-    Mat down = grabSingleImage("down");
-    tonen(down, "down");
+    Mat down = grabSingleImage("down", hCam,true);
+    //tonen(down, "down");
 
-    my_serial_stream.Close();
+	port.close();
+
+    //Kamera wieder freigeben
+    is_ExitCamera(hCam);
+
 
 }
 
 void grabMultiflashCalibImages(int number)
 {
+    HIDS hCam = initCam();
+
     for(int i=0; i<number; i++)
     {
         ostringstream conv;
         conv << i;
         ///grab image from camera + save it
-        Mat calib_image = grabSingleImage("calib" + conv.str());
+        Mat calib_image = grabSingleImage("calib" + conv.str(), hCam, true);
         ///show image and wait for input. this gives user time to reposition calibration board
         if(!calib_image.empty())
-            tonen(calib_image, "Image");
+            tonen(calib_image, "Image"+conv.str());
         else
         {
             cout<<"Couldn't find calibration image, reposition the board and press enter to continue."<<endl;
@@ -215,10 +242,171 @@ void calculateDepthMap()
 {
     ///Read the images acquired by grabMultiflashImages()
     Mat left, right, down, up;
-    left = imread("./calib_mf/left.JPG", 1);
-    right = imread("./calib_mf/right.JPG", 1);
-    down = imread("./calib_mf/down.JPG", 1);
-    up = imread("./calib_mf/up.JPG", 1);
+    left = imread("./calib_mf/left.png", 0);
+    right = imread("./calib_mf/right.png", 0);
+    down = imread("./calib_mf/down.png", 0);
+    up = imread("./calib_mf/up.png", 0);
+
+    if(left.empty())
+    {
+        cout<<"Left nok"<<endl;
+    }
+
+    if(right.empty())
+    {
+        cout<<"right nok"<<endl;
+    }
+
+    if(down.empty())
+    {
+        cout<<"down nok"<<endl;
+    }
+
+    if(up.empty())
+    {
+        cout<<"up nok"<<endl;
+    }
+
+    ///undistort images using cameramatrix calculated in calibrateMultiflashCamera()
+    /*FileStorage fs("./camera.xml", FileStorage::READ);
+    Mat cameramatrix, distcoef;
+
+    fs["camera_matrix"] >> cameramatrix;
+    fs[distortion_camera"] >> distcoef;
+
+    undistort(left, left, cameramatrix, distcoef);
+    undistort(right, right, cameramatrix, distcoef);
+    undistort(up, up, cameramatrix, distcoef);
+    undistort(down, down, cameramatrix, distcoef);
+
+    */
+    ///Calculate shadow free image
+    Mat noshadow = Mat(left.rows, left.cols, CV_8UC1);
+
+    for(int y=0; y<left.rows; y++)
+    {
+        for(int x=0; x<left.cols; x++)
+        {
+                uchar color;
+                uchar color_left = left.at<uchar>(y,x);
+                uchar color_right = right.at<uchar>(y,x);
+                uchar color_up = up.at<uchar>(y,x);
+                uchar color_down = down.at<uchar>(y,x);
+
+                color = ((color < color_left) ? color_left : color);
+                color = ((color < color_right) ? color_right : color);
+                color = ((color < color_up) ? color_up : color);
+                color = ((color < color_down) ? color_down : color);
+
+                noshadow.at<uchar>(y,x) = color;
+        }
+    }
+
+    ///Calculate difference image
+    Mat ratio_left = Mat(left.rows, left.cols, CV_8UC1);
+    Mat ratio_right = Mat(left.rows, left.cols, CV_8UC1);
+    Mat ratio_down = Mat(left.rows, left.cols, CV_8UC1);
+    Mat ratio_up = Mat(left.rows, left.cols, CV_8UC1);
+
+    ratio_left = left/noshadow;
+    ratio_right = right/noshadow;
+    ratio_up = up/noshadow;
+    ratio_down = down/noshadow;
+
+    ///Calculate depth edges
+
+    Mat edge = Mat::ones(ratio_left.rows, ratio_left.cols, CV_8UC1);
+    edge *=255;
+
+    ///Right:
+    for(int y=0; y<ratio_right.rows; y++)
+    {
+        for(int x=ratio_right.cols-1; x>=0; x--)
+        {
+            if(edge.at<uchar>(y,x) == 255 )
+            {
+                if(ratio_right.at<uchar>(y,x) < ratio_right.at<uchar>(y,x+1))
+                {
+                    edge.at<uchar>(y,x) = 0;
+                }
+                else
+                {
+                    edge.at<uchar>(y,x) = 255;
+                }
+            }
+        }
+    }
+
+    ///Left:
+    for(int y=0; y<ratio_left.rows; y++)
+    {
+        for(int x=0; x<ratio_left.cols; x++)
+        {
+            if(edge.at<uchar>(y,x) == 255 )
+            {
+                if(ratio_left.at<uchar>(y,x) < ratio_left.at<uchar>(y,x-1))
+                {
+                    edge.at<uchar>(y,x) = 0;
+                }
+                else
+                {
+                    edge.at<uchar>(y,x) = 255;
+                }
+            }
+        }
+    }
+
+    ///Up:
+    for(int x=0; x<ratio_up.cols; x++)
+    {
+        for(int y=0; y<ratio_up.rows; y++)
+        {
+            if(edge.at<uchar>(y,x) !=0 )
+            {
+                if(ratio_up.at<uchar>(y,x) < ratio_up.at<uchar>(y-1,x))
+                {
+                    edge.at<uchar>(y,x) = 0;
+                }
+                else
+                {
+                    edge.at<uchar>(y,x) = 255;
+                }
+            }
+        }
+    }
+
+    ///Down:
+    for(int x=0; x<ratio_down.cols; x++)
+    {
+        for(int y=ratio_down.rows-1; y>=0; y--)
+        {
+            if(edge.at<uchar>(y,x) !=0 )
+            {
+                if(ratio_down.at<uchar>(y,x) < ratio_down.at<uchar>(y+1,x))
+                {
+                    edge.at<uchar>(y,x) = 0;
+                }
+                else
+                {
+                    edge.at<uchar>(y,x) = 255;
+                }
+            }
+        }
+    }
+
+    imwrite("edges.jpg", edge);
+    tonen(edge, "edges");
+}
+
+
+void calculateDepthMapRGB()
+{
+    ///Read the images acquired by grabMultiflashImages()
+    Mat left, right, down, up;
+    left = imread("./calib_mf/left.png", 1);
+    right = imread("./calib_mf/right.png", 1);
+    down = imread("./calib_mf/down.png", 1);
+    up = imread("./calib_mf/up.png", 1);
 
     if(left.empty())
     {
