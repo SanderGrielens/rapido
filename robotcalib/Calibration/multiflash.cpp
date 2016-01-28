@@ -77,29 +77,31 @@ Mat grabSingleImage(String a)
 void grabMultiflashImages()
 {
     SerialStream my_serial_stream;
-    my_serial_stream.Open( "/dev/ttyS0" );
+    my_serial_stream.Open( "/media/sgr/MBED" );
     my_serial_stream.SetCharSize( SerialStreamBuf::CHAR_SIZE_8 ) ;
 
     ///Light left
     my_serial_stream << "a";
     ///Grab image
     Mat left = grabSingleImage("left");
+    tonen(left,"left");
 
     ///Light right
-    my_serial_stream << "a";
+    my_serial_stream << "b";
     ///Grab image
     Mat right = grabSingleImage("right");
+    tonen(right,"right");
 
     ///Light up
-    my_serial_stream << "a";
+    my_serial_stream << "c";
     ///Grab image
     Mat up = grabSingleImage("up");
-
+    tonen(up, "up");
     ///Light down
-    my_serial_stream << "a";
+    my_serial_stream << "d";
     ///Grab image
     Mat down = grabSingleImage("down");
-
+    tonen(down, "down");
     my_serial_stream.Close();
 
 }
