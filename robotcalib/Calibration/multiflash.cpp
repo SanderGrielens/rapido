@@ -35,7 +35,7 @@ Mat grabSingleImage(String a)
     //Speicher für Bild alloziieren
     char* pMem = NULL;
     int memID = 0;
-    nRet = is_AllocImageMem(hCam, 1280, 1024, 24, &pMem, &memID);
+    nRet = is_AllocImageMem(hCam, 1280, 1024, 8, &pMem, &memID);
     printf("Status AllocImage %d\n",nRet);
 
     //diesen Speicher aktiv setzen
@@ -97,11 +97,13 @@ void grabMultiflashImages()
     ///Grab image
     Mat up = grabSingleImage("up");
     tonen(up, "up");
+
     ///Light down
     my_serial_stream << "d";
     ///Grab image
     Mat down = grabSingleImage("down");
     tonen(down, "down");
+
     my_serial_stream.Close();
 
 }

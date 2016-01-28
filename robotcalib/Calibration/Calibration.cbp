@@ -86,7 +86,6 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-O2" />
-					<Add option="-pg" />
 					<Add option="-fopenmp" />
 					<Add directory="../../Camera_sdk/Vimba_1_3/VimbaCPP" />
 					<Add directory="../../Camera_sdk/Vimba_1_3" />
@@ -96,7 +95,6 @@
 					<Add directory="calib_en" />
 				</Compiler>
 				<Linker>
-					<Add option="-pg" />
 					<Add option="-lNxLib64" />
 					<Add option="-lueye_api" />
 					<Add option="-lboost_system" />
