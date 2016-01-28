@@ -152,6 +152,7 @@
 					<Add library="/usr/local/lib/libpcl_surface.so" />
 					<Add library="/usr/local/lib/libpcl_tracking.so" />
 					<Add library="/usr/local/lib/libpcl_visualization.so" />
+					<Add library="/usr/local/lib/libserial.so" />
 					<Add directory="../../Camera_sdk/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit" />
 					<Add directory="calib_en" />
 				</Linker>

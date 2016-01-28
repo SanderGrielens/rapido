@@ -115,7 +115,14 @@ void grabMultiflashCalibImages(int number)
         ///grab image from camera + save it
         Mat calib_image = grabSingleImage("calib" + conv.str());
         ///show image and wait for input. this gives user time to reposition calibration board
-        tonen(calib_image, "Image");
+        if(!calib_image.empty())
+            tonen(calib_image, "Image");
+        else
+        {
+            cout<<"Couldn't find calibration image, reposition the board and press enter to continue."<<endl;
+            i--;
+            cin.ignore();
+        }
     }
     cout<<"Grab succesful"<<endl;
 }
