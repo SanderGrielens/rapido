@@ -242,11 +242,16 @@ void calculateDepthMap()
 {
     ///Read the images acquired by grabMultiflashImages()
     Mat left, right, down, up;
-    left = imread("./calib_mf/left.png", 0);
-    right = imread("./calib_mf/right.png", 0);
-    down = imread("./calib_mf/down.png", 0);
-    up = imread("./calib_mf/up.png", 0);
+    left = imread("./calib_mf/1left.png", 0);
+    right = imread("./calib_mf/1right.png", 0);
+    down = imread("./calib_mf/1down.png", 0);
+    up = imread("./calib_mf/1up.png", 0);
 
+    /*left.clone().convertTo(left, CV_32FC1);
+    right.clone().convertTo(right, CV_32FC1);
+    down.clone().convertTo(down, CV_32FC1);
+    up.clone().convertTo(up, CV_32FC1);
+*/
     if(left.empty())
     {
         cout<<"Left nok"<<endl;
@@ -267,27 +272,15 @@ void calculateDepthMap()
         cout<<"up nok"<<endl;
     }
 
-    ///undistort images using cameramatrix calculated in calibrateMultiflashCamera()
-    /*FileStorage fs("./camera.xml", FileStorage::READ);
-    Mat cameramatrix, distcoef;
-
-    fs["camera_matrix"] >> cameramatrix;
-    fs[distortion_camera"] >> distcoef;
-
-    undistort(left, left, cameramatrix, distcoef);
-    undistort(right, right, cameramatrix, distcoef);
-    undistort(up, up, cameramatrix, distcoef);
-    undistort(down, down, cameramatrix, distcoef);
-
-    */
     ///Calculate shadow free image
+    //Mat noshadow = Mat(left.rows, left.cols, CV_32FC1);
     Mat noshadow = Mat(left.rows, left.cols, CV_8UC1);
 
     for(int y=0; y<left.rows; y++)
     {
         for(int x=0; x<left.cols; x++)
         {
-                uchar color;
+                uchar color = 0;
                 uchar color_left = left.at<uchar>(y,x);
                 uchar color_right = right.at<uchar>(y,x);
                 uchar color_up = up.at<uchar>(y,x);
@@ -298,24 +291,37 @@ void calculateDepthMap()
                 color = ((color < color_up) ? color_up : color);
                 color = ((color < color_down) ? color_down : color);
 
+                //cout<<color_left<<" "<<color_right<<" "<<color_up<<" "<<color_down<<" "<<color<<endl;
+
                 noshadow.at<uchar>(y,x) = color;
         }
     }
 
     ///Calculate difference image
-    Mat ratio_left = Mat(left.rows, left.cols, CV_8UC1);
-    Mat ratio_right = Mat(left.rows, left.cols, CV_8UC1);
-    Mat ratio_down = Mat(left.rows, left.cols, CV_8UC1);
-    Mat ratio_up = Mat(left.rows, left.cols, CV_8UC1);
+    Mat ratio_left = Mat(left.rows, left.cols, CV_32FC1);
+    Mat ratio_right = Mat(left.rows, left.cols, CV_32FC1);
+    Mat ratio_down = Mat(left.rows, left.cols, CV_32FC1);
+    Mat ratio_up = Mat(left.rows, left.cols, CV_32FC1);
 
-    ratio_left = left/noshadow;
-    ratio_right = right/noshadow;
-    ratio_up = up/noshadow;
-    ratio_down = down/noshadow;
+    divide(left, noshadow, ratio_left);
+    divide(right, noshadow, ratio_right);
+    divide(up, noshadow, ratio_up);
+    divide(down, noshadow, ratio_down);
 
+    ratio_left.clone().convertTo(ratio_left, CV_8UC1);
+    ratio_right.clone().convertTo(ratio_right, CV_8UC1);
+    ratio_down.clone().convertTo(ratio_down, CV_8UC1);
+    ratio_up.clone().convertTo(ratio_up, CV_8UC1);
+
+    //tonen(noshadow, "noshadow");
     ///Calculate depth edges
 
-    Mat edge = Mat::ones(ratio_left.rows, ratio_left.cols, CV_8UC1);
+    /*tonen(ratio_left*255, "ratio_left");
+    tonen(ratio_right*255, "ratio_right");
+    tonen(ratio_up*255, "ratio_up");
+    tonen(ratio_down*255, "ratio_down");
+*/
+    Mat edge = Mat::ones(left.rows, left.cols, CV_8UC1);
     edge *=255;
 
     ///Right:
@@ -325,17 +331,14 @@ void calculateDepthMap()
         {
             if(edge.at<uchar>(y,x) == 255 )
             {
-                if(ratio_right.at<uchar>(y,x) < ratio_right.at<uchar>(y,x+1))
+                if(ratio_right.at<uchar>(y,x) < ratio_right.at<uchar>(y,x+1) )
                 {
                     edge.at<uchar>(y,x) = 0;
-                }
-                else
-                {
-                    edge.at<uchar>(y,x) = 255;
                 }
             }
         }
     }
+
 
     ///Left:
     for(int y=0; y<ratio_left.rows; y++)
@@ -348,28 +351,21 @@ void calculateDepthMap()
                 {
                     edge.at<uchar>(y,x) = 0;
                 }
-                else
-                {
-                    edge.at<uchar>(y,x) = 255;
-                }
             }
         }
     }
+
 
     ///Up:
     for(int x=0; x<ratio_up.cols; x++)
     {
         for(int y=0; y<ratio_up.rows; y++)
         {
-            if(edge.at<uchar>(y,x) !=0 )
+            if(edge.at<uchar>(y,x) == 255 )
             {
-                if(ratio_up.at<uchar>(y,x) < ratio_up.at<uchar>(y-1,x))
+                if(ratio_up.at<uchar>(y,x) < ratio_up.at<uchar>(y-1,x) )
                 {
                     edge.at<uchar>(y,x) = 0;
-                }
-                else
-                {
-                    edge.at<uchar>(y,x) = 255;
                 }
             }
         }
@@ -380,15 +376,11 @@ void calculateDepthMap()
     {
         for(int y=ratio_down.rows-1; y>=0; y--)
         {
-            if(edge.at<uchar>(y,x) !=0 )
+            if(edge.at<uchar>(y,x) == 255 )
             {
                 if(ratio_down.at<uchar>(y,x) < ratio_down.at<uchar>(y+1,x))
                 {
                     edge.at<uchar>(y,x) = 0;
-                }
-                else
-                {
-                    edge.at<uchar>(y,x) = 255;
                 }
             }
         }
