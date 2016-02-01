@@ -242,10 +242,10 @@ void calculateDepthMap()
 {
     ///Read the images acquired by grabMultiflashImages()
     Mat left, right, down, up;
-    left = imread("./calib_mf/1left.png", 0);
-    right = imread("./calib_mf/1right.png", 0);
-    down = imread("./calib_mf/1down.png", 0);
-    up = imread("./calib_mf/1up.png", 0);
+    left = imread("./calib_mf/left.png", 0);
+    right = imread("./calib_mf/right.png", 0);
+    down = imread("./calib_mf/down.png", 0);
+    up = imread("./calib_mf/up.png", 0);
 
     /*left.clone().convertTo(left, CV_32FC1);
     right.clone().convertTo(right, CV_32FC1);
