@@ -226,7 +226,7 @@ int main()
                 }
                 else if(antwoord == 'd')
                 {
-                    calculateDepthMap();
+                    calculateEdgeMap();
                 }
                 else if(antwoord=='q')
                 {

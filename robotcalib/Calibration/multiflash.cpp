@@ -238,14 +238,14 @@ void calibrateMultiflashCamera()
     fs.release();
 }
 
-void calculateDepthMap()
+void calculateEdgeMap()
 {
     ///Read the images acquired by grabMultiflashImages()
     Mat left, right, down, up;
-    left = imread("./calib_mf/1left.png", 0);
-    right = imread("./calib_mf/1right.png", 0);
-    down = imread("./calib_mf/1down.png", 0);
-    up = imread("./calib_mf/1up.png", 0);
+    left = imread("./calib_mf/left.png", 0);
+    right = imread("./calib_mf/right.png", 0);
+    down = imread("./calib_mf/down.png", 0);
+    up = imread("./calib_mf/up.png", 0);
 
     /*left.clone().convertTo(left, CV_32FC1);
     right.clone().convertTo(right, CV_32FC1);
@@ -308,22 +308,30 @@ void calculateDepthMap()
     divide(up, noshadow, ratio_up);
     divide(down, noshadow, ratio_down);
 
+    ratio_left *= 255;
+    ratio_right *= 255;
+    ratio_down *= 255;
+    ratio_up *= 255;
+
     ratio_left.clone().convertTo(ratio_left, CV_8UC1);
     ratio_right.clone().convertTo(ratio_right, CV_8UC1);
     ratio_down.clone().convertTo(ratio_down, CV_8UC1);
     ratio_up.clone().convertTo(ratio_up, CV_8UC1);
 
-    //tonen(noshadow, "noshadow");
+    tonen(noshadow, "noshadow");
     ///Calculate depth edges
 
-    /*tonen(ratio_left*255, "ratio_left");
-    tonen(ratio_right*255, "ratio_right");
-    tonen(ratio_up*255, "ratio_up");
-    tonen(ratio_down*255, "ratio_down");
+    /*tonen(ratio_left, "ratio_left");
+    tonen(ratio_right, "ratio_right");
+    tonen(ratio_up, "ratio_up");
+    tonen(ratio_down, "ratio_down");
 */
     Mat edge = Mat::ones(left.rows, left.cols, CV_8UC1);
     edge *=255;
 
+    int grens = 100 ;
+
+    /*for(grens; grens<1; grens++)*/
     ///Right:
     for(int y=0; y<ratio_right.rows; y++)
     {
@@ -331,8 +339,9 @@ void calculateDepthMap()
         {
             if(edge.at<uchar>(y,x) == 255 )
             {
-                if(ratio_right.at<uchar>(y,x) < ratio_right.at<uchar>(y,x+1) )
+                if(ratio_right.at<uchar>(y,x+1) - ratio_right.at<uchar>(y,x) > grens  )
                 {
+                    cout<<(float)ratio_right.at<uchar>(y,x)<<" is kleiner dan "<<(float)ratio_right.at<uchar>(y,x+1)<<endl;
                     edge.at<uchar>(y,x) = 0;
                 }
             }
@@ -347,7 +356,7 @@ void calculateDepthMap()
         {
             if(edge.at<uchar>(y,x) == 255 )
             {
-                if(ratio_left.at<uchar>(y,x) < ratio_left.at<uchar>(y,x-1))
+                if(ratio_left.at<uchar>(y,x-1) - ratio_left.at<uchar>(y,x) > grens )
                 {
                     edge.at<uchar>(y,x) = 0;
                 }
@@ -363,7 +372,7 @@ void calculateDepthMap()
         {
             if(edge.at<uchar>(y,x) == 255 )
             {
-                if(ratio_up.at<uchar>(y,x) < ratio_up.at<uchar>(y-1,x) )
+                if(ratio_up.at<uchar>(y-1,x) - ratio_up.at<uchar>(y,x) > grens  )
                 {
                     edge.at<uchar>(y,x) = 0;
                 }
@@ -378,7 +387,7 @@ void calculateDepthMap()
         {
             if(edge.at<uchar>(y,x) == 255 )
             {
-                if(ratio_down.at<uchar>(y,x) < ratio_down.at<uchar>(y+1,x))
+                if(ratio_down.at<uchar>(y+1,x) - ratio_down.at<uchar>(y,x) > grens)
                 {
                     edge.at<uchar>(y,x) = 0;
                 }
@@ -391,7 +400,7 @@ void calculateDepthMap()
 }
 
 
-void calculateDepthMapRGB()
+void calculateEdgeMapRGB()
 {
     ///Read the images acquired by grabMultiflashImages()
     Mat left, right, down, up;

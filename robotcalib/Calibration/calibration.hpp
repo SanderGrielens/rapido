@@ -95,8 +95,8 @@ bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_w
 ///MultiFlash:
 void grabMultiflashImages();
 void calibrateMultiflashCamera();
-void calculateDepthMap();
-void calculateDepthMapRGB();
+void calculateEdgeMap();
+void calculateEdgeMapRGB();
 void grabMultiflashCalibImages(int number);
 Mat grabSingleImage(String a, HIDS hCam);
 
