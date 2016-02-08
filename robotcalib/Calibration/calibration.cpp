@@ -21,7 +21,7 @@ int getdir (string dir, vector<string> &files)
 void tonen(Mat image, String naam)              // afbeelding tonen op scherm a.d.h.v. afbeelding en naam venster
 {
     namedWindow( naam, WINDOW_NORMAL );
-    resizeWindow(naam, 800,600);
+    resizeWindow(naam, 1200,800);
     imshow( naam, image );
     waitKey(0);
 }

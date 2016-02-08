@@ -33,9 +33,9 @@ vector<Mat> generate_pattern(int NOP_v, int NOP_h, int projector_width, int proj
 {
     vector<Mat> result;
 
-    for(int i =0 ; i< NOP_h*2 + NOP_v*2 + 4; i++)
+    for(int i =0 ; i< NOP_h*2 + NOP_v*2 + 2; i++)
     {
-        Mat newmat = Mat(projector_height, projector_width, CV_8UC1);
+        Mat newmat = Mat::zeros(projector_height, projector_width, CV_8UC1);
         result.push_back(newmat) ;
     }
     ///Generate vertical patterns
@@ -66,19 +66,33 @@ vector<Mat> generate_pattern(int NOP_v, int NOP_h, int projector_width, int proj
 
             int macht = pow(2, k);
 
-            if(i%macht == 0 && i != 0)
+            if(k>0)
             {
-                if(change)
+                if(i%macht == 0 && i != 0)
                 {
-                    flag = !flag;
-                    change = false;
+                    if(change)
+                    {
+                        flag = !flag;
+                        change = false;
+                    }
+                    else
+                        change = true;
                 }
-                else
-                    change = true;
+            }
+            else
+            {
+                flag = !flag;
             }
         }
     }
 
+    /*int pixel_teller = 0;
+    for(int i = 0; i < projector_width; i++)
+    {
+        if(result[teller-2].at<uchar>( 0,i ) != result[teller -2].at<uchar>( 0,i-1))
+            pixel_teller++;
+    }
+    cout<<"verticaal pixels: "<<pixel_teller<<endl;*/
     ///Generate Horizontal patterns
     for(int k=NOP_h-1; k>=0; teller +=2, k--)
     {
@@ -103,22 +117,42 @@ vector<Mat> generate_pattern(int NOP_v, int NOP_h, int projector_width, int proj
                 result[teller + 1].at<uchar>( i, j ) = pixel_color;  // inverse
             }
             int macht = pow(2,k);
-            if(i%macht == 0 && i != 0)
+
+            if(k>0)
             {
-                if(change)
+                if(i%macht == 0 && i != 0)
                 {
-                    flag = !flag;
-                    change = false;
+                    if(change)
+                    {
+                        flag = !flag;
+                        change = false;
+                    }
+                    else
+                        change = true;
                 }
-                else
-                    change = true;
+            }
+            else
+            {
+                flag = !flag;
             }
         }
     }
+
+    //tonen(result[teller-2], "hor pix");
+    //tonen(result[teller-1], "hor pix invers");
+    /*cout<<"hier"<<endl;
+    pixel_teller = 0;
+    for(int i = 1; i < projector_height; i++)
+    {
+        if(result[teller-1].at<uchar>( i,0 ) != result[teller-1].at<uchar>( i-1,0))
+            pixel_teller++;
+    }
+    cout<<"horizontaal pixels: "<<pixel_teller<<endl;
+*/
     return result;
 }
 
-bool get_sl_images(int delay, string path, int serie, int width, int height)
+bool get_vimba(int delay, string path, int serie, int width, int height)
 {
     vector<Mat> pattern;
     cout<<"serienummer: "<<serie<<endl;
@@ -178,7 +212,7 @@ bool get_sl_images(int delay, string path, int serie, int width, int height)
     pattern = generate_pattern(NOP_v, NOP_h, width, height);
     cout<<"Pattern generated"<<endl;
 
-    int number_of_patterns = (NOP_h + NOP_v)*2;
+    int number_of_patterns = (NOP_h + NOP_v)*2 + 2;
 
     ///Save patterns
     /*vector<int> compression_params;
@@ -274,6 +308,186 @@ bool get_sl_images(int delay, string path, int serie, int width, int height)
     }
 
     return true;
+}
+
+void PrintError( FlyCapture2::Error error )
+{
+    error.PrintErrorTrace();
+}
+
+bool get_pointgrey(int delay, string path, int serie, int width, int height)
+{
+     vector<Mat> pattern;
+    cout<<"serienummer: "<<serie<<endl;
+
+    int vertical_patterns=0;
+    ///Get dimensions
+    while(pow(2, vertical_patterns) < width)
+    {
+        vertical_patterns++;
+    }
+    NOP_v = vertical_patterns;
+
+    ///Do the same for the horizontal patterns
+    int horizontal_patterns=0;
+    while(pow(2, horizontal_patterns) < height)
+    {
+        horizontal_patterns++;
+    }
+    NOP_h = horizontal_patterns;
+
+    ///Open camera
+    FlyCapture2::Error error;
+
+    BusManager busMgr;
+    unsigned int numCameras;
+    error = busMgr.GetNumOfCameras(&numCameras);
+    if (error != PGRERROR_OK)
+    {
+        cout<<"No cameras found"<<endl;
+        return -1;
+    }
+
+    if ( numCameras < 1 )
+    {
+        cout << "Insufficient number of cameras... exiting" << endl;
+        return -1;
+    }
+
+    PGRGuid guid;
+    error = busMgr.GetCameraFromIndex(0, &guid);
+    if (error != PGRERROR_OK)
+    {
+        cout<<"No index retrieved"<<endl;
+        return -1;
+    }
+
+    FlyCapture2::Camera cam;
+
+    // Connect to a camera
+    error = cam.Connect(&guid);
+    if (error != PGRERROR_OK)
+    {
+        cout<<"Camera not connected"<<endl;
+        return -1;
+    }
+
+    // Get the camera information
+    CameraInfo camInfo;
+    error = cam.GetCameraInfo(&camInfo);
+    if (error != PGRERROR_OK)
+    {
+        cout<<"No camera info retrieved"<<endl;
+        return -1;
+    }
+
+    pattern = generate_pattern(NOP_v, NOP_h, width, height);
+    cout<<"Pattern generated"<<endl;
+
+    int number_of_patterns = pattern.size();
+
+    ///Save patterns
+    /*vector<int> compression_params;
+    compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION );
+    //Kies 0 om geen compressie door te voeren
+    compression_params.push_back(0);
+
+    for(int i=0; i<number_of_patterns; i++)
+    {
+        ostringstream stm ;
+        stm << i ;
+        try {
+            imwrite("patroon" + stm.str()+ ".png", pattern[i], compression_params);
+        }
+        catch (int runtime_error){
+            fprintf(stderr, "Exception converting image to JPPEG format: %s\n");
+            return 1;
+        }
+    }*/
+
+    for(int i = 0; i<number_of_patterns; i++)
+    {
+        string Result;
+        ostringstream convert;
+        convert << i;
+        ///Project pattern full screen via projector
+        namedWindow( "pattern", CV_WINDOW_NORMAL );
+        setWindowProperty("pattern", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+        moveWindow("pattern", 0, 0);
+        imshow("pattern", pattern[i]);
+        waitKey(delay);
+
+        ///Read from camera
+            // Start capturing images
+        error = cam.StartCapture();
+        if (error != PGRERROR_OK)
+        {
+            PrintError(error);
+            return -1;
+        }
+
+        // Grab images
+        Image rawImage;
+        error = cam.RetrieveBuffer(&rawImage);
+        if (error != PGRERROR_OK)
+        {
+            cout << "Error grabbing image " << endl;
+            continue;
+        }
+
+
+        // Stop capturing images
+        error = cam.StopCapture();
+        if (error != PGRERROR_OK)
+        {
+            PrintError(error);
+            return -1;
+        }
+
+        ///Save camera image
+
+        FlyCapture2::Image cf2Img;
+        rawImage.Convert(FlyCapture2::PIXEL_FORMAT_BGR, &cf2Img );
+        unsigned int rowBytes = (double)cf2Img.GetReceivedDataSize()/(double)cf2Img.GetRows();
+        cv::Mat cvImage = cv::Mat( cf2Img.GetRows(), cf2Img.GetCols(), CV_8UC3, cf2Img.GetData(), rowBytes );
+
+        vector<int> compression_params;
+        compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION );
+        //Kies 0 om geen compressie door te voeren
+        compression_params.push_back(0);
+        String plek = path + "/frame" + convert.str()+ ".bmp";
+
+        try {
+            imwrite(plek, cvImage, compression_params);
+        }
+        catch (int runtime_error){
+            fprintf(stderr, "Exception converting image to JPPEG format: %s\n");
+            return 1;
+        }
+    }
+
+    error = cam.Disconnect();
+    if (error != PGRERROR_OK)
+    {
+        cout<<"Camera not connected"<<endl;
+        return -1;
+    }
+    return true;
+}
+
+bool get_sl_images(int delay, string path, int serie, int width, int height)
+{
+    char antwoord;
+    cout<<"Vimba?[y/n] ";
+    cin>>antwoord;
+
+    if(antwoord=='y')
+        return get_vimba(delay, path, serie, width, height);
+
+    else
+        return get_pointgrey(delay, path, serie, width, height);
+
+
 }
 
 bool findcorners(vector<vector<Point2f> > &chessboardcorners, string path, int aantalseries, int width, int height)
@@ -504,7 +718,6 @@ void get_pattern_image(Decoder &d, vector<Mat> beelden, int dir, float m, float 
         }
     }
 
-    int teller =0;
     ///Convert pattern from gray code to binary
     //#pragma omp parallel for
     for(int i=0;i<d.pattern_image[dir].rows;i++)
@@ -532,8 +745,6 @@ void get_pattern_image(Decoder &d, vector<Mat> beelden, int dir, float m, float 
         }
     }
 
-
-    cout<<"Aantal punten: "<<teller<<endl;
     //tonen(d.minimum[dir], "minimum");
     //tonen(d.maximum[dir], "maximum");
     cout<<"pattern decoded"<<endl;
@@ -917,14 +1128,15 @@ Mat calculate3DPoints_all(string path, int aantalseries, float b, float m, float
 
         Mat hory = d.pattern_image[0];
         Mat verx = d.pattern_image[1];
+
         struct timeval tv4, tv5, tv6; struct timezone tz;
         gettimeofday(&tv4, &tz);
         vector<vector<vector<Point2d> > > punten;///punten[x][y][z]
-        punten.resize(1280);
+        punten.resize(camera_width);
         //#pragma omp parallel for
         for(int i=0; i<punten.size(); i++)
         {
-            punten[i].resize(800);
+            punten[i].resize(camera_height);
             for(int j=0; j< punten[i].size(); j++)
             {
                 punten[i][j].reserve(10);
@@ -937,7 +1149,7 @@ Mat calculate3DPoints_all(string path, int aantalseries, float b, float m, float
         {
             for(int y = 0; y<camera_height; y++)
             {
-                if (hory.at<float>(y,x) >= 800 || hory.at<float>(y,x) < 0 ||  verx.at<float>(y,x) >= 1280 || verx.at<float>(y,x) < 0)
+                if (hory.at<float>(y,x) >= camera_height || hory.at<float>(y,x) < 0 ||  verx.at<float>(y,x) >= camera_width || verx.at<float>(y,x) < 0)
                 {
                     continue;
                 }
@@ -947,9 +1159,15 @@ Mat calculate3DPoints_all(string path, int aantalseries, float b, float m, float
                 //cout<<"Projpunt: "<<verx.at<float>(y,x)<<" "<<hory.at<float>(y,x)<<endl;
                 //cout<<"size: "<<punten[verx.at<float>(y,x)][hory.at<float>(y,x)].size()<<endl;
                 punten[verx.at<float>(y,x)][hory.at<float>(y,x)].push_back(punt_cam);
+                /*cout<<"locatie: "<<verx.at<float>(y,x)<<" x "<<hory.at<float>(y,x)<<endl;
+                cout<<"wat we hebben weggestoken: "<<punt_cam<<endl;
+                cout<<"wat er inzit: "<<punten[verx.at<float>(y,x)][hory.at<float>(y,x)].back()<<endl;*/
+
             }
         }
         //#pragma omp parallel for
+        Mat tekening = Mat::zeros(camera_height, camera_width, CV_8UC1);
+        Mat tekening2 = Mat::zeros(camera_height, camera_width, CV_8UC1);
         for(int x = 0; x<punten.size(); x++)
         {
             for(int y = 0; y<punten[x].size(); y++)
@@ -961,27 +1179,38 @@ Mat calculate3DPoints_all(string path, int aantalseries, float b, float m, float
                 {
                     for(int z = 0; z < punten[x][y].size(); z++)
                     {
+                        /*punt = Point2d(punten[x][y][z].x, punten[x][y][z].y);
+                        cam_points.push_back(punt);
+                        punt2 = Point2d(x,y);
+                        proj_points.push_back(punt2);*/
+
                         gemx += punten[x][y][z].x;
                         gemy += punten[x][y][z].y;
                     }
                     //cout<<"gemiddelde: "<<gemx<<" "<<punten[x][y].size()<<endl;
                     if(x%2==0)
                     {
-                        punt = Point2d((gemx/punten[x][y].size())+0.55, gemy/punten[x][y].size());
+                        punt = Point2d((gemx/punten[x][y].size()), gemy/punten[x][y].size());
+                        tekening.at<uchar>( gemy/punten[x][y].size(),gemx/punten[x][y].size()) = 255;
                     }
                     else
-                        punt = Point2d((gemx/punten[x][y].size())-0.55, gemy/punten[x][y].size());
+                    {
+                        punt = Point2d((gemx/punten[x][y].size()), gemy/punten[x][y].size());
+                        tekening.at<uchar>( gemy/punten[x][y].size(),gemx/punten[x][y].size()) = 255;
+                    }
                     //cout<<"punt: "<<punt<<endl;
                     cam_points.push_back(punt);
                     punt2 = Point2d(x,y);
                     proj_points.push_back(punt2);
-                    //cout<<1;
+                    tekening2.at<uchar>(y,x) = 255;
                 }
                 /*else
                    cout<<0;*/
             }
             //cout<<endl;
         }
+
+        //imwrite("tekening.jpg", tekening);
 
         gettimeofday(&tv5, &tz);
         printf( "nieuwe ontcijfering duurt %12.4g sec\n", (tv5.tv_sec-tv4.tv_sec) + (tv5.tv_usec-tv4.tv_usec)*1e-6 );
@@ -992,7 +1221,7 @@ Mat calculate3DPoints_all(string path, int aantalseries, float b, float m, float
         P0 = cameraMatrix * projmat1;
         P1 = projMatrix * projmat2;
 
-        int number_of_cores= 4;
+        int number_of_cores= 1;
         omp_set_num_threads(number_of_cores);
         vector<vector<Point2d> > cams;
         vector<vector<Point2d> > projs;
@@ -1039,7 +1268,6 @@ Mat calculate3DPoints_all(string path, int aantalseries, float b, float m, float
         ///Transform into homogeneous points
         result = Mat(4, driedpunten.cols,CV_64FC1);
         double X,Y,Z;
-
         //#pragma omp parallel for
         for(int i=0;i<driedpunten.cols;i++)
         {
@@ -1053,9 +1281,10 @@ Mat calculate3DPoints_all(string path, int aantalseries, float b, float m, float
             result.at<double>(2, i) = Z/1000;
             result.at<double>(3, i) = 1;
         }
-
         ///Convert to pointcloud and save as .PCD and .PLY and transform them into homogene points
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGB>);
+        //pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZ>);
+
         for(int i=0;i<driedpunten.cols;i++)
         {
             //std::cout<<i<<endl;
@@ -1067,15 +1296,17 @@ Mat calculate3DPoints_all(string path, int aantalseries, float b, float m, float
             point.x = X/1000; // /1000 so the coordinates are in metres
             point.y = Y/1000;
             point.z = Z/1000;
-
+            //cout<<Z<<endl;
             uint8_t r,g,b;
             r = 255;
             g = 0;
-            b = 0;    // Example: Red color
+            b = 0;
 
             uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
             point.rgb = *reinterpret_cast<float*>(&rgb);
+
             point_cloud_ptr -> points.push_back(point);
+
         }
 
 
@@ -1351,6 +1582,8 @@ Mat convert(Mat origin)
     Mat transMat;
     fs["transmat"] >> transMat;
     //transpose(origin.clone(), origin);
+    if(transMat.empty())
+        cout<<"transformation Matrix is empty."<<endl;
 
     Mat driedpunten = transMat*origin;
 

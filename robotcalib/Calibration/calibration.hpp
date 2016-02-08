@@ -13,6 +13,8 @@
 #include <sys/stat.h>
 #include <limits>
 #include <omp.h>
+#include <sstream>
+#include <iomanip>
 
 #include <ueye.h>
 
@@ -28,6 +30,9 @@
 #include "Common/ErrorCodeToMessage.h"
 #include "VimbaCPP/Include/VimbaSystem.h"
 
+#include "flycapture/FlyCapture2.h"
+#include "flycapture/stdafx.h"
+
 #include <boost/timer/timer.hpp>
 #include <cmath>
 
@@ -38,6 +43,7 @@ using namespace std;
 using namespace cv;
 using namespace pcl;
 using namespace boost;
+using namespace FlyCapture2;
 
 ///Normal camera
 void calibrate_camera();
@@ -74,6 +80,8 @@ struct Visualizer
 Decoder init_decoder();
 vector<Mat> generate_pattern(int NOP_v, int NOP_h, int projector_width, int projector_height);
 bool get_sl_images(int delay, string path, int serie, int width, int height);
+bool get_vimba(int delay, string path, int serie, int width, int height);
+bool get_pointgrey(int delay, string path, int serie, int width, int height);
 int getdir (string dir, vector<string> &files);
 bool findcorners(vector<vector<Point2f> > &chessboardcorners, string path, int aantalseries, int width, int height);
 int check_bit(float value1, float value2, float Ld, float Lg, float m);

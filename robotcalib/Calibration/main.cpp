@@ -84,11 +84,12 @@ int main()
             bool vlag = false;
             while(!vlag)
             {
-                int p_w = 1280;
-                int p_h = 800;
+                int p_w = 912;
+                int p_h = 1140;
                 float b = 0.5;
                 float m = 5;
-                float thresh = 25;
+                float thresh = 50;
+                int speed = 75; ///capture speed in ms / image
                 /*cout<<"Please give the projector resolution. First the width, then the height:"<<endl;
                 cin >> p_w;
                 cin >> p_h;*/
@@ -112,7 +113,7 @@ int main()
                         conv << calib_sl_series;
                         string path = "./calib_sl/serie"+conv.str();
                         mkdir(path.c_str(), 0700);
-                        bool gelukt = get_sl_images(300, path, calib_sl_series, p_w, p_h);
+                        bool gelukt = get_sl_images(speed, path, calib_sl_series, p_w, p_h);
                         if(gelukt)
                             calib_sl_series++;
                         else
@@ -152,7 +153,7 @@ int main()
                     cin >> antwoord;
                     if(antwoord == 'y')
                     {
-                        bool gelukt = get_sl_images(300, path, 0, p_w, p_h);
+                        bool gelukt = get_sl_images(speed, path, 0, p_w, p_h);
                         /*if(gelukt)
                             calib_sl_series++;
                         else
@@ -174,7 +175,7 @@ int main()
                     cin >> antwoord;
                     if(antwoord == 'y')
                     {
-                        bool gelukt = get_sl_images(300, path, 0, p_w, p_h);
+                        bool gelukt = get_sl_images(speed, path, 0, p_w, p_h);
                         /*if(gelukt)
                             calib_sl_series++;
                         else
