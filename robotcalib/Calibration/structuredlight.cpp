@@ -525,7 +525,7 @@ bool findcorners(vector<vector<Point2f> > &chessboardcorners, string path, int a
             continue;
         }
 
-        bool found1_1 = findChessboardCorners(board, boardSize, chessboardcorners[i],CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_NORMALIZE_IMAGE);
+        bool found1_1 = findChessboardCorners(board, boardSize, chessboardcorners[i],CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_NORMALIZE_IMAGE | CALIB_CB_FAST_CHECK);
 
         if(!found1_1)
         {
@@ -1209,7 +1209,8 @@ Mat calculate3DPoints_all(string path, int aantalseries, float b, float m, float
             }
             //cout<<endl;
         }
-
+        //tonen(tekening, "camera view");
+        //tonen(tekening2, "projector view");
         //imwrite("tekening.jpg", tekening);
 
         gettimeofday(&tv5, &tz);
@@ -1304,8 +1305,10 @@ Mat calculate3DPoints_all(string path, int aantalseries, float b, float m, float
 
             uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
             point.rgb = *reinterpret_cast<float*>(&rgb);
-
-            point_cloud_ptr -> points.push_back(point);
+            if(Z> 870 && Z< 1000)
+                point_cloud_ptr -> points.push_back(point);
+            //else
+                //cout<<Z<<endl;
 
         }
 

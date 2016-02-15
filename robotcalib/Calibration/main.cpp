@@ -32,7 +32,7 @@ int main()
           " n: Normal camera **under construction**\n"
           " s: Structured Light\n"
           " t: TOF **under construction**\n"
-          " m: Multi flash **under construction**\n"
+          " m: Multi flash \n"
           " l: Laser line triangulation **under construction**\n"
           " q: Quit program"<<endl;
         char keuze;

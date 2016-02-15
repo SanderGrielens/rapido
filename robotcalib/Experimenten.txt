@@ -30,16 +30,23 @@ Hoe te installeren:
 	-Stereo vision camera(Ensenso):
 		Installeer de Ensenso SDK, te vinden op http://www.ensenso.com/support/sdk-download/
 		Volgorde: Eerste de uEye driver installeren, dan pas de ensensoSDK.
+		gebruik -lNx64Lib en -lueye_api
 
 	-Structured Light:
-		We gebruiken een Manta GigE camera. Deze maakt gebruik van de Vimba SDK. De nodige libraries en headers staan mee in de repository.
+		Manta GigE:
+		Deze maakt gebruik van de Vimba SDK. De nodige libraries en headers staan mee in de repository.
+		Point Grey Flea3 usb camera:
+		Installeer de flycapture library en gebruik -lflycapture bij het builden.
+ 
 		TI opstelling: Gebruik windows programma bij de hardware geleverd.
 
 	-TOF:
 
 	-Multi flash:
 	Maakt gebruik van dezelfde Ueye header als de ensenso camera.
-	Om de seriele communicatie met de LEDs te verzorgen maken we gebruik van LibSerial: http://libserial.sourceforge.net/
+	Om de seriele communicatie met de LEDs te verzorgen maken we gebruik van boost
+	gebruik -lueye_api voor de IDS camera
+	
 	
 	-Laser line triangulation:
 
