@@ -1,5 +1,6 @@
 #include <iostream>
 #include <math.h>
+#include <opencv2/opencv.hpp>
 #include <boost/thread/thread.hpp>
 #include <pcl/common/transforms.h>
 #include <pcl/common/common_headers.h>
@@ -13,7 +14,7 @@
 #include <pcl/console/parse.h>
 
 using namespace std;
-
+using namespace cv;
 
 boost::shared_ptr<pcl::visualization::PCLVisualizer> rgbVis (pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr cloud, boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer, string nummer)
 {
@@ -44,6 +45,15 @@ boost::shared_ptr<pcl::visualization::PCLVisualizer> simpleVis (pcl::PointCloud<
   return (viewer);
 }
 
+
+void tonen(Mat image, String naam)              // afbeelding tonen op scherm a.d.h.v. afbeelding en naam venster
+{
+    namedWindow( naam, WINDOW_NORMAL );
+    resizeWindow(naam, 1200,800);
+    imshow( naam, image );
+    waitKey(0);
+}
+
 int rms_error_ground_plane()
 {
     vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> cloud_collection; //(new pcl::PointCloud<pcl::PointXYZ>);
@@ -51,11 +61,11 @@ int rms_error_ground_plane()
 
     vector<string> files;
 
-    files.push_back("en.ply");
+    //files.push_back("en.ply");
     files.push_back("sl.ply");
 
     pcl::PLYReader plyreader;
-    boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
+    //boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
     for(int k=0; k<files.size() ; k++)
     {
         ostringstream conv;
@@ -87,10 +97,36 @@ int rms_error_ground_plane()
             return (-1);
         }
 
-
-
-        while(abs(1.0 - coefficients->values[2] ) > 0.01)
+        while(abs(coefficients->values[1] ) > 0.01)
         {
+            cout<<"rotate x"<<endl;
+            ///Build our own rotation matrix
+            Eigen::Matrix4f transform_1 = Eigen::Matrix4f::Identity();
+            float theta;
+            // Define a rotation matrix (see https://en.wikipedia.org/wiki/Rotation_matrix)
+            theta = asin(coefficients->values[1]);
+            //rotate around X-Axis
+            transform_1 (1,1) = cos (theta);
+            transform_1 (1,2) = -sin(theta);
+            transform_1 (2,1) = sin (theta);
+            transform_1 (2,2) = cos (theta);
+            //    (row, column)
+
+            pcl::transformPointCloud (*cloud, *cloud, transform_1);
+
+            seg.setInputCloud (cloud);
+            seg.segment (*inliers, *coefficients);
+
+            if (inliers->indices.size () == 0)
+            {
+                PCL_ERROR ("Could not estimate a planar model for the given dataset.");
+                return (-1);
+            }
+        }
+
+        while(abs(1.0 - coefficients->values[2] ) > 0.01) //rotate around Y-axis
+        {
+            cout<<"rotate y"<<endl;
             ///Build our own rotation matrix
             Eigen::Matrix4f transform_1 = Eigen::Matrix4f::Identity();
             float theta;
@@ -115,12 +151,97 @@ int rms_error_ground_plane()
             }
         }
 
+
+
         std::cerr << "Model coefficients: " << coefficients->values[0] << " "
                                               << coefficients->values[1] << " "
                                               << coefficients->values[2] << " "
                                               << coefficients->values[3] << std::endl;
 
         std::cerr << "Model inliers: " << inliers->indices.size () << std::endl;
+
+        double hoogstez = 0;
+        double hoogste2 = 0;
+        double laagstez = 10000;
+        double laagste2 = 10000;
+
+        for(int i=0; i<cloud->points.size(); i++)
+        {
+            if(hoogstez<cloud->points[i].z)
+            {
+                hoogste2 = hoogstez;
+                hoogstez = cloud->points[i].z;
+            }
+            if(laagstez>cloud->points[i].z)
+            {
+                laagste2 = laagstez;
+                laagstez = cloud->points[i].z;
+            }
+
+        }
+
+
+        double X,Y,Z;
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGB>);//(new pcl::pointcloud<pcl::pointXYZ>);
+        float n = 4.f;
+        float dt = 255.f/n;
+        for(int i=0;i<cloud->points.size();i++)
+        {
+            //std::cout<<i<<endl;
+            X = cloud->points[i].x;
+            Y = cloud->points[i].y;
+            Z = cloud->points[i].z;
+
+            pcl::PointXYZRGB point;
+            point.x = X;
+            point.y = Y;
+            point.z = Z;
+
+            float t = ((Z-laagste2)/(hoogste2-laagste2))*255;
+            float c1 = 0.f, c2 = 0.f, c3 = 0.f;
+            if (t<=1.f*dt)
+            {   //black -> red
+
+                float c = n*(t-0.f*dt);
+                c1 = c;     //0-255
+                c2 = 0.f;   //0
+                c3 = 0.f;   //0
+            }
+            else if (t<=2.f*dt)
+            {   //red -> red,green
+
+                float c = n*(t-1.f*dt);
+                c1 = 255.f; //255
+                c2 = c;     //0-255
+                c3 = 0.f;   //0
+            }
+            else if (t<=3.f*dt)
+            {   //red,green -> green
+                float c = n*(t-2.f*dt);
+                c1 = 255.f-c;   //255-0
+                c2 = 255.f;     //255
+                c3 = 0.f;       //0
+            }
+            else if (t<=4.f*dt)
+            {   //green -> blue
+                float c = n*(t-3.f*dt);
+                c1 = 0.f;       //0
+                c2 = 255.f-c;   //255-0
+                c3 = c;         //0-255
+            }
+
+            uint8_t r = c1, g = c2, b = c3;
+            uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
+            point.rgb = *reinterpret_cast<float*>(&rgb);
+            point_cloud_ptr -> points.push_back(point);
+        }
+
+        pcl::PLYWriter plywriter;
+        plywriter.write("./test.ply", *cloud, false);
+        pcl::io::savePCDFileBinary("./test.pcd", *cloud);
+        plywriter.write("./test2.ply", *point_cloud_ptr, false);
+        pcl::io::savePCDFileBinary("./test2.pcd", *point_cloud_ptr);
+
 
         ///Lengte van de diagonaal berekenen
         double xmin = 0, xmax = 0, ymin = 0, ymax = 0;
@@ -174,13 +295,13 @@ int rms_error_ground_plane()
 
     }
 
-    viewer = rgbVis(cloud_collection[0], viewer, "0");
+    /*viewer = rgbVis(cloud_collection[0], viewer, "0");
     viewer = rgbVis(cloud_collection[1], viewer, "1");
     while (!viewer->wasStopped ())
     {
         viewer->spinOnce (100);
         boost::this_thread::sleep (boost::posix_time::microseconds (100000));
-    }
+    }*/
     return 0;
 }
 
@@ -356,6 +477,6 @@ int main (int argc, char** argv)
 {
     int res;
     res = rms_error_ground_plane();
-    res = rms_error_top_plane();
+    //res = rms_error_top_plane();
     return res;
 }

@@ -20,7 +20,6 @@
 				<Linker>
 					<Add option="-lboost_system" />
 					<Add option="-lboost_thread" />
-					<Add library="/usr/local/lib/libboost_thread.so" />
 					<Add library="/usr/local/lib/libpcl_2d.so" />
 					<Add library="/usr/local/lib/libpcl_common.so" />
 					<Add library="/usr/local/lib/libpcl_features.so" />
@@ -84,7 +83,6 @@
 					<Add option="-s" />
 					<Add option="-lboost_system" />
 					<Add option="-lboost_thread" />
-					<Add library="/usr/local/lib/libboost_thread.so" />
 					<Add library="/usr/local/lib/libpcl_2d.so" />
 					<Add library="/usr/local/lib/libpcl_common.so" />
 					<Add library="/usr/local/lib/libpcl_features.so" />
