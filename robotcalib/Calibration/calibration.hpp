@@ -31,7 +31,7 @@
 #include "VimbaCPP/Include/VimbaSystem.h"
 
 #include "flycapture/FlyCapture2.h"
-#include "flycapture/stdafx.h"
+//#include "flycapture/stdafx.h"
 
 #include <boost/timer/timer.hpp>
 #include <cmath>

@@ -242,161 +242,254 @@ void calculateEdgeMap()
 {
     ///Read the images acquired by grabMultiflashImages()
     Mat left, right, down, up;
-    left = imread("./calib_mf/left.png", 0);
-    right = imread("./calib_mf/right.png", 0);
-    down = imread("./calib_mf/down.png", 0);
-    up = imread("./calib_mf/up.png", 0);
 
-    /*left.clone().convertTo(left, CV_32FC1);
-    right.clone().convertTo(right, CV_32FC1);
-    down.clone().convertTo(down, CV_32FC1);
-    up.clone().convertTo(up, CV_32FC1);
+    string start = "./calib_mf/";
+    string links = "left.png";
+    string rechts = "right.png";
+    string beneden = "down.png";
+    string omhoog = "up.png";
+
+    int aantal_sets = 6;
+
+    for(int i = 0; i< aantal_sets; i++)
+    {
+        ostringstream nummer;
+        nummer << i;
+        left = imread(start + nummer.str() + links, 0);
+        right = imread(start + nummer.str() + rechts, 0);
+        down = imread(start + nummer.str() + beneden, 0);
+        up = imread(start + nummer.str() + omhoog, 0);
+
+        /*left.clone().convertTo(left, CV_32FC1);
+        right.clone().convertTo(right, CV_32FC1);
+        down.clone().convertTo(down, CV_32FC1);
+        up.clone().convertTo(up, CV_32FC1);
+    */
+
+        normalize(left.clone(), left, 0, 255, NORM_MINMAX);
+        normalize(right.clone(), right, 0, 255, NORM_MINMAX);
+        normalize(down.clone(), down, 0, 255, NORM_MINMAX);
+        normalize(up.clone(), up, 0, 255, NORM_MINMAX);
+
+        /*tonen(left, "ratio_left");
+        tonen(right, "ratio_right");
+        tonen(up, "ratio_up");
+        tonen(down, "ratio_down");
 */
-    if(left.empty())
-    {
-        cout<<"Left nok"<<endl;
-    }
-
-    if(right.empty())
-    {
-        cout<<"right nok"<<endl;
-    }
-
-    if(down.empty())
-    {
-        cout<<"down nok"<<endl;
-    }
-
-    if(up.empty())
-    {
-        cout<<"up nok"<<endl;
-    }
-
-    ///Calculate shadow free image
-    //Mat noshadow = Mat(left.rows, left.cols, CV_32FC1);
-    Mat noshadow = Mat(left.rows, left.cols, CV_8UC1);
-
-    for(int y=0; y<left.rows; y++)
-    {
-        for(int x=0; x<left.cols; x++)
+        if(left.empty())
         {
-                uchar color = 0;
-                uchar color_left = left.at<uchar>(y,x);
-                uchar color_right = right.at<uchar>(y,x);
-                uchar color_up = up.at<uchar>(y,x);
-                uchar color_down = down.at<uchar>(y,x);
-
-                color = ((color < color_left) ? color_left : color);
-                color = ((color < color_right) ? color_right : color);
-                color = ((color < color_up) ? color_up : color);
-                color = ((color < color_down) ? color_down : color);
-
-                //cout<<color_left<<" "<<color_right<<" "<<color_up<<" "<<color_down<<" "<<color<<endl;
-
-                noshadow.at<uchar>(y,x) = color;
+            cout<<"Left nok"<<endl;
         }
-    }
 
-    ///Calculate difference image
-    Mat ratio_left = Mat(left.rows, left.cols, CV_32FC1);
-    Mat ratio_right = Mat(left.rows, left.cols, CV_32FC1);
-    Mat ratio_down = Mat(left.rows, left.cols, CV_32FC1);
-    Mat ratio_up = Mat(left.rows, left.cols, CV_32FC1);
-
-    divide(left, noshadow, ratio_left);
-    divide(right, noshadow, ratio_right);
-    divide(up, noshadow, ratio_up);
-    divide(down, noshadow, ratio_down);
-
-    ratio_left *= 255;
-    ratio_right *= 255;
-    ratio_down *= 255;
-    ratio_up *= 255;
-
-    ratio_left.clone().convertTo(ratio_left, CV_8UC1);
-    ratio_right.clone().convertTo(ratio_right, CV_8UC1);
-    ratio_down.clone().convertTo(ratio_down, CV_8UC1);
-    ratio_up.clone().convertTo(ratio_up, CV_8UC1);
-
-    tonen(noshadow, "noshadow");
-    ///Calculate depth edges
-
-    /*tonen(ratio_left, "ratio_left");
-    tonen(ratio_right, "ratio_right");
-    tonen(ratio_up, "ratio_up");
-    tonen(ratio_down, "ratio_down");
-*/
-    Mat edge = Mat::ones(left.rows, left.cols, CV_8UC1);
-    edge *=255;
-
-    int grens = 100 ;
-
-    /*for(grens; grens<1; grens++)*/
-    ///Right:
-    for(int y=0; y<ratio_right.rows; y++)
-    {
-        for(int x=ratio_right.cols-1; x>=0; x--)
+        if(right.empty())
         {
-            if(edge.at<uchar>(y,x) == 255 )
+            cout<<"right nok"<<endl;
+        }
+
+        if(down.empty())
+        {
+            cout<<"down nok"<<endl;
+        }
+
+        if(up.empty())
+        {
+            cout<<"up nok"<<endl;
+        }
+
+        ///Calculate shadow free image
+        //Mat noshadow = Mat(left.rows, left.cols, CV_32FC1);
+        Mat noshadow = Mat(left.rows, left.cols, CV_8UC1);
+
+        for(int y=0; y<left.rows; y++)
+        {
+            for(int x=0; x<left.cols; x++)
             {
-                if(ratio_right.at<uchar>(y,x+1) - ratio_right.at<uchar>(y,x) > grens  )
+                    uchar color = 0;
+                    uchar color_left = left.at<uchar>(y,x);
+                    uchar color_right = right.at<uchar>(y,x);
+                    uchar color_up = up.at<uchar>(y,x);
+                    uchar color_down = down.at<uchar>(y,x);
+
+                    color = ((color < color_left) ? color_left : color);
+                    color = ((color < color_right) ? color_right : color);
+                    color = ((color < color_up) ? color_up : color);
+                    color = ((color < color_down) ? color_down : color);
+
+                    //cout<<color_left<<" "<<color_right<<" "<<color_up<<" "<<color_down<<" "<<color<<endl;
+
+                    noshadow.at<uchar>(y,x) = color;
+            }
+        }
+
+        ///Calculate difference image
+        Mat ratio_left = Mat(left.rows, left.cols, CV_32FC1);
+        Mat ratio_right = Mat(left.rows, left.cols, CV_32FC1);
+        Mat ratio_down = Mat(left.rows, left.cols, CV_32FC1);
+        Mat ratio_up = Mat(left.rows, left.cols, CV_32FC1);
+
+        divide(left, noshadow, ratio_left);
+        divide(right, noshadow, ratio_right);
+        divide(up, noshadow, ratio_up);
+        divide(down, noshadow, ratio_down);
+
+        ratio_left *= 255;
+        ratio_right *= 255;
+        ratio_down *= 255;
+        ratio_up *= 255;
+
+        ratio_left.clone().convertTo(ratio_left, CV_8UC1);
+        ratio_right.clone().convertTo(ratio_right, CV_8UC1);
+        ratio_down.clone().convertTo(ratio_down, CV_8UC1);
+        ratio_up.clone().convertTo(ratio_up, CV_8UC1);
+
+        /*int erosion_type =
+                            MORPH_RECT;
+                            //MORPH_CROSS;
+                            //MORPH_ELLIPSE;
+        int erosion = 1;
+        Mat element = getStructuringElement( erosion_type,
+                                               Size( 2*erosion + 1, 2*erosion+1 ),
+                                               Point( erosion, erosion ) );
+
+        dilate(ratio_left.clone(), ratio_left, element );
+        dilate(ratio_right.clone(), ratio_right,element );
+        dilate(ratio_down.clone(), ratio_down, element );
+        dilate(ratio_up.clone(), ratio_up, element );
+
+        erode(ratio_left.clone(), ratio_left, element );
+        erode(ratio_right.clone(), ratio_right,element );
+        erode(ratio_down.clone(), ratio_down, element );
+        erode(ratio_up.clone(), ratio_up, element );*/
+
+
+        tonen(ratio_left, "ratio_left");
+        tonen(ratio_right, "ratio_right");
+        tonen(ratio_up, "ratio_up");
+        tonen(ratio_down, "ratio_down");
+        ///MAYBE SPLIT UP THE SOBEL
+        Mat leftkernel = Mat::zeros(3,3, CV_32FC1);
+        Mat upkernel = Mat::zeros(3,3, CV_32FC1);
+
+        leftkernel.at<float>(0,0) =1 ;
+        leftkernel.at<float>(0,1) =0 ;
+        leftkernel.at<float>(0,2) =-1 ;
+        leftkernel.at<float>(1,0) =2 ;
+        leftkernel.at<float>(1,1) =0 ;
+        leftkernel.at<float>(1,2) =-2 ;
+        leftkernel.at<float>(2,0) =1 ;
+        leftkernel.at<float>(2,1) =0 ;
+        leftkernel.at<float>(2,2) =-1 ;
+
+        upkernel.at<float>(0,0) =1 ;
+        upkernel.at<float>(0,1) =2 ;
+        upkernel.at<float>(0,2) =1 ;
+        upkernel.at<float>(1,0) =0 ;
+        upkernel.at<float>(1,1) =0 ;
+        upkernel.at<float>(1,2) =0 ;
+        upkernel.at<float>(2,0) =-1 ;
+        upkernel.at<float>(2,1) =-2 ;
+        upkernel.at<float>(2,2) =-1 ;
+
+        //Sobel( ratio_left.clone(), ratio_left, CV_8UC1, 1, 0, 3 ); //Kernel in de verkeerde richting --> [(1 0 -1), ( 2 0 -2), (1 0 -1)
+        filter2D(ratio_left.clone(), ratio_left, CV_8UC1, leftkernel);
+        Sobel( ratio_right.clone(), ratio_right, CV_8UC1, 1, 0, 3 );
+        Sobel( ratio_down.clone(), ratio_down, CV_8UC1, 0, 1, 3 );
+        //Sobel( ratio_up.clone(), ratio_up, CV_8UC1, 0, 1, 3 ); //Kernel in de verkeerde richting --> [(1 2 1), ( 0 0 0), (-1 -2 -1)]
+        filter2D(ratio_up.clone(), ratio_up, CV_8UC1, upkernel);
+
+
+        convertScaleAbs( ratio_left.clone(), ratio_left );
+        convertScaleAbs( ratio_right.clone(), ratio_right);
+        convertScaleAbs( ratio_down.clone(), ratio_down );
+        convertScaleAbs( ratio_up.clone(), ratio_up );
+
+
+        ///Calculate depth edges
+        //tonen(noshadow, "noshadow");
+        /*tonen(ratio_left, "sobel_left");
+        tonen(ratio_right, "sobel_right");
+        tonen(ratio_up, "sobel_up");
+        tonen(ratio_down, "sobel_down");*/
+
+        Mat weigthed;
+        addWeighted(ratio_left, 1, ratio_right, 1, 0, weigthed);
+        addWeighted(weigthed, 1, ratio_down, 1, 0, weigthed);
+        addWeighted(weigthed, 1, ratio_up, 1, 0, weigthed);
+
+        Mat edge = Mat::ones(left.rows, left.cols, CV_8UC1);
+
+        Canny(weigthed, edge, 0.1, 0.9, 3 );
+        tonen(edge, "result");
+
+
+        /*edge *=255;
+
+        int grens = 100 ;
+
+        ///Right:
+        for(int y=0; y<ratio_right.rows; y++)
+        {
+            for(int x=ratio_right.cols-1; x>=0; x--)
+            {
+                if(edge.at<uchar>(y,x) == 255 )
                 {
-                    cout<<(float)ratio_right.at<uchar>(y,x)<<" is kleiner dan "<<(float)ratio_right.at<uchar>(y,x+1)<<endl;
-                    edge.at<uchar>(y,x) = 0;
+                    if(ratio_right.at<uchar>(y,x+1) - ratio_right.at<uchar>(y,x) > grens  )
+                    {
+                        edge.at<uchar>(y,x) = 0;
+                    }
                 }
             }
         }
-    }
 
 
-    ///Left:
-    for(int y=0; y<ratio_left.rows; y++)
-    {
-        for(int x=0; x<ratio_left.cols; x++)
+        ///Left:
+        for(int y=0; y<ratio_left.rows; y++)
         {
-            if(edge.at<uchar>(y,x) == 255 )
+            for(int x=0; x<ratio_left.cols; x++)
             {
-                if(ratio_left.at<uchar>(y,x-1) - ratio_left.at<uchar>(y,x) > grens )
+                if(edge.at<uchar>(y,x) == 255 )
                 {
-                    edge.at<uchar>(y,x) = 0;
+                    if(ratio_left.at<uchar>(y,x-1) - ratio_left.at<uchar>(y,x) > grens )
+                    {
+                        edge.at<uchar>(y,x) = 0;
+                    }
                 }
             }
         }
-    }
 
 
-    ///Up:
-    for(int x=0; x<ratio_up.cols; x++)
-    {
-        for(int y=0; y<ratio_up.rows; y++)
+        ///Up:
+        for(int x=0; x<ratio_up.cols; x++)
         {
-            if(edge.at<uchar>(y,x) == 255 )
+            for(int y=0; y<ratio_up.rows; y++)
             {
-                if(ratio_up.at<uchar>(y-1,x) - ratio_up.at<uchar>(y,x) > grens  )
+                if(edge.at<uchar>(y,x) == 255 )
                 {
-                    edge.at<uchar>(y,x) = 0;
+                    if(ratio_up.at<uchar>(y-1,x) - ratio_up.at<uchar>(y,x) > grens  )
+                    {
+                        edge.at<uchar>(y,x) = 0;
+                    }
                 }
             }
         }
-    }
 
-    ///Down:
-    for(int x=0; x<ratio_down.cols; x++)
-    {
-        for(int y=ratio_down.rows-1; y>=0; y--)
+        ///Down:
+        for(int x=0; x<ratio_down.cols; x++)
         {
-            if(edge.at<uchar>(y,x) == 255 )
+            for(int y=ratio_down.rows-1; y>=0; y--)
             {
-                if(ratio_down.at<uchar>(y+1,x) - ratio_down.at<uchar>(y,x) > grens)
+                if(edge.at<uchar>(y,x) == 255 )
                 {
-                    edge.at<uchar>(y,x) = 0;
+                    if(ratio_down.at<uchar>(y+1,x) - ratio_down.at<uchar>(y,x) > grens)
+                    {
+                        edge.at<uchar>(y,x) = 0;
+                    }
                 }
             }
-        }
+        }*/
+        tonen(edge, "edges"+nummer.str());
+        //imwrite("./calib_mf/"+nummer.str() +"edges.jpg", edge);
     }
-
-    imwrite("edges.jpg", edge);
-    tonen(edge, "edges");
 }
 
 
