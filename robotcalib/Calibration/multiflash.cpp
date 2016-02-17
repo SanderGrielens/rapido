@@ -264,7 +264,7 @@ void calculateEdgeMap()
         right.clone().convertTo(right, CV_32FC1);
         down.clone().convertTo(down, CV_32FC1);
         up.clone().convertTo(up, CV_32FC1);
-    */
+        */
 
         normalize(left.clone(), left, 0, 255, NORM_MINMAX);
         normalize(right.clone(), right, 0, 255, NORM_MINMAX);
@@ -275,22 +275,20 @@ void calculateEdgeMap()
         tonen(right, "ratio_right");
         tonen(up, "ratio_up");
         tonen(down, "ratio_down");
-*/
+        */
+
         if(left.empty())
         {
             cout<<"Left nok"<<endl;
         }
-
         if(right.empty())
         {
             cout<<"right nok"<<endl;
         }
-
         if(down.empty())
         {
             cout<<"down nok"<<endl;
         }
-
         if(up.empty())
         {
             cout<<"up nok"<<endl;
@@ -342,30 +340,11 @@ void calculateEdgeMap()
         ratio_down.clone().convertTo(ratio_down, CV_8UC1);
         ratio_up.clone().convertTo(ratio_up, CV_8UC1);
 
-        /*int erosion_type =
-                            MORPH_RECT;
-                            //MORPH_CROSS;
-                            //MORPH_ELLIPSE;
-        int erosion = 1;
-        Mat element = getStructuringElement( erosion_type,
-                                               Size( 2*erosion + 1, 2*erosion+1 ),
-                                               Point( erosion, erosion ) );
-
-        dilate(ratio_left.clone(), ratio_left, element );
-        dilate(ratio_right.clone(), ratio_right,element );
-        dilate(ratio_down.clone(), ratio_down, element );
-        dilate(ratio_up.clone(), ratio_up, element );
-
-        erode(ratio_left.clone(), ratio_left, element );
-        erode(ratio_right.clone(), ratio_right,element );
-        erode(ratio_down.clone(), ratio_down, element );
-        erode(ratio_up.clone(), ratio_up, element );*/
-
-
         tonen(ratio_left, "ratio_left");
         tonen(ratio_right, "ratio_right");
         tonen(ratio_up, "ratio_up");
         tonen(ratio_down, "ratio_down");
+
         ///MAYBE SPLIT UP THE SOBEL
         Mat leftkernel = Mat::zeros(3,3, CV_32FC1);
         Mat upkernel = Mat::zeros(3,3, CV_32FC1);
@@ -397,12 +376,10 @@ void calculateEdgeMap()
         //Sobel( ratio_up.clone(), ratio_up, CV_8UC1, 0, 1, 3 ); //Kernel in de verkeerde richting --> [(1 2 1), ( 0 0 0), (-1 -2 -1)]
         filter2D(ratio_up.clone(), ratio_up, CV_8UC1, upkernel);
 
-
         convertScaleAbs( ratio_left.clone(), ratio_left );
         convertScaleAbs( ratio_right.clone(), ratio_right);
         convertScaleAbs( ratio_down.clone(), ratio_down );
         convertScaleAbs( ratio_up.clone(), ratio_up );
-
 
         ///Calculate depth edges
         //tonen(noshadow, "noshadow");
@@ -417,13 +394,10 @@ void calculateEdgeMap()
         addWeighted(weigthed, 1, ratio_up, 1, 0, weigthed);
 
         Mat edge = Mat::ones(left.rows, left.cols, CV_8UC1);
-
         Canny(weigthed, edge, 0.1, 0.9, 3 );
         tonen(edge, "result");
 
-
         /*edge *=255;
-
         int grens = 100 ;
 
         ///Right:
@@ -441,7 +415,6 @@ void calculateEdgeMap()
             }
         }
 
-
         ///Left:
         for(int y=0; y<ratio_left.rows; y++)
         {
@@ -456,7 +429,6 @@ void calculateEdgeMap()
                 }
             }
         }
-
 
         ///Up:
         for(int x=0; x<ratio_up.cols; x++)
@@ -491,7 +463,6 @@ void calculateEdgeMap()
         //imwrite("./calib_mf/"+nummer.str() +"edges.jpg", edge);
     }
 }
-
 
 void calculateEdgeMapRGB()
 {
