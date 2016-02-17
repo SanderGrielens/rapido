@@ -88,8 +88,12 @@ int main()
                 int p_h = 1140;
                 float b = 0.5;
                 float m = 5;
-                float thresh = 50;
+                float thresh = 37;
                 int speed = 75; ///capture speed in ms / image
+
+                /*cout<<"please give b and m:"<<endl;
+                cin>>b;
+                cin>>m;
                 /*cout<<"Please give the projector resolution. First the width, then the height:"<<endl;
                 cin >> p_w;
                 cin >> p_h;*/
