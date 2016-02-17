@@ -1,5 +1,10 @@
 #include <iostream>
 #include <math.h>
+#include <pcl/point_types.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/features/normal_3d.h>
+#include <pcl/visualization/pcl_visualizer.h>
+#include <pcl/console/parse.h>
 #include <opencv2/opencv.hpp>
 #include <boost/thread/thread.hpp>
 #include <pcl/common/transforms.h>
@@ -7,11 +12,7 @@
 #include <pcl/ModelCoefficients.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/io/ply_io.h>
-#include <pcl/point_types.h>
-#include <pcl/segmentation/sac_segmentation.h>
-#include <pcl/features/normal_3d.h>
-#include <pcl/visualization/pcl_visualizer.h>
-#include <pcl/console/parse.h>
+
 
 using namespace std;
 using namespace cv;
@@ -61,11 +62,11 @@ int rms_error_ground_plane()
 
     vector<string> files;
 
-    //files.push_back("en.ply");
+    files.push_back("en.ply");
     files.push_back("sl.ply");
 
     pcl::PLYReader plyreader;
-    //boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
+    boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
     for(int k=0; k<files.size() ; k++)
     {
         ostringstream conv;
@@ -237,10 +238,8 @@ int rms_error_ground_plane()
         }
 
         pcl::PLYWriter plywriter;
-        plywriter.write("./test.ply", *cloud, false);
-        pcl::io::savePCDFileBinary("./test.pcd", *cloud);
-        plywriter.write("./test2.ply", *point_cloud_ptr, false);
-        pcl::io::savePCDFileBinary("./test2.pcd", *point_cloud_ptr);
+        plywriter.write("./recht.ply", *point_cloud_ptr, false);
+        pcl::io::savePCDFileBinary("./recht.pcd", *point_cloud_ptr);
 
 
         ///Lengte van de diagonaal berekenen
@@ -287,21 +286,22 @@ int rms_error_ground_plane()
         cout<<"Relative error: "<< distance/diagonaal * 100<<"%"<<endl;
         cloud_collection.push_back(rgbcloud);
 
-        //viewer->addPlane(*coefficients, "plane" + conv.str());
+        viewer->addPlane(*coefficients, "plane" + conv.str());
 
+        viewer = rgbVis(cloud_collection[k], viewer, conv.str());
       //--------------------
       // -----Main loop-----
       //--------------------
 
     }
 
-    /*viewer = rgbVis(cloud_collection[0], viewer, "0");
-    viewer = rgbVis(cloud_collection[1], viewer, "1");
+
+    //viewer = rgbVis(cloud_collection[1], viewer, "1");
     while (!viewer->wasStopped ())
     {
         viewer->spinOnce (100);
         boost::this_thread::sleep (boost::posix_time::microseconds (100000));
-    }*/
+    }
     return 0;
 }
 
@@ -350,6 +350,39 @@ int rms_error_top_plane()
             return (-1);
         }
 
+        while(abs(coefficients->values[1] ) > 0.01)
+        {
+            cout<<"rotate x"<<endl;
+            ///Build our own rotation matrix
+            Eigen::Matrix4f transform_1 = Eigen::Matrix4f::Identity();
+            float theta;
+            // Define a rotation matrix (see https://en.wikipedia.org/wiki/Rotation_matrix)
+            theta = asin(coefficients->values[1]);
+            //rotate around X-Axis
+            transform_1 (1,1) = cos (theta);
+            transform_1 (1,2) = -sin(theta);
+            transform_1 (2,1) = sin (theta);
+            transform_1 (2,2) = cos (theta);
+            //    (row, column)
+
+            pcl::transformPointCloud (*cloud, *cloud, transform_1);
+
+            seg.setInputCloud (cloud);
+            seg.segment (*inliers, *coefficients);
+
+            if (inliers->indices.size () == 0)
+            {
+                PCL_ERROR ("Could not estimate a planar model for the given dataset.");
+                return (-1);
+            }
+
+            std::cerr << "Model coefficients: " << coefficients->values[0] << " "
+                                              << coefficients->values[1] << " "
+                                              << coefficients->values[2] << " "
+                                              << coefficients->values[3] << std::endl;
+
+        }
+
         while(abs(1.0 - coefficients->values[2] ) > 0.01)
         {
             ///Build our own rotation matrix
@@ -375,13 +408,19 @@ int rms_error_top_plane()
                 PCL_ERROR ("Could not estimate a planar model for the given dataset.");
                 return (-1);
             }
+
+            std::cerr << "Model coefficients: " << coefficients->values[0] << " "
+                                              << coefficients->values[1] << " "
+                                              << coefficients->values[2] << " "
+                                              << coefficients->values[3] << std::endl;
+
         }
 
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud2(new pcl::PointCloud<pcl::PointXYZ>);
 
         for(int i =0 ; i< cloud->points.size(); i++)
         {
-            if(cloud->points[i].z < abs(coefficients->values[3]+0.032))
+            if(cloud->points[i].z < abs(coefficients->values[3]+0.030))
             {
                 cloud2->points.push_back(cloud->points[i]);
             }
@@ -431,6 +470,11 @@ int rms_error_top_plane()
             }
         }
 
+        std::cerr << "Model coefficients: " << coefficients2->values[0] << " "
+                                              << coefficients2->values[1] << " "
+                                              << coefficients2->values[2] << " "
+                                              << coefficients2->values[3] << std::endl;
+
         ///Grondvlak tekenen + gemiddelde afwijking uitrekenen
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgbcloud(new pcl::PointCloud<pcl::PointXYZRGB>);
         float distance = 0;
@@ -458,25 +502,25 @@ int rms_error_top_plane()
 
         cout<<"RMS error from plane: "<<distance*1000<<" mm"<<endl;
         cout<<"Measured height of the object: "<<(-coefficients->values[3] + coefficients2->values[3])*1000<<"mm"<<endl;
+        cloud_collection.push_back(rgbcloud);
 
-        boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
         viewer = rgbVis(rgbcloud, viewer, conv.str());
-        viewer->addPlane(*coefficients, "plane"+conv.str());
+        viewer->addPlane(*coefficients2, "plane"+conv.str());
 
-        while (!viewer->wasStopped ())
-        {
-            viewer->spinOnce (100);
-            boost::this_thread::sleep (boost::posix_time::microseconds (100000));
-        }
+
     }
-
+    while (!viewer->wasStopped ())
+    {
+        viewer->spinOnce (100);
+        boost::this_thread::sleep (boost::posix_time::microseconds (100000));
+    }
     return 0;
 }
 
 int main (int argc, char** argv)
 {
     int res;
-    res = rms_error_ground_plane();
-    //res = rms_error_top_plane();
+    //res = rms_error_ground_plane();
+    res = rms_error_top_plane();
     return res;
 }
