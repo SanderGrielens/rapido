@@ -405,6 +405,8 @@ bool get_pointgrey(int delay, string path, int serie, int width, int height)
         }
     }*/
 
+
+
     for(int i = 0; i<number_of_patterns; i++)
     {
         string Result;
@@ -419,6 +421,29 @@ bool get_pointgrey(int delay, string path, int serie, int width, int height)
 
         ///Read from camera
             // Start capturing images
+        if(i==0)
+        {
+            error = cam.StartCapture();
+            if (error != PGRERROR_OK)
+            {
+                PrintError(error);
+            }
+                // Grab images
+            Image rawImage;
+            error = cam.RetrieveBuffer(&rawImage);
+            if (error != PGRERROR_OK)
+            {
+                cout << "Error grabbing image " << endl;
+            }
+
+            // Stop capturing images
+            error = cam.StopCapture();
+            if (error != PGRERROR_OK)
+            {
+                PrintError(error);
+            }
+        }
+
         error = cam.StartCapture();
         if (error != PGRERROR_OK)
         {
@@ -1055,7 +1080,7 @@ Mat calculate3DPoints_all(string path, int aantalseries, float b, float m, float
     }
     NOP_h = horizontal_patterns;
 
-    bool draw = false;
+    bool draw = true;
     vector<Decoder> dec;
     struct timeval tv1, tv2; struct timezone tz;
     gettimeofday(&tv1, &tz);
@@ -1179,15 +1204,10 @@ Mat calculate3DPoints_all(string path, int aantalseries, float b, float m, float
                 {
                     for(int z = 0; z < punten[x][y].size(); z++)
                     {
-                        /*punt = Point2d(punten[x][y][z].x, punten[x][y][z].y);
-                        cam_points.push_back(punt);
-                        punt2 = Point2d(x,y);
-                        proj_points.push_back(punt2);*/
-
                         gemx += punten[x][y][z].x;
                         gemy += punten[x][y][z].y;
                     }
-                    //cout<<"gemiddelde: "<<gemx<<" "<<punten[x][y].size()<<endl;
+
                     if(x%2==0)
                     {
                         punt = Point2d((gemx/punten[x][y].size()), gemy/punten[x][y].size());
@@ -1204,10 +1224,7 @@ Mat calculate3DPoints_all(string path, int aantalseries, float b, float m, float
                     proj_points.push_back(punt2);
                     tekening2.at<uchar>(y,x) = 255;
                 }
-                /*else
-                   cout<<0;*/
             }
-            //cout<<endl;
         }
         //tonen(tekening, "camera view");
         //tonen(tekening2, "projector view");
@@ -1305,13 +1322,9 @@ Mat calculate3DPoints_all(string path, int aantalseries, float b, float m, float
 
             uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
             point.rgb = *reinterpret_cast<float*>(&rgb);
-            if(Z> 870 && Z< 1000)
+            if(Z>860 && Z < 920)
                 point_cloud_ptr -> points.push_back(point);
-            //else
-                //cout<<Z<<endl;
-
         }
-
 
         ///Write pointcloud to disk as .PCD and .PLY
         point_cloud_ptr->width = (int)point_cloud_ptr->points.size();
