@@ -315,6 +315,30 @@ void PrintError( FlyCapture2::Error error )
     error.PrintErrorTrace();
 }
 
+void saveMat(vector<Mat> beelden, string path)
+{
+    vector<int> compression_params;
+    compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION );
+    //Kies 0 om geen compressie door te voeren
+    compression_params.push_back(0);
+
+    for(int i =0; i< beelden.size(); i++)
+    {
+        ostringstream convert;
+        convert << i;
+
+        String plek = path + "/frame" + convert.str()+ ".bmp";
+
+        try {
+            imwrite(plek, beelden[i], compression_params);
+        }
+        catch (int runtime_error){
+            fprintf(stderr, "Exception converting image to JPPEG format: %s\n");
+            return 1;
+        }
+    }
+}
+
 bool get_pointgrey(int delay, string path, int serie, int width, int height)
 {
      vector<Mat> pattern;
@@ -404,8 +428,7 @@ bool get_pointgrey(int delay, string path, int serie, int width, int height)
             return 1;
         }
     }*/
-
-
+    vector<Mat> beelden;
 
     for(int i = 0; i<number_of_patterns; i++)
     {
@@ -476,19 +499,7 @@ bool get_pointgrey(int delay, string path, int serie, int width, int height)
         unsigned int rowBytes = (double)cf2Img.GetReceivedDataSize()/(double)cf2Img.GetRows();
         cv::Mat cvImage = cv::Mat( cf2Img.GetRows(), cf2Img.GetCols(), CV_8UC3, cf2Img.GetData(), rowBytes );
 
-        vector<int> compression_params;
-        compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION );
-        //Kies 0 om geen compressie door te voeren
-        compression_params.push_back(0);
-        String plek = path + "/frame" + convert.str()+ ".bmp";
-
-        try {
-            imwrite(plek, cvImage, compression_params);
-        }
-        catch (int runtime_error){
-            fprintf(stderr, "Exception converting image to JPPEG format: %s\n");
-            return 1;
-        }
+        beelden.push_back(cvImage);
     }
 
     error = cam.Disconnect();
@@ -497,6 +508,9 @@ bool get_pointgrey(int delay, string path, int serie, int width, int height)
         cout<<"Camera not connected"<<endl;
         return -1;
     }
+
+    saveMat(beelden, path);
+
     return true;
 }
 
