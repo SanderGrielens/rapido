@@ -3,3 +3,4 @@ calib_cam/*
 calib_mf/*.png
 edges.jpg
 calib_mf/*.jpg
+calib_sl/camera_projector.xml

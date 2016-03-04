@@ -1208,14 +1208,14 @@ Mat calculate3DPoints_all(string path, int aantalseries, float b, float m, float
                         gemy += punten[x][y][z].y;
                     }
 
-                    if(x%2==0)
+                    if(y%2==0)
                     {
                         punt = Point2d((gemx/punten[x][y].size()), gemy/punten[x][y].size());
                         tekening.at<uchar>( gemy/punten[x][y].size(),gemx/punten[x][y].size()) = 255;
                     }
                     else
                     {
-                        punt = Point2d((gemx/punten[x][y].size()), gemy/punten[x][y].size());
+                        punt = Point2d((gemx/punten[x][y].size())+0.5, gemy/punten[x][y].size());
                         tekening.at<uchar>( gemy/punten[x][y].size(),gemx/punten[x][y].size()) = 255;
                     }
                     //cout<<"punt: "<<punt<<endl;

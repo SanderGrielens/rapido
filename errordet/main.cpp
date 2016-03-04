@@ -168,15 +168,18 @@ int rms_error_ground_plane()
 
         for(int i=0; i<cloud->points.size(); i++)
         {
-            if(hoogstez<cloud->points[i].z)
+            if(cloud->points[i].z < (-coefficients->values[3] + 0.01))
             {
-                hoogste2 = hoogstez;
-                hoogstez = cloud->points[i].z;
-            }
-            if(laagstez>cloud->points[i].z)
-            {
-                laagste2 = laagstez;
-                laagstez = cloud->points[i].z;
+                if(hoogstez<cloud->points[i].z)
+                {
+                    hoogste2 = hoogstez;
+                    hoogstez = cloud->points[i].z;
+                }
+                if(laagstez>cloud->points[i].z)
+                {
+                    laagste2 = laagstez;
+                    laagstez = cloud->points[i].z;
+                }
             }
 
         }
@@ -234,12 +237,16 @@ int rms_error_ground_plane()
             uint8_t r = c1, g = c2, b = c3;
             uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
             point.rgb = *reinterpret_cast<float*>(&rgb);
-            point_cloud_ptr -> points.push_back(point);
+            if(Z < (-coefficients->values[3] + 0.01))
+            {
+                //cout<<Z<<endl;
+                point_cloud_ptr -> points.push_back(point);
+            }
         }
 
         pcl::PLYWriter plywriter;
         plywriter.write("./recht.ply", *point_cloud_ptr, false);
-        pcl::io::savePCDFileBinary("./recht.pcd", *point_cloud_ptr);
+        pcl::io::savePCDFileBinary("./recht" + conv.str() + ".pcd", *point_cloud_ptr);
 
 
         ///Lengte van de diagonaal berekenen
@@ -520,7 +527,7 @@ int rms_error_top_plane()
 int main (int argc, char** argv)
 {
     int res;
-    //res = rms_error_ground_plane();
+    res = rms_error_ground_plane();
     res = rms_error_top_plane();
     return res;
 }
