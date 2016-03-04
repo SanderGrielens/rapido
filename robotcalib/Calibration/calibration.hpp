@@ -80,6 +80,7 @@ struct Visualizer
 Decoder init_decoder();
 vector<Mat> generate_pattern(int NOP_v, int NOP_h, int projector_width, int projector_height);
 bool get_sl_images(int delay, string path, int serie, int width, int height);
+void saveMat(vector<Mat> beelden, string path);
 bool get_vimba(int delay, string path, int serie, int width, int height);
 bool get_pointgrey(int delay, string path, int serie, int width, int height);
 int getdir (string dir, vector<string> &files);
