@@ -33,14 +33,15 @@ vector<Mat> generate_pattern(int NOP_v, int NOP_h, int projector_width, int proj
 {
     vector<Mat> result;
 
-    for(int i =0 ; i< NOP_h*2 + NOP_v*2 + 2; i++)
+    for(int i =0 ; i< NOP_h*2 + NOP_v*2 + 6; i++)
     {
         Mat newmat = Mat::zeros(projector_height, projector_width, CV_8UC1);
         result.push_back(newmat) ;
     }
+
     ///Generate vertical patterns
     int teller =0;
-    for(int k=NOP_v; k>=0; teller+=2, k--)
+    for(int k=NOP_v; k>=-1; teller+=2, k--)
     {
         bool change = true;
         bool flag = true;
@@ -66,7 +67,7 @@ vector<Mat> generate_pattern(int NOP_v, int NOP_h, int projector_width, int proj
 
             int macht = pow(2, k);
 
-            if(k>0)
+            if(k>=0)
             {
                 if(i%macht == 0 && i != 0)
                 {
@@ -93,9 +94,12 @@ vector<Mat> generate_pattern(int NOP_v, int NOP_h, int projector_width, int proj
             pixel_teller++;
     }
     cout<<"verticaal pixels: "<<pixel_teller<<endl;*/
+
+
     ///Generate Horizontal patterns
-    for(int k=NOP_h-1; k>=0; teller +=2, k--)
+    for(int k=NOP_h-1; k>=-1; teller +=2, k--)
     {
+        cout<<teller<<endl;
         bool change = true;
         bool flag = true;
         for(int i = 0; i < projector_height; i++)
@@ -118,7 +122,7 @@ vector<Mat> generate_pattern(int NOP_v, int NOP_h, int projector_width, int proj
             }
             int macht = pow(2,k);
 
-            if(k>0)
+            if(k>=0)
             {
                 if(i%macht == 0 && i != 0)
                 {
@@ -334,7 +338,7 @@ void saveMat(vector<Mat> beelden, string path)
         }
         catch (int runtime_error){
             fprintf(stderr, "Exception converting image to JPPEG format: %s\n");
-            return 1;
+            //return 1;
         }
     }
 }
@@ -375,7 +379,7 @@ bool get_pointgrey(int delay, string path, int serie, int width, int height)
     if ( numCameras < 1 )
     {
         cout << "Insufficient number of cameras... exiting" << endl;
-        return -1;
+        //return -1;
     }
 
     PGRGuid guid;
@@ -383,7 +387,7 @@ bool get_pointgrey(int delay, string path, int serie, int width, int height)
     if (error != PGRERROR_OK)
     {
         cout<<"No index retrieved"<<endl;
-        return -1;
+        //return -1;
     }
 
     FlyCapture2::Camera cam;
@@ -393,7 +397,7 @@ bool get_pointgrey(int delay, string path, int serie, int width, int height)
     if (error != PGRERROR_OK)
     {
         cout<<"Camera not connected"<<endl;
-        return -1;
+        //return -1;
     }
 
     // Get the camera information
@@ -402,9 +406,9 @@ bool get_pointgrey(int delay, string path, int serie, int width, int height)
     if (error != PGRERROR_OK)
     {
         cout<<"No camera info retrieved"<<endl;
-        return -1;
+        //return -1;
     }
-
+    cout<<"generating pattern"<<endl;
     pattern = generate_pattern(NOP_v, NOP_h, width, height);
     cout<<"Pattern generated"<<endl;
 
@@ -421,13 +425,14 @@ bool get_pointgrey(int delay, string path, int serie, int width, int height)
         ostringstream stm ;
         stm << i ;
         try {
-            imwrite("patroon" + stm.str()+ ".png", pattern[i], compression_params);
+            imwrite("./patronen_sl/patroon" + stm.str()+ ".png", pattern[i], compression_params);
         }
         catch (int runtime_error){
             fprintf(stderr, "Exception converting image to JPPEG format: %s\n");
             return 1;
         }
-    }*/
+    }
+    */
     vector<Mat> beelden;
 
     for(int i = 0; i<number_of_patterns; i++)
