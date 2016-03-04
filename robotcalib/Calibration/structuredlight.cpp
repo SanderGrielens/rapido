@@ -99,7 +99,6 @@ vector<Mat> generate_pattern(int NOP_v, int NOP_h, int projector_width, int proj
     ///Generate Horizontal patterns
     for(int k=NOP_h-1; k>=-1; teller +=2, k--)
     {
-        cout<<teller<<endl;
         bool change = true;
         bool flag = true;
         for(int i = 0; i < projector_height; i++)
@@ -330,7 +329,7 @@ void saveMat(vector<Mat> beelden, string path)
     {
         ostringstream convert;
         convert << i;
-
+        tonen(beelden[i], "beeldje"+convert.str());
         String plek = path + "/frame" + convert.str()+ ".bmp";
 
         try {
@@ -340,6 +339,7 @@ void saveMat(vector<Mat> beelden, string path)
             fprintf(stderr, "Exception converting image to JPPEG format: %s\n");
             //return 1;
         }
+
     }
 }
 
@@ -505,6 +505,7 @@ bool get_pointgrey(int delay, string path, int serie, int width, int height)
         cv::Mat cvImage = cv::Mat( cf2Img.GetRows(), cf2Img.GetCols(), CV_8UC3, cf2Img.GetData(), rowBytes );
 
         beelden.push_back(cvImage);
+        //tonen(beelden[i],"is zien"+convert.str());
     }
 
     error = cam.Disconnect();
