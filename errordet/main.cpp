@@ -64,6 +64,7 @@ int rms_error_ground_plane()
 
     files.push_back("en.ply");
     files.push_back("sl.ply");
+    files.push_back("sl_dlp.ply");
 
     pcl::PLYReader plyreader;
     boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
@@ -77,6 +78,32 @@ int rms_error_ground_plane()
         cloud->width  = cloud->points.size();
         cloud->height = 1;
         cloud->points.resize (cloud->width * cloud->height);
+        cout<<"grootte van de point cloud: "<<cloud->points.size()<<endl;
+
+        ///Show point cloud
+       /* boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer2 (new pcl::visualization::PCLVisualizer ("3D Viewer"));
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgbcloud2(new pcl::PointCloud<pcl::PointXYZRGB>);
+        for (size_t i = 0; i < cloud->points.size(); ++i)
+        {
+
+            pcl::PointXYZRGB point;
+            point.x = cloud->points[i].x;
+            point.y = cloud->points[i].y;
+            point.z = cloud->points[i].z;
+            // pack r/g/b into rgb
+            uint8_t r = 255, g = k*255, b = 0;    // Example: Red color
+            uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
+            point.rgb = *reinterpret_cast<float*>(&rgb);
+            //rgbcloud->points.push_back(point);
+
+            rgbcloud2->points.push_back(point);
+        }
+        viewer2 = rgbVis(rgbcloud2, viewer2, conv.str());
+        while (!viewer2->wasStopped ())
+        {
+            viewer2->spinOnce (100);
+            boost::this_thread::sleep (boost::posix_time::microseconds (100000));
+        }*/
 
         pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
         pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
@@ -275,7 +302,7 @@ int rms_error_ground_plane()
             point.y = cloud->points[inliers->indices[i]].y;
             point.z = cloud->points[inliers->indices[i]].z;
             // pack r/g/b into rgb
-            uint8_t r = 255, g = k*255, b = 0;    // Example: Red color
+            uint8_t r = k*255, g = k*128, b = 125;    // Example: Red color
             uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
             point.rgb = *reinterpret_cast<float*>(&rgb);
             //rgbcloud->points.push_back(point);
@@ -293,7 +320,7 @@ int rms_error_ground_plane()
         cout<<"Relative error: "<< distance/diagonaal * 100<<"%"<<endl;
         cloud_collection.push_back(rgbcloud);
 
-        viewer->addPlane(*coefficients, "plane" + conv.str());
+        //viewer->addPlane(*coefficients, "plane" + conv.str());
 
         viewer = rgbVis(cloud_collection[k], viewer, conv.str());
       //--------------------
@@ -312,7 +339,6 @@ int rms_error_ground_plane()
     return 0;
 }
 
-
 int rms_error_top_plane()
 {
      vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> cloud_collection; //(new pcl::PointCloud<pcl::PointXYZ>);
@@ -322,6 +348,7 @@ int rms_error_top_plane()
 
     files.push_back("en.ply");
     files.push_back("sl.ply");
+    files.push_back("sl_dlp.ply");
 
     pcl::PLYReader plyreader;
     boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
