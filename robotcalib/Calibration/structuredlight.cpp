@@ -318,31 +318,6 @@ void PrintError( FlyCapture2::Error error )
     error.PrintErrorTrace();
 }
 
-void saveMat(vector<Mat> beelden, string path)
-{
-    vector<int> compression_params;
-    compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION );
-    //Kies 0 om geen compressie door te voeren
-    compression_params.push_back(0);
-
-    for(int i =0; i< beelden.size(); i++)
-    {
-        ostringstream convert;
-        convert << i;
-        tonen(beelden[i], "beeldje"+convert.str());
-        String plek = path + "/frame" + convert.str()+ ".bmp";
-
-        try {
-            imwrite(plek, beelden[i], compression_params);
-        }
-        catch (int runtime_error){
-            fprintf(stderr, "Exception converting image to JPPEG format: %s\n");
-            //return 1;
-        }
-
-    }
-}
-
 bool get_pointgrey(int delay, string path, int serie, int width, int height)
 {
      vector<Mat> pattern;
@@ -504,18 +479,17 @@ bool get_pointgrey(int delay, string path, int serie, int width, int height)
         unsigned int rowBytes = (double)cf2Img.GetReceivedDataSize()/(double)cf2Img.GetRows();
         cv::Mat cvImage = cv::Mat( cf2Img.GetRows(), cf2Img.GetCols(), CV_8UC3, cf2Img.GetData(), rowBytes );
 
-        beelden.push_back(cvImage);
-        //tonen(beelden[i],"is zien"+convert.str());
+        string plek = path + "/frame" + convert.str()+ ".bmp";
+        imwrite(plek, cvImage);
+        //tonen(cvImage, "test");
     }
 
     error = cam.Disconnect();
     if (error != PGRERROR_OK)
     {
-        cout<<"Camera not connected"<<endl;
+        cout<<"Camera not disconnected"<<endl;
         return -1;
     }
-
-    saveMat(beelden, path);
 
     return true;
 }
@@ -538,7 +512,7 @@ bool get_sl_images(int delay, string path, int serie, int width, int height)
 bool findcorners(vector<vector<Point2f> > &chessboardcorners, string path, int aantalseries, int width, int height)
 {
     Mat board;
-    Size boardSize(8,6);
+    Size boardSize(10,7);
 
     int vertical_patterns=0;
     ///Get dimensions
@@ -670,41 +644,45 @@ void get_pattern_image(Decoder &d, vector<Mat> beelden, int dir, float m, float 
     int NOP;
     int start;
     string richting;
-    float min_slecht = pow(2, NOP_v+2);
+    float min_slecht = pow(2, NOP_v+5);
 
     if(dir)
     {
         start = 0;
         holder = NOP_v;
-        NOP = 2*NOP_v-3; //number of highest frequency vertical pattern
+        NOP = 2*NOP_v+1; //number of highest frequency vertical pattern
         richting = "vert";
     }
     else
     {
         holder = NOP_h;
-        NOP = 2*NOP_v + 2*NOP_h-3; //number of highest frequency horizontal pattern
-        start = 2*NOP_v;
+        NOP = 2*NOP_v+1 + 2*NOP_h+2; //number of highest frequency horizontal pattern
+        start = 2*NOP_v+2;
         richting = "hor";
     }
 
     bit = holder;
     //cout<<"bit: "<<bit<<endl;
     #pragma omp parallel for
-    for(int j =0; j< beelden[NOP].rows; j++)
+    for(int i = start; i<=NOP ; i+=2)
     {
-        for(int k =0; k<beelden[NOP].cols; k++)
+        for(int j =0; j< beelden[NOP].rows; j++)
         {
-            float val1 = beelden[NOP].at<float>(j,k);
-            float val2 = beelden[NOP-1].at<float>(j,k);
+            for(int k =0; k<beelden[NOP].cols; k++)
+            {
+                float val1 = beelden[i+1].at<float>(j,k);
+                float val2 = beelden[i].at<float>(j,k);
 
-            ///save min and max of every pixel in every image pair
-            if(val1 < d.minimum[dir].at<float>(j,k) || val2 < d.minimum[dir].at<float>(j,k))
-                d.minimum[dir].at<float>(j,k) = (val1<val2 ? val1 : val2);
+                ///save min and max of every pixel in every image pair
+                if(val1 < d.minimum[dir].at<float>(j,k) || val2 < d.minimum[dir].at<float>(j,k))
+                    d.minimum[dir].at<float>(j,k) = (val1<val2 ? val1 : val2);
 
-            if(val1> d.maximum[dir].at<float>(j,k) || val2> d.maximum[dir].at<float>(j,k))
-                d.maximum[dir].at<float>(j,k) = (val1>val2 ? val1 : val2);
+                if(val1> d.maximum[dir].at<float>(j,k) || val2> d.maximum[dir].at<float>(j,k))
+                    d.maximum[dir].at<float>(j,k) = (val1>val2 ? val1 : val2);
+            }
         }
     }
+    //cout<<"bit: "<<bit<<endl;
 
     ///Go over each image pair (img and his inverse) and check for each pixel it's value. Add it to pattern[dir]
     /// If a pixel is in a lighted area, we add 2 raised to the power of (k - the frame number). This way we get a gray code pattern for each pixel in pattern[dir].
@@ -712,7 +690,7 @@ void get_pattern_image(Decoder &d, vector<Mat> beelden, int dir, float m, float 
 
     for(int i = start; i<=NOP ; i+=2)
     {
-        bit--;
+
         Mat beeld1 = beelden[i+1];
         Mat beeld2 = beelden[i];
         #pragma omp parallel for
@@ -731,7 +709,7 @@ void get_pattern_image(Decoder &d, vector<Mat> beelden, int dir, float m, float 
                     int p = check_bit(val1, val2, ld, lg, m);
                     if(p == 2)
                     {
-                        d.pattern_image[dir].at<float>(j,k) += (p<<(NOP_v+2)); //p*(pow(2, NOP_v+2));
+                        d.pattern_image[dir].at<float>(j,k) += (p<<(NOP_v+5)); //p*(pow(2, NOP_v+5));
                     }
                     else
                     {
@@ -740,28 +718,33 @@ void get_pattern_image(Decoder &d, vector<Mat> beelden, int dir, float m, float 
                 //}
             }
         }
+        bit--;
     }
-    for(int x = 0; x<d.pattern_image[dir].cols; x++)
+
+
+
+    /*for(int x = 0; x<d.pattern_image[dir].cols; x++)
     {
         for(int y = 0; y<d.pattern_image[dir].rows; y++)
         {
-            if (d.pattern_image[dir].at<float>(y,x) >= pow(2,NOP_v+2))
+            if (d.pattern_image[dir].at<float>(y,x) >= pow(2,NOP_v+5))
             {
                 continue;
             }
-            bitset<12> bitje(d.pattern_image[dir].at<float>(y,x));
+            bitset<16> bitje(d.pattern_image[dir].at<float>(y,x));
+
             if(bitje[0] > 0)
             {
                 cout<<"x: "<<x<<" y: "<<y<<endl;
                 cout<<bitje<<endl;
-                for(int j = 11; j>=0;j--)
+                for(int j = 15; j>=0;j--)
                 {
                     cout<<bitje[j];
                 }
                 cout<<endl;
             }
         }
-    }
+    }*/
 
     ///Convert pattern from gray code to binary
     //#pragma omp parallel for
@@ -785,7 +768,7 @@ void get_pattern_image(Decoder &d, vector<Mat> beelden, int dir, float m, float 
 
             if((d.maximum[dir].at<float>(i,j) - d.minimum[dir].at<float>(i,j)) < thresh)
             {
-                d.pattern_image[dir].at<float>(i,j) = 2 << (NOP_v+2);// 2*(pow(2, NOP_v+2));
+                d.pattern_image[dir].at<float>(i,j) = 2 << (NOP_v+5);// 2*(pow(2, NOP_v+5));
             }
         }
     }
@@ -798,29 +781,21 @@ void get_pattern_image(Decoder &d, vector<Mat> beelden, int dir, float m, float 
 void colorize_pattern(Decoder &d, vector<Mat> &image, int dir, int projector_width, int projector_height)
 {
     int NOP;
+    float max_t = 0;
 
     int effective_width = projector_width;
     int effective_height = projector_height;
-    if(dir)
+    for(int i = 0; i< d.pattern_image[dir].rows; i++)
     {
-        int max_vert_value = (1<<NOP_v);
-        while (effective_width>max_vert_value )
+        for(int j = 0; j< d.pattern_image[dir].cols; j++)
         {
-            effective_width >>= 1;
+            if (d.pattern_image[dir].at<float>(i,j) >= (pow(2, NOP_v+5)))
+            {
+                continue;
+            }
+            max_t = (d.pattern_image[dir].at<float>(i,j) > max_t ? d.pattern_image[dir].at<float>(i,j) : max_t);
         }
-        NOP = effective_width;
     }
-    else
-    {
-        int max_hor_value = (1<<NOP_h);
-        while (effective_height>max_hor_value )
-        {
-            effective_height >>= 1;
-        }
-        NOP = effective_height;
-    }
-
-    float max_t = NOP;
     float n = 4.f;
     float dt = 255.f/n;
 
@@ -828,11 +803,12 @@ void colorize_pattern(Decoder &d, vector<Mat> &image, int dir, int projector_wid
     {
         for(int j = 0; j< d.pattern_image[dir].cols; j++)
         {
-            if (d.pattern_image[dir].at<float>(i,j) >= (pow(2, NOP_v+2)))
+            if (d.pattern_image[dir].at<float>(i,j) >= (pow(2, NOP_v+5)))
             {   //invalid value: use grey
                 image[dir].at<Vec3b>(i,j) = Vec3b(128, 128, 128);
                 continue;
             }
+
 
             //display
             float t = d.pattern_image[dir].at<float>(i,j)*255.f/max_t;
@@ -866,6 +842,9 @@ void colorize_pattern(Decoder &d, vector<Mat> &image, int dir, int projector_wid
                 c3 = c;         //0-255
             }
             image[dir].at<Vec3b>(i,j) = Vec3b(c3, c2,c1);
+
+            //if(c3 == 0 && c2== 0 && c1==0)
+              //  cout<<d.pattern_image[dir].at<float>(i,j)<<endl;
         }
     }
     if(dir)
@@ -887,7 +866,7 @@ bool decode(int serienummer, Decoder &d, bool draw, string path, float b, float 
 
     pad = path + serienr.str() + "/frame";
     ///Reading every image in a serie
-    for(int i=2; i<(NOP_v+NOP_h)*2; i++)
+    for(int i=2; i<=(NOP_v+NOP_h)*2+5; i++)
     {
         ostringstream beeldnr;
         beeldnr << i;
@@ -967,11 +946,11 @@ bool calibrate_sl(vector<Decoder> dec, vector<vector<Point2f> > corners, int aan
     vector<cv::Point3f> world_corners;
 
 
-    for(int h=0; h<6; h++)
+    for(int h=0; h<7; h++)
     {
-        for (int w=0; w<8; w++)
+        for (int w=0; w<10; w++)
         {
-            world_corners.push_back(cv::Point3f(28.55555555f * w, 28.55555555f * h, 0.f));
+            world_corners.push_back(cv::Point3f(24.f * w, 24.f * h, 0.f));
         }
     }
 
@@ -991,7 +970,7 @@ bool calibrate_sl(vector<Decoder> dec, vector<vector<Point2f> > corners, int aan
                 {
                     for(int y = c[l].y - window; y<=c[l].y + window; y++)
                     {
-                        if (d.pattern_image[0].at<float>(y,x) >= (pow(2, NOP_v+2)) || d.pattern_image[1].at<float>(y,x) >= (pow(2, NOP_v+2)))
+                        if (d.pattern_image[0].at<float>(y,x) >= (pow(2, NOP_v+5)) || d.pattern_image[1].at<float>(y,x) >= (pow(2, NOP_v+5)))
                         {
                             continue;
                         }
@@ -1028,7 +1007,7 @@ bool calibrate_sl(vector<Decoder> dec, vector<vector<Point2f> > corners, int aan
                 //+ cv::CALIB_ZERO_TANGENT_DIST
                 + cv::CALIB_FIX_K3
                 ;
-
+    cout<<"we gaan de camera calibreren"<<endl;
     Size imageSize = dec[0].pattern_image[0].size();
     vector<Mat> cam_rvecs, cam_tvecs;
     Mat cam_mat;
@@ -1100,7 +1079,7 @@ Mat calculate3DPoints_all(string path, int aantalseries, float b, float m, float
     }
     NOP_h = horizontal_patterns;
 
-    bool draw = true;
+    bool draw = false;
     vector<Decoder> dec;
     struct timeval tv1, tv2; struct timezone tz;
     gettimeofday(&tv1, &tz);
@@ -1173,46 +1152,55 @@ Mat calculate3DPoints_all(string path, int aantalseries, float b, float m, float
 
         Mat hory = d.pattern_image[0];
         Mat verx = d.pattern_image[1];
+        float max_hor = 0;
+        float max_ver = 0;
+
+        for(int i = 0; i< hory.rows; i++)
+        {
+            for(int j = 0; j< hory.cols; j++)
+            {
+                if (hory.at<float>(i,j) >= (pow(2, NOP_v+5)) || verx.at<float>(i,j) >= (pow(2, NOP_v+5)))
+                {
+                    continue;
+                }
+                max_hor = (hory.at<float>(i,j) > max_hor ? hory.at<float>(i,j) : max_hor);
+                max_ver = (verx.at<float>(i,j) > max_ver ? verx.at<float>(i,j) : max_ver);
+            }
+        }
 
         struct timeval tv4, tv5, tv6; struct timezone tz;
         gettimeofday(&tv4, &tz);
         vector<vector<vector<Point2d> > > punten;///punten[x][y][z]
-        punten.resize(camera_width);
+        punten.resize(max_ver+1);
         //#pragma omp parallel for
         for(int i=0; i<punten.size(); i++)
         {
-            punten[i].resize(camera_height);
+            punten[i].resize(max_hor+1);
             for(int j=0; j< punten[i].size(); j++)
             {
                 punten[i][j].reserve(10);
             }
         }
-
+        //Mat tekening3 = Mat::zeros(camera_height, camera_width, CV_8UC1);
         //#pragma omp parallel for
         int tel = 0;
         for(int x = 0; x<camera_width; x++)
         {
             for(int y = 0; y<camera_height; y++)
             {
-                if (hory.at<float>(y,x) >= camera_height || hory.at<float>(y,x) < 0 ||  verx.at<float>(y,x) >= camera_width || verx.at<float>(y,x) < 0)
+                if (hory.at<float>(y,x) >= (pow(2, NOP_v+5)) || hory.at<float>(y,x) < 0 || verx.at<float>(y,x) >= (pow(2, NOP_v+5)) || verx.at<float>(y,x) < 0)
                 {
                     continue;
                 }
                 tel++;
                 Point2d punt_cam = Point2d(x,y);
-                //cout<<"punt: "<<x<<" "<<y<<endl;
-                //cout<<"Projpunt: "<<verx.at<float>(y,x)<<" "<<hory.at<float>(y,x)<<endl;
-                //cout<<"size: "<<punten[verx.at<float>(y,x)][hory.at<float>(y,x)].size()<<endl;
                 punten[verx.at<float>(y,x)][hory.at<float>(y,x)].push_back(punt_cam);
-                /*cout<<"locatie: "<<verx.at<float>(y,x)<<" x "<<hory.at<float>(y,x)<<endl;
-                cout<<"wat we hebben weggestoken: "<<punt_cam<<endl;
-                cout<<"wat er inzit: "<<punten[verx.at<float>(y,x)][hory.at<float>(y,x)].back()<<endl;*/
-
             }
         }
+        //tonen(tekening3, "camera view1");
         //#pragma omp parallel for
         Mat tekening = Mat::zeros(camera_height, camera_width, CV_8UC1);
-        Mat tekening2 = Mat::zeros(camera_height, camera_width, CV_8UC1);
+        Mat tekening2 = Mat::zeros(max_hor+1, max_ver+1, CV_8UC1);
         for(int x = 0; x<punten.size(); x++)
         {
             for(int y = 0; y<punten[x].size(); y++)
@@ -1238,7 +1226,7 @@ Mat calculate3DPoints_all(string path, int aantalseries, float b, float m, float
                         punt = Point2d((gemx/punten[x][y].size())+0.5, gemy/punten[x][y].size());
                         tekening.at<uchar>( gemy/punten[x][y].size(),gemx/punten[x][y].size()) = 255;
                     }
-                    //cout<<"punt: "<<punt<<endl;
+
                     cam_points.push_back(punt);
                     punt2 = Point2d(x,y);
                     proj_points.push_back(punt2);
@@ -1319,7 +1307,7 @@ Mat calculate3DPoints_all(string path, int aantalseries, float b, float m, float
             result.at<double>(2, i) = Z/1000;
             result.at<double>(3, i) = 1;
         }
-        ///Convert to pointcloud and save as .PCD and .PLY and transform them into homogene points
+        /// Transform them into homogene points, convert to pointcloud and save as .PCD and .PLY
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGB>);
         //pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZ>);
 
@@ -1364,7 +1352,7 @@ Mat calculate3DPoints(vector<Point2f> &c, Decoder d)
 
     for(int l = 0; l< c.size(); l++) //for each chessboard corner
     {
-        if (d.pattern_image[0].at<float>(c[l].y,c[l].x) >= (pow(2, NOP_v+2)) || d.pattern_image[1].at<float>(c[l].y,c[l].x) >= (pow(2, NOP_v+2)))
+        if (d.pattern_image[0].at<float>(c[l].y,c[l].x) >= (pow(2, NOP_v+5)) || d.pattern_image[1].at<float>(c[l].y,c[l].x) >= (pow(2, NOP_v+5)))
         {
             continue;
         }
@@ -1771,3 +1759,4 @@ bool calibrate_sl_r(string path, float b, float m, float thresh, int projector_w
     //save(points_sensor, transformed, points_robot);
     return true;
 }
+

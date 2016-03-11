@@ -88,8 +88,8 @@ int main()
                 int p_h = 1140;
                 float b = 0.5;
                 float m = 5;
-                float thresh = 37;
-                int speed = 75; ///capture speed in ms / image
+                float thresh = 50;
+                int speed = 100; ///capture speed in ms / image
 
                 /*cout<<"please give b and m:"<<endl;
                 cin>>b;
@@ -134,7 +134,7 @@ int main()
                         if(gelukt_f)
                             corners = chessboardcorners;
                     }
-                    if(!gelukt_d)
+                    if(!gelukt_d && gelukt_f)
                     {
                         string path = "./calib_sl/serie";
                         bool draw = false;
