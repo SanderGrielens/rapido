@@ -1,0 +1,5 @@
+bin/*
+*.ply
+errordet.*
+obj/*
+*.pcd
